@@ -69,6 +69,10 @@ export default function CheckoutPage() {
 
     setLoading(true)
     try {
+      // 👉 apanha sessão (se estiver logado vamos gravar o user_id)
+      const { data: sessionData } = await supabase.auth.getSession()
+      const userId = sessionData?.session?.user?.id ?? null
+
       const payload = {
         // dados do cliente
         name: name.trim(),
@@ -91,6 +95,8 @@ export default function CheckoutPage() {
         order_type: delivery_type,
         acknowledged: false as boolean | undefined,
         status: 'pending' as const,
+        // ligação ao utilizador (opcional se houver login)
+        user_id: userId,
       }
 
       // 👉 Guardar e obter o ID da encomenda
