@@ -1,5 +1,33 @@
-node_modules
-.next
-out
-.env
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json
+
+# Next.js
+.next/
+out/
+.next/static/
+!.next/static/.gitkeep
+
+# Build
+dist/
+build/
+
+# Misc
 .DS_Store
+Thumbs.db
+
+# Env files
+.env
+.env.*.local
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# OS
+desktop.ini
