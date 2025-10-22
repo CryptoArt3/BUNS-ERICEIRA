@@ -1,4 +1,3 @@
-import '../globals.css'
 import type { Metadata } from 'next'
 import AdminGuard from '@/components/AdminGuard'
 import AdminHeader from '@/components/AdminHeader'
