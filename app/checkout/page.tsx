@@ -88,8 +88,17 @@ export default function CheckoutPage() {
         delivery_fee,
         fee: delivery_fee, // compat
         total,
-        // itens
-        items,            // JSONB
+        // itens (com note/variant/options)
+        items: items.map((it) => ({
+          id: it.id,
+          name: it.name,
+          qty: it.qty,
+          price: it.price,
+          variant: it.variant ?? null,
+          options: it.options ?? null,
+          // notinha duplicada para leitura fácil no admin, se quiseres
+          note: it.options?.note ?? null,
+        })),            // JSONB
         items_count,      // NOT NULL
         // meta
         order_type: delivery_type,

@@ -1,60 +1,138 @@
-'use client'
-import { createContext, useContext, useEffect, useMemo, useState } from 'react'
+'use client';
 
-export type CartItem = { id: string; name: string; price: number; qty: number }
-export type Cart = { items: CartItem[] }
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 
-type CartCtx = {
-  cart: Cart
-  add: (item: CartItem) => void
-  remove: (id: string) => void
-  clear: () => void
-}
+/* -------------------- Tipos -------------------- */
+export type FriesType = 'normal' | 'doce' | null;
 
-const Ctx = createContext<CartCtx | undefined>(undefined)
+export type CartItemOptions = {
+  /** ingredientes on/off, p.ex. { ketchup:true, pickles:false }  */
+  ingredients?: Record<string, boolean>;
+  /** batata para “menu” */
+  fries?: FriesType;
+  /** bebida para “menu” */
+  drink?: string | null;
+  /** nota livre do cliente */
+  note?: string;
+};
 
-// 👉 lê do localStorage já no 1º render
-function loadInitialCart(): Cart {
-  if (typeof window === 'undefined') return { items: [] }
-  try {
-    const raw = localStorage.getItem('cart')
-    return raw ? JSON.parse(raw) : { items: [] }
-  } catch {
-    return { items: [] }
-  }
-}
+export type CartItem = {
+  id: string;
+  name: string;
+  price: number;
+  qty: number;
+  /** ex.: 'burger' | 'menu' para cards com as duas variantes */
+  variant?: 'burger' | 'menu';
+  /** customizações */
+  options?: CartItemOptions;
+};
 
+type CartState = { items: CartItem[] };
+
+export type CartContextType = {
+  cart: CartState;
+  add: (item: Omit<CartItem, 'qty'> & { qty?: number }) => void;
+  remove: (id: string) => void;
+  setQty: (id: string, qty: number) => void;
+  clear: () => void;
+  /** Atualiza parcial de opções; cria options se não existir */
+  updateOptions: (id: string, patch: Partial<CartItemOptions>) => void;
+
+  /** Wrappers de conveniência (compat com o teu CartPage) */
+  inc: (id: string) => void;
+  dec: (id: string) => void;
+  setNote: (id: string, note: string) => void;
+};
+
+const CartContext = createContext<CartContextType | null>(null);
+
+/* -------------------- Provider -------------------- */
 export const CartProvider = ({ children }: { children: React.ReactNode }) => {
-  const [cart, setCart] = useState<Cart>(loadInitialCart)
+  const [cart, setCart] = useState<CartState>({ items: [] });
 
-  // persiste no localStorage sempre que mudar
+  // carregar de localStorage
   useEffect(() => {
     try {
-      localStorage.setItem('cart', JSON.stringify(cart))
+      const raw = localStorage.getItem('cart');
+      if (raw) setCart(JSON.parse(raw));
     } catch {}
-  }, [cart])
+  }, []);
+  // persistir
+  useEffect(() => {
+    try {
+      localStorage.setItem('cart', JSON.stringify(cart));
+    } catch {}
+  }, [cart]);
 
-  const add = (item: CartItem) =>
-    setCart(c => {
-      const idx = c.items.findIndex(x => x.id === item.id)
-      const items = [...c.items]
-      if (idx >= 0) items[idx] = { ...items[idx], qty: items[idx].qty + item.qty }
-      else items.push(item)
-      return { items }
-    })
+  const add: CartContextType['add'] = (item) => {
+    setCart((prev) => {
+      const qty = item.qty ?? 1;
+      const idx = prev.items.findIndex((it) => it.id === item.id);
+      if (idx >= 0) {
+        const clone = [...prev.items];
+        clone[idx] = { ...clone[idx], qty: clone[idx].qty + qty };
+        return { items: clone };
+      }
+      return { items: [...prev.items, { ...item, qty }] };
+    });
+  };
 
-  const remove = (id: string) =>
-    setCart(c => ({ items: c.items.filter(x => x.id !== id) }))
+  const remove: CartContextType['remove'] = (id) => {
+    setCart((prev) => ({ items: prev.items.filter((it) => it.id !== id) }));
+  };
 
-  const clear = () => setCart({ items: [] })
+  const setQty: CartContextType['setQty'] = (id, qty) => {
+    setCart((prev) => ({
+      items: prev.items.map((it) => (it.id === id ? { ...it, qty: Math.max(1, qty) } : it)),
+    }));
+  };
 
-  const value = useMemo(() => ({ cart, add, remove, clear }), [cart])
+  const clear = () => setCart({ items: [] });
 
-  return <Ctx.Provider value={value}>{children}</Ctx.Provider>
-}
+  const updateOptions: CartContextType['updateOptions'] = (id, patch) => {
+    setCart((prev) => ({
+      items: prev.items.map((it) =>
+        it.id === id
+          ? {
+              ...it,
+              options: {
+                ...(it.options ?? {}),
+                ...patch,
+                // merge específico para ingredients
+                ...(patch.ingredients
+                  ? { ingredients: { ...(it.options?.ingredients ?? {}), ...patch.ingredients } }
+                  : {}),
+              },
+            }
+          : it
+      ),
+    }));
+  };
 
+  /* ---------- Wrappers compat (inc, dec, setNote) ---------- */
+  const inc: CartContextType['inc'] = (id) => {
+    const item = cart.items.find((i) => i.id === id);
+    if (item) setQty(id, item.qty + 1);
+  };
+  const dec: CartContextType['dec'] = (id) => {
+    const item = cart.items.find((i) => i.id === id);
+    if (item) setQty(id, Math.max(1, item.qty - 1));
+  };
+  const setNote: CartContextType['setNote'] = (id, note) => {
+    updateOptions(id, { note });
+  };
+
+  const value = useMemo<CartContextType>(
+    () => ({ cart, add, remove, setQty, clear, updateOptions, inc, dec, setNote }),
+    [cart] // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
+  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
+};
+
+/* -------------------- Hook -------------------- */
 export const useCart = () => {
-  const ctx = useContext(Ctx)
-  if (!ctx) throw new Error('useCart must be used within CartProvider')
-  return ctx
-}
+  const ctx = useContext(CartContext);
+  if (!ctx) throw new Error('useCart must be used within CartProvider');
+  return ctx;
+};

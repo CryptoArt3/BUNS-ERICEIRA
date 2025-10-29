@@ -19,7 +19,27 @@ export type Product = {
   category: CategoryId
   /** etiquetas para badges opcionais */
   tags?: Array<'veg' | 'spicy' | 'new' | 'limited'>
+  /** Ingredientes “default” do hambúrguer que o cliente pode tirar */
+  ingredients?: string[]
 }
+
+/* ---------- Opções globais para “Menu” ---------- */
+export const FRIES_OPTIONS = [
+  'Batata Normal',
+  'Batata Doce',
+] as const
+
+export const DRINK_OPTIONS = [
+  'Coca-Cola',
+  'Coca-Cola Zero',
+  '7UP',
+  'Ice Tea Limão',
+  'Ice Tea Pêssego',
+  'Ice Tea Manga',
+  'Super Bock',
+  'Água',
+  'Água com gás',
+] as const
 
 /* ---------- Categorias ---------- */
 export const CATEGORIES: { id: CategoryId; label: string; emoji: string }[] = [
@@ -42,6 +62,7 @@ export const PRODUCTS: Product[] = [
     menuPrice: 12.90,
     image: '/menu/classic.png',
     category: 'burgers',
+    ingredients: ['Ketchup', 'Mostarda', 'Cebola', 'Pickles'],
   },
   {
     id: 'bacon-bun',
@@ -51,6 +72,7 @@ export const PRODUCTS: Product[] = [
     menuPrice: 13.90,
     image: '/menu/bacon.png',
     category: 'burgers',
+    ingredients: ['Molho especial', 'Cebola frita', 'Bacon', 'Alface iceberg'],
   },
   {
     id: 'epic-bun',
@@ -61,6 +83,7 @@ export const PRODUCTS: Product[] = [
     image: '/menu/epic.png',
     category: 'burgers',
     tags: ['spicy'],        // 🔥 picante
+    ingredients: ['Molho especial', 'Cebola caramelizada', 'Jalapeños'],
   },
   {
     id: 'veggie-bun',
@@ -71,6 +94,7 @@ export const PRODUCTS: Product[] = [
     image: '/menu/veggie.png',
     category: 'burgers',
     tags: ['veg'],          // 🌱 veggie
+    ingredients: ['Molho especial', 'Beyond Meat', 'Cebola', 'Alface iceberg'],
   },
 
   // Batatas

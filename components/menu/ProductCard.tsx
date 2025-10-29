@@ -1,4 +1,3 @@
-// components/menu/ProductCard.tsx
 'use client'
 
 import { useMemo, useRef, useState } from 'react'
@@ -7,10 +6,7 @@ import { useCart } from '@/components/cart/CartContext'
 
 export default function ProductCard({ product }: { product: Product }) {
   const { add } = useCart()
-
-  // ⬇️ se quiser “Menu” pré-selecionado, mude 'burger' para 'menu'
   const [variant, setVariant] = useState<'burger' | 'menu'>('burger')
-
   const cardRef = useRef<HTMLDivElement>(null)
 
   const hasMenu = typeof product.menuPrice === 'number'
@@ -19,19 +15,26 @@ export default function ProductCard({ product }: { product: Product }) {
     [variant, hasMenu, product.price, product.menuPrice]
   )
 
+  // Só ativa o tilt em dispositivos com rato
+  const canTilt =
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(pointer: fine)').matches
+
   function handleAdd() {
-    const name =
-      variant === 'menu' && hasMenu ? `${product.name} — Menu` : product.name
+    const name = variant === 'menu' && hasMenu ? `${product.name} — Menu` : product.name
     add({
       id: product.id + (variant === 'menu' && hasMenu ? '-menu' : ''),
       name,
       price,
       qty: 1,
+      variant, // <- útil para o checkout/admin
+      // options: {} // se no futuro quiseres passar opções já daqui
     })
   }
 
-  // tilt leve “crypto”
   function handleMove(e: React.MouseEvent) {
+    if (!canTilt) return
     const el = cardRef.current
     if (!el) return
     const r = el.getBoundingClientRect()
@@ -42,6 +45,7 @@ export default function ProductCard({ product }: { product: Product }) {
     el.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg)`
   }
   function handleLeave() {
+    if (!canTilt) return
     const el = cardRef.current
     if (!el) return
     el.style.transform = `rotateX(0deg) rotateY(0deg)`
@@ -67,11 +71,7 @@ export default function ProductCard({ product }: { product: Product }) {
       <div className="mb-3 overflow-hidden rounded-2xl border border-white/10 bg-black/30">
         {product.image ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={product.image}
-            alt={product.name}
-            className="h-40 w-full object-cover"
-          />
+          <img src={product.image} alt={product.name} className="h-40 w-full object-cover" />
         ) : (
           <div className="h-40 w-full bg-gradient-to-br from-white/10 to-white/0" />
         )}
@@ -96,31 +96,27 @@ export default function ProductCard({ product }: { product: Product }) {
         </div>
 
         <div className="text-right">
-          <div className="font-display text-lg text-buns-yellow">
-            {price.toFixed(2)} €
-          </div>
+          <div className="font-display text-lg text-buns-yellow">{price.toFixed(2)} €</div>
 
           {hasMenu && (
-            <div className="mt-3 grid grid-cols-2 gap-1 rounded-xl bg-black/40 p-1 text-sm">
+            <div className="mt-2 grid grid-cols-2 gap-1 rounded-xl bg-black/30 p-1 text-sm">
               <button
                 onClick={() => setVariant('burger')}
-                className={`rounded-lg px-3 py-2 font-medium transition ${
-                  variant === 'burger'
-                    ? 'bg-white/20 text-white shadow-inner'
-                    : 'hover:bg-white/10 text-white/70'
+                aria-pressed={variant === 'burger'}
+                className={`rounded-lg px-3 py-2 ${
+                  variant === 'burger' ? 'bg-white/10 ring-1 ring-white/20' : 'hover:bg-white/5'
                 }`}
               >
-                🍔 Burger
+                Burger
               </button>
               <button
                 onClick={() => setVariant('menu')}
-                className={`rounded-lg px-3 py-2 font-medium transition ${
-                  variant === 'menu'
-                    ? 'bg-buns-yellow text-black shadow-inner'
-                    : 'hover:bg-white/10 text-white/80'
+                aria-pressed={variant === 'menu'}
+                className={`rounded-lg px-3 py-2 ${
+                  variant === 'menu' ? 'bg-white/10 ring-1 ring-white/20' : 'hover:bg-white/5'
                 }`}
               >
-                🍟 Menu
+                Menu
               </button>
             </div>
           )}
