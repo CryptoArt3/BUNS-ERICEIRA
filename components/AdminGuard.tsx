@@ -1,51 +1,72 @@
-"use client";
-import { useEffect, useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
-import { supabase } from "../lib/supabase/client";
+// components/AdminGuard.tsx
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
+import { supabase } from '@/lib/supabase/client'
+
+/**
+ * Lista branca de emails de admin.
+ * Define na Vercel e localmente: NEXT_PUBLIC_ADMIN_EMAILS=teu@email.com,outro@dominio.com
+ */
+const ADMIN_EMAILS =
+  (process.env.NEXT_PUBLIC_ADMIN_EMAILS || '')
+    .split(',')
+    .map(e => e.trim().toLowerCase())
+    .filter(Boolean)
 
 export default function AdminGuard({ children }: { children: React.ReactNode }) {
-  const [loading, setLoading] = useState(true);
-  const [authed, setAuthed] = useState(false);
-  const router = useRouter();
-  const pathname = usePathname();
+  const [loading, setLoading] = useState(true)
+  const [allowed, setAllowed] = useState(false)
+  const router = useRouter()
+  const pathname = usePathname()
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) {
-        setAuthed(true);
-      } else {
-        if (pathname !== "/admin/login") router.push("/admin/login");
+    const check = async () => {
+      const { data } = await supabase.auth.getSession()
+      const email = data.session?.user?.email?.toLowerCase() ?? null
+
+      const isAdmin = !!email && ADMIN_EMAILS.includes(email)
+      if (!isAdmin) {
+        // envia para login com ?next= para voltar ao admin depois de entrar
+        const next = encodeURIComponent(pathname || '/admin/orders')
+        router.replace(`/login?next=${next}`)
+        setAllowed(false)
+        setLoading(false)
+        return
       }
-      setLoading(false);
-    });
+      setAllowed(true)
+      setLoading(false)
+    }
+
+    check().catch(() => {
+      setAllowed(false)
+      setLoading(false)
+    })
 
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
-      if (session) {
-        setAuthed(true);
+      const email = session?.user?.email?.toLowerCase() ?? null
+      const isAdmin = !!email && ADMIN_EMAILS.includes(email)
+      if (!isAdmin) {
+        const next = encodeURIComponent(pathname || '/admin/orders')
+        router.replace(`/login?next=${next}`)
+        setAllowed(false)
       } else {
-        setAuthed(false);
-        if (pathname !== "/admin/login") router.push("/admin/login");
+        setAllowed(true)
       }
-    });
+    })
 
-    return () => {
-      sub.subscription.unsubscribe();
-    };
-  }, [router, pathname]);
+    return () => sub.subscription.unsubscribe()
+  }, [pathname, router])
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center text-white">
-        A verificar sessão…
+        A verificar permissões…
       </div>
-    );
+    )
   }
 
-  // Se estiver autenticado, mostra conteúdo
-  if (authed) return <>{children}</>;
-
-  // Se não, mostra o login
-  if (pathname === "/admin/login") return <>{children}</>;
-
-  return null;
+  if (!allowed) return null
+  return <>{children}</>
 }
