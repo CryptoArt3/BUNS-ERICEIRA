@@ -214,25 +214,25 @@ const TEAM = [
   {
     name: 'Pedro',
     role: 'Operações',
-    photo: '/team/mika.jpg',
+    photo: '/pedro.jpg',
     quote: 'Serviço rápido, sempre quente.',
   },
   {
     name: 'Luis',
     role: 'Criativo',
-    photo: '/team/rafa.jpg',
+    photo: '/luis.jpg',
     quote: 'Surf de dia, smash à noite.',
   },
   {
     name: 'Bárbara',
     role: 'Front & Smile',
-    photo: '/team/lara.jpg',
+    photo: '/barbara.jpg',
     quote: 'O segredo? Bons ingredientes e boas vibrações.',
   },
   {
     name: 'Bruno',
     role: 'Prep & Qualidade',
-    photo: '/team/tomas.jpg',
+    photo: '/bruno.jpg',
     quote: 'Detalhe a detalhe, burger a burger.',
   },
 ]
