@@ -110,3 +110,10 @@ body, .mode-day .hero::before, .mode-night .hero::before {
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 }
+/* === Ajustes gerais mobile === */
+@media (max-width: 640px) {
+  h1, h2, h3 { line-height: 1.25; }
+  p { font-size: 1rem; line-height: 1.5; }
+  .btn { @apply text-base py-3 px-4; }
+  .card { @apply p-4; }
+}
