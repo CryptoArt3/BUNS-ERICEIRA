@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
 import { useCart } from '@/components/cart/CartContext'
@@ -26,6 +27,14 @@ function calcFeeAndMeta(zoneOrTakeaway: string) {
 export default function CheckoutPage() {
   const router = useRouter()
   const { cart, clear } = useCart()
+
+  // 👇 novo: exigir login
+  const [mustLogin, setMustLogin] = useState(false)
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setMustLogin(!data?.session) // true se não estiver logado
+    })
+  }, [])
 
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
@@ -56,6 +65,12 @@ export default function CheckoutPage() {
     e.preventDefault()
     setErr(null)
 
+    // 👇 trava se não estiver logado
+    if (mustLogin) {
+      setErr('Para concluir o pedido e acompanhar o estado, inicia sessão primeiro.')
+      return
+    }
+
     if (!name.trim()) return setErr('Indica o teu nome.')
 
     // só dígitos (até 15)
@@ -69,9 +84,14 @@ export default function CheckoutPage() {
 
     setLoading(true)
     try {
-      // 👉 apanha sessão (se estiver logado vamos gravar o user_id)
+      // 👉 apanha sessão (gravamos user_id)
       const { data: sessionData } = await supabase.auth.getSession()
       const userId = sessionData?.session?.user?.id ?? null
+      if (!userId) {
+        setErr('Sessão inválida. Inicia sessão novamente.')
+        setLoading(false)
+        return
+      }
 
       const payload = {
         // dados do cliente
@@ -94,17 +114,16 @@ export default function CheckoutPage() {
           name: it.name,
           qty: it.qty,
           price: it.price,
-          variant: it.variant ?? null,
-          options: it.options ?? null,
-          // notinha duplicada para leitura fácil no admin, se quiseres
-          note: it.options?.note ?? null,
+          variant: (it as any).variant ?? null,
+          options: (it as any).options ?? null,
+          note: (it as any).options?.note ?? null,
         })),            // JSONB
         items_count,      // NOT NULL
         // meta
         order_type: delivery_type,
         acknowledged: false as boolean | undefined,
         status: 'pending' as const,
-        // ligação ao utilizador (opcional se houver login)
+        // ligação ao utilizador (obrigatória para RLS)
         user_id: userId,
       }
 
@@ -116,8 +135,12 @@ export default function CheckoutPage() {
         .single()
 
       if (error) {
-        console.error('INSERT error', error)
-        setErr(error.message)
+        // mensagem mais amigável se for RLS
+        if (String(error.message).toLowerCase().includes('row-level security')) {
+          setErr('Não foi possível criar o pedido devido às regras de segurança. Inicia sessão e tenta novamente.')
+        } else {
+          setErr(error.message)
+        }
         setLoading(false)
         return
       }
@@ -129,7 +152,6 @@ export default function CheckoutPage() {
       // 👉 página de confirmação com o nº da encomenda
       router.push(`/obrigado?order=${data.id}`)
     } catch (e: any) {
-      console.error(e)
       setErr(e?.message ?? 'Falha ao enviar o pedido.')
     } finally {
       setLoading(false)
@@ -152,6 +174,16 @@ export default function CheckoutPage() {
       <p className="text-white/80 mb-8">
         Preenche os teus dados e confirma o pedido. Tarifa por zona é aplicada automaticamente.
       </p>
+
+      {/* Aviso de login + CTA */}
+      {mustLogin && (
+        <div className="rounded-xl bg-orange-500/20 border border-orange-400/40 text-orange-200 p-3 mb-6">
+          Para concluir o pedido e acompanhar o estado, inicia sessão.
+          <Link href="/login?next=/checkout" className="btn btn-primary ml-3 inline-block">
+            Iniciar sessão
+          </Link>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="card p-6 sm:p-8 space-y-6">
         {/* Nome + Telefone */}
@@ -184,16 +216,22 @@ export default function CheckoutPage() {
             value={zoneChoice}
             onChange={(e) => setZoneChoice(e.target.value as typeof zoneChoice)}
           >
+            {/* Ativo */}
             <option value="TAKEAWAY">Levantamento em loja (Takeaway)</option>
-            <option value="Ericeira">Entrega — Ericeira (+2,50€)</option>
-            <option value="Ribamar">Entrega — Ribamar (+3,50€)</option>
-            <option value="Achada">Entrega — Achada (+3,50€)</option>
-            <option value="Sobreiro">Entrega — Sobreiro (+3,50€)</option>
-            <option value="Outro">Entrega — Outra zona perto (+3,50€)</option>
+
+            {/* Delivery desativado mas visível */}
+            <option value="Ericeira" disabled>Entrega — Ericeira (+2,50€) — brevemente</option>
+            <option value="Ribamar" disabled>Entrega — Ribamar (+3,50€) — brevemente</option>
+            <option value="Achada" disabled>Entrega — Achada (+3,50€) — brevemente</option>
+            <option value="Sobreiro" disabled>Entrega — Sobreiro (+3,50€) — brevemente</option>
+            <option value="Outro" disabled>Entrega — Outra zona perto (+3,50€) — brevemente</option>
           </select>
+          <span className="text-xs text-white/60 mt-1">
+            Entrega ao domicílio 🚚 disponível brevemente.
+          </span>
         </label>
 
-        {/* Morada (se delivery) */}
+        {/* Morada (só quando delivery estiver ativo) */}
         {needsAddress && (
           <label className="flex flex-col gap-2">
             <span className="text-sm text-white/70">Morada de entrega</span>
