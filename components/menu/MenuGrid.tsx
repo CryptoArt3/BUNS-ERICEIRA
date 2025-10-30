@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState, useEffect } from 'react'
 import ProductCard from './ProductCard'
 import { PRODUCTS, CATEGORIES } from './data'
 import type { Product } from './data'
@@ -9,18 +9,29 @@ type CategoryId = 'all' | (typeof CATEGORIES)[number]['id']
 
 export default function MenuGrid() {
   const [filter, setFilter] = useState<CategoryId>('all')
+  const chipsRef = useRef<HTMLDivElement>(null)
 
   const visible: Product[] = useMemo(() => {
     if (filter === 'all') return PRODUCTS
     return PRODUCTS.filter((p: Product) => p.category === filter)
   }, [filter])
 
+  // centra o chip activo no viewport em mobile
+  useEffect(() => {
+    const el = chipsRef.current
+    if (!el) return
+    const active = el.querySelector('[data-active="true"]') as HTMLElement | null
+    if (!active) return
+    const left = active.offsetLeft - el.clientWidth / 2 + active.clientWidth / 2
+    el.scrollTo({ left, behavior: 'smooth' })
+  }, [filter])
+
   return (
     <section className="w-full">
-      {/* TABS — sempre visíveis ao fazer scroll */}
+      {/* TABS — sticky + scroll horizontal em mobile */}
       <div className="sticky top-16 z-20 bg-black/60 backdrop-blur-sm border-b border-white/10">
-        <div className="flex flex-wrap gap-2 px-2 py-3">
-          <Chip active={filter === 'all'} onClick={() => setFilter('all')}>
+        <div ref={chipsRef} className="flex gap-2 px-2 py-3 overflow-x-auto no-scrollbar">
+          <Chip active={filter === 'all'} onClick={() => setFilter('all')} data-active={filter === 'all'}>
             🍔 Tudo
           </Chip>
 
@@ -29,6 +40,7 @@ export default function MenuGrid() {
               key={c.id}
               active={filter === c.id}
               onClick={() => setFilter(c.id as CategoryId)}
+              data-active={filter === c.id}
             >
               {c.emoji} {c.label}
             </Chip>
@@ -37,7 +49,7 @@ export default function MenuGrid() {
       </div>
 
       {/* Grelha */}
-      <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+      <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
         {visible.map((p: Product) => (
           <ProductCard key={p.id} product={p} />
         ))}
@@ -46,30 +58,29 @@ export default function MenuGrid() {
       {visible.length === 0 && (
         <div className="text-white/60 p-6 text-center">Sem produtos nesta categoria.</div>
       )}
+
+      {/* espaço extra para a sticky bar no mobile */}
+      <div className="h-20 md:h-0" />
     </section>
   )
 }
 
-/* — Componentes locais — */
-function Chip({
-  children,
-  active,
-  onClick,
-}: {
-  children: React.ReactNode
-  active?: boolean
-  onClick?: () => void
-}) {
+/* — Chip — */
+function Chip(
+  { children, active, onClick, ...rest }:
+  { children: React.ReactNode, active?: boolean, onClick?: () => void } & React.HTMLAttributes<HTMLButtonElement>
+) {
   return (
     <button
       type="button"
       onClick={onClick}
       className={[
-        'px-3 py-1.5 rounded-full text-sm transition',
+        'px-3 py-2 rounded-full text-sm transition shrink-0',
         'border border-white/15 bg-white/5 hover:bg-white/10',
         active ? 'ring-1 ring-white/30 text-buns-yellow' : 'text-white/80',
       ].join(' ')}
       aria-pressed={active ? 'true' : 'false'}
+      {...rest}
     >
       {children}
     </button>

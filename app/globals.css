@@ -104,3 +104,9 @@ body, .mode-day .hero::before, .mode-night .hero::before {
   0%, 100% { transform: scale(1); }
   50%      { transform: scale(1.15); }
 }
+/* Utilidades para mobile/safe-area e esconder scrollbars dos chips */
+@layer utilities {
+  .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+}
