@@ -1,15 +1,20 @@
 'use client'
 
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState, useEffect } from 'react'
 import type { Product } from './data'
 import { useCart } from '@/components/cart/CartContext'
+import { Check } from 'lucide-react'
 
 export default function ProductCard({ product }: { product: Product }) {
   const { add } = useCart()
-  const [variant, setVariant] = useState<'burger' | 'menu'>('burger')
+
+  // 👉 Destacar MENU (a maioria compra menu)
+  const hasMenu = typeof product.menuPrice === 'number'
+  const [variant, setVariant] = useState<'burger' | 'menu'>(hasMenu ? 'menu' : 'burger')
+
+  const [added, setAdded] = useState(false)
   const cardRef = useRef<HTMLDivElement>(null)
 
-  const hasMenu = typeof product.menuPrice === 'number'
   const price = useMemo(
     () => (variant === 'menu' && hasMenu ? product.menuPrice! : product.price),
     [variant, hasMenu, product.price, product.menuPrice]
@@ -28,8 +33,12 @@ export default function ProductCard({ product }: { product: Product }) {
       name,
       price,
       qty: 1,
-      variant, // útil para checkout/admin
+      variant,
     })
+
+    // feedback visual no botão
+    setAdded(true)
+    window.setTimeout(() => setAdded(false), 900)
   }
 
   function handleMove(e: React.MouseEvent) {
@@ -57,7 +66,7 @@ export default function ProductCard({ product }: { product: Product }) {
       onMouseLeave={handleLeave}
       className="group relative rounded-3xl border border-white/10 bg-white/5 p-4 sm:p-5 shadow-buns transition-transform will-change-transform"
     >
-      {/* glow */}
+      {/* glow hover */}
       <div
         className="pointer-events-none absolute -inset-px rounded-3xl opacity-0 blur-md transition group-hover:opacity-100"
         style={{ background: 'radial-gradient(600px 120px at 10% -10%, rgba(255,212,0,.25), transparent 60%)' }}
@@ -67,7 +76,11 @@ export default function ProductCard({ product }: { product: Product }) {
       <div className="mb-3 overflow-hidden rounded-2xl border border-white/10 bg-black/30">
         {product.image ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={product.image} alt={product.name} className="w-full aspect-[16/9] object-cover md:aspect-[3/1]" />
+          <img
+            src={product.image}
+            alt={product.name}
+            className="w-full aspect-[16/9] object-cover md:aspect-[3/1]"
+          />
         ) : (
           <div className="w-full aspect-[16/9] bg-gradient-to-br from-white/10 to-white/0" />
         )}
@@ -77,7 +90,7 @@ export default function ProductCard({ product }: { product: Product }) {
         <div className="min-w-0">
           <h3 className="font-display text-lg sm:text-xl">{product.name}</h3>
           {product.description && (
-            <p className="mt-1 text-[13px] sm:text-sm text-white/70 leading-snug line-clamp-2">
+            <p className="mt-1 text-sm sm:text-[15px] text-white/75 leading-snug">
               {product.description}
             </p>
           )}
@@ -96,25 +109,45 @@ export default function ProductCard({ product }: { product: Product }) {
         </div>
 
         <div className="text-right shrink-0">
-          <div className="font-display text-lg sm:text-xl text-buns-yellow">
+          <div className="font-display text-lg sm:text-xl text-buns-yellow transition-all">
             {price.toFixed(2)} €
           </div>
 
           {hasMenu && (
-            <div className="mt-2 grid grid-cols-2 gap-1 rounded-xl bg-black/30 p-1 text-sm">
+            <div
+              className={[
+                'mt-2 grid grid-cols-2 gap-1 rounded-xl p-1 text-sm',
+                'bg-black/50 border border-white/10',
+                variant === 'menu' ? 'ring-2 ring-[rgba(255,212,0,.45)]' : '',
+              ].join(' ')}
+            >
               <button
                 onClick={() => setVariant('burger')}
                 aria-pressed={variant === 'burger'}
-                className={`rounded-lg px-3 py-2 ${variant === 'burger' ? 'bg-white/10 ring-1 ring-white/20' : 'hover:bg-white/5'}`}
+                className={[
+                  'rounded-lg px-3 py-2 transition',
+                  variant === 'burger' ? 'bg-white/10 ring-1 ring-white/20' : 'hover:bg-white/5',
+                ].join(' ')}
               >
                 Burger
               </button>
+
               <button
                 onClick={() => setVariant('menu')}
                 aria-pressed={variant === 'menu'}
-                className={`rounded-lg px-3 py-2 ${variant === 'menu' ? 'bg-white/10 ring-1 ring-white/20' : 'hover:bg-white/5'}`}
+                className={[
+                  'rounded-lg px-3 py-2 transition relative',
+                  variant === 'menu'
+                    ? 'bg-buns-yellow text-black font-semibold shadow-[0_0_12px_rgba(255,212,0,.35)]'
+                    : 'hover:bg-white/5',
+                ].join(' ')}
               >
                 Menu
+                {variant === 'menu' && (
+                  <span className="absolute -top-2 -right-2 text-[10px] px-2 py-0.5 rounded-full bg-black/70 text-buns-yellow">
+                    🔥 Popular
+                  </span>
+                )}
               </button>
             </div>
           )}
@@ -122,8 +155,21 @@ export default function ProductCard({ product }: { product: Product }) {
       </div>
 
       <div className="mt-4">
-        <button onClick={handleAdd} className="btn btn-primary w-full py-3 text-base">
-          Adicionar
+        <button
+          onClick={handleAdd}
+          className={[
+            'btn btn-primary w-full py-3 text-base active:scale-[0.99] transition',
+            added ? 'ring-4 ring-[rgba(255,212,0,.35)] animate-pulse' : '',
+          ].join(' ')}
+          aria-live="polite"
+        >
+          {added ? (
+            <span className="inline-flex items-center gap-2">
+              <Check className="w-5 h-5" /> Adicionado!
+            </span>
+          ) : (
+            'Adicionar'
+          )}
         </button>
       </div>
     </div>
