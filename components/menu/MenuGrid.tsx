@@ -16,7 +16,6 @@ export default function MenuGrid() {
     return PRODUCTS.filter((p: Product) => p.category === filter)
   }, [filter])
 
-  // centra o chip activo
   useEffect(() => {
     const el = chipsRef.current
     if (!el) return
@@ -28,11 +27,11 @@ export default function MenuGrid() {
 
   return (
     <section className="w-full">
-      {/* TABS — sticky + scroll horizontal em mobile */}
-      <div className="sticky top-16 z-20 bg-black/60 backdrop-blur-sm border-b border-white/10">
+      {/* sticky abaixo do header (h-16 = 64px) */}
+      <div className="sticky top-[64px] z-20 bg-black/60 backdrop-blur-sm border-b border-white/10">
         <div
           ref={chipsRef}
-          className="flex gap-2 px-2 py-3 overflow-x-auto no-scrollbar touch-scroll-x"
+          className="x-scroll no-scrollbar flex gap-2 px-2 py-3 overflow-x-auto"
         >
           <Chip active={filter === 'all'} onClick={() => setFilter('all')} data-active={filter === 'all'}>
             🍔 Tudo
