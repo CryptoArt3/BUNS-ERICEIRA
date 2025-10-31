@@ -16,7 +16,7 @@ export default function MenuGrid() {
     return PRODUCTS.filter((p: Product) => p.category === filter)
   }, [filter])
 
-  // centra o chip activo no viewport em mobile
+  // centra o chip activo
   useEffect(() => {
     const el = chipsRef.current
     if (!el) return
@@ -28,11 +28,11 @@ export default function MenuGrid() {
 
   return (
     <section className="w-full">
-      {/* TABS — sticky: compensa header (64px) + barra Uber/Eats (~44px) no mobile */}
-      <div className="sticky top-[7.5rem] md:top-16 z-20 bg-black/60 backdrop-blur-sm border-b border-white/10">
+      {/* TABS — sticky + scroll horizontal em mobile */}
+      <div className="sticky top-16 z-20 bg-black/60 backdrop-blur-sm border-b border-white/10">
         <div
           ref={chipsRef}
-          className="flex gap-2 px-2 py-3 overflow-x-auto no-scrollbar w-full"
+          className="flex gap-2 px-2 py-3 overflow-x-auto no-scrollbar touch-scroll-x"
         >
           <Chip active={filter === 'all'} onClick={() => setFilter('all')} data-active={filter === 'all'}>
             🍔 Tudo
@@ -51,7 +51,7 @@ export default function MenuGrid() {
         </div>
       </div>
 
-      {/* Grelha alinhada com o resto do site */}
+      {/* Grelha */}
       <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
         {visible.map((p: Product) => (
           <ProductCard key={p.id} product={p} />
@@ -62,7 +62,6 @@ export default function MenuGrid() {
         <div className="text-white/60 p-6 text-center">Sem produtos nesta categoria.</div>
       )}
 
-      {/* espaço para a sticky cart bar no mobile */}
       <div className="h-20 md:h-0" />
     </section>
   )

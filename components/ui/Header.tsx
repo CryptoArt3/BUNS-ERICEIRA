@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { ShoppingCart, ExternalLink, LogIn, User, LogOut } from 'lucide-react'
-
 import { useCart } from '@/components/cart/CartContext'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { ModeToggle } from '@/components/ui/ModeToggle'
@@ -14,7 +13,6 @@ import { supabase } from '@/lib/supabase/client'
 const UBER_LINK = 'https://www.ubereats.com/pt'
 const ERICEIRA_EATS = 'https://ericeiraeats.pt'
 
-// rotas internas válidas
 type AppRoute = '/' | '/menu' | '/cart' | '/checkout' | '/login' | '/account'
 
 export const Header = () => {
@@ -22,11 +20,9 @@ export const Header = () => {
   const router = useRouter()
   const { cart } = useCart()
 
-  // evitar hydration mismatch
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
 
-  // sessão
   const [email, setEmail] = useState<string | null>(null)
   useEffect(() => {
     let unsub: (() => void) | undefined
@@ -50,40 +46,27 @@ export const Header = () => {
   }
 
   return (
-    <header className="sticky top-0 z-40 backdrop-blur border-b border-white/10 bg-black/50">
-      {/* wrapper idêntico às outras páginas */}
-      <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-        {/* logo */}
+    <header className="sticky top-0 z-50 backdrop-blur border-b border-white/10 bg-black/50">
+      <div className="mx-auto max-w-6xl px-4 h-16 flex items-center justify-between">
         <Link href="/" className="font-display text-2xl tracking-wider flex items-center gap-3">
           <img src="/logo-buns.svg" alt="BUNS" className="h-6 w-auto hidden sm:block" />
           <span className="text-buns-yellow">BUNS</span>
         </Link>
 
-        {/* botões externos (desktop) */}
+        {/* desktop – externos */}
         <div className="hidden md:flex items-center gap-2">
-          <a
-            href={UBER_LINK}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-outline flex items-center gap-2"
-          >
+          <a href={UBER_LINK} target="_blank" rel="noopener noreferrer" className="btn-outline flex items-center gap-2">
             Uber Eats <ExternalLink className="w-3.5 h-3.5" />
           </a>
-          <a
-            href={ERICEIRA_EATS}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-outline flex items-center gap-2"
-          >
+          <a href={ERICEIRA_EATS} target="_blank" rel="noopener noreferrer" className="btn-outline flex items-center gap-2">
             Ericeira Eats <ExternalLink className="w-3.5 h-3.5" />
           </a>
         </div>
 
-        {/* navegação desktop */}
+        {/* desktop – nav */}
         <nav className="hidden md:flex items-center gap-2">
           <ModeToggle />
           <ThemeToggle />
-
           <NavLink href="/menu" active={path.startsWith('/menu')}>Menu</NavLink>
 
           {email ? (
@@ -108,12 +91,14 @@ export const Header = () => {
           </Link>
         </nav>
 
-        {/* menu hambúrguer (mobile) */}
-        <MobileNav />
+        {/* mobile – hambúrguer */}
+        <div className="md:hidden">
+          <MobileNav />
+        </div>
       </div>
 
-      {/* CTA mobile externos – mesma largura do container */}
-      <div className="md:hidden container mx-auto px-4 py-2 flex gap-2">
+      {/* mobile – links externos */}
+      <div className="md:hidden mx-auto max-w-6xl px-4 py-2 flex gap-2">
         <a href={UBER_LINK} target="_blank" rel="noopener noreferrer" className="btn-outline flex-1 text-center">
           Uber Eats <ExternalLink className="inline w-3.5 h-3.5 ml-1" />
         </a>

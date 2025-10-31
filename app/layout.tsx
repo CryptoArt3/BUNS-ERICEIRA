@@ -11,10 +11,10 @@ export const metadata: Metadata = {
   description: 'Born in Ericeira. Surf · Graffiti · Smash Burgers.',
 }
 
+// Viewport: sem maximumScale para não bloquear pinch-zoom
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
   viewportFit: 'cover',
 }
 

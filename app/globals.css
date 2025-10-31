@@ -2,21 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Evita “smart zoom / text autosize” no Safari iOS + bloqueia overflow horizontal */
-html {
-  -webkit-text-size-adjust: 100%;
-  text-size-adjust: 100%;
-  overflow-x: hidden;
-}
-body {
-  overflow-x: hidden;
-}
+/* Evita “smart zoom / text autosize” no Safari iOS */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 
-/* Imagens e SVGs nunca “rebentam” a largura do ecrã */
-img, svg, video, canvas {
-  max-width: 100%;
-  height: auto;
-}
+/* Evita que imagens forcem overflow horizontal/zoom */
+img { max-width: 100%; height: auto; display: block; }
+
+/* Classe utilitária para scrollers horizontais com gesto fluído */
+.touch-scroll-x { -webkit-overflow-scrolling: touch; touch-action: pan-x; overscroll-behavior-x: contain; }
 
 /* === Variáveis base === */
 :root {
@@ -117,7 +110,7 @@ body, .mode-day .hero::before, .mode-night .hero::before {
 .location-card:hover .pin { color: var(--buns-accent); animation: pinPulse 1.2s infinite ease-in-out; }
 @keyframes pinPulse { 0%,100%{transform:scale(1);} 50%{transform:scale(1.15);} }
 
-/* Utilidades */
+/* Utilidades extra */
 @layer utilities {
   .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
   .no-scrollbar::-webkit-scrollbar { display: none; }
