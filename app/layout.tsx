@@ -1,14 +1,22 @@
 // app/layout.tsx
 import './globals.css'
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { CartProvider } from '@/components/cart/CartContext'
 import { Header } from '@/components/ui/Header'
 import WelcomeModal from '@/components/ui/WelcomeModal'
-import StickyCartBar from '@/components/cart/StickyCartBar' // 👈 novo CTA fixo no mobile
+import StickyCartBar from '@/components/cart/StickyCartBar'
 
 export const metadata: Metadata = {
   title: 'BUNS — Smash Burgers',
   description: 'Born in Ericeira. Surf · Graffiti · Smash Burgers.',
+}
+
+// Viewport explícito para impedir zoom automático e usar a safe-area no iOS
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: 'cover',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -16,7 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="pt">
       <body suppressHydrationWarning>
         <CartProvider>
-          {/* padding-bottom no mobile para não ficar conteúdo escondido atrás da StickyCartBar */}
+          {/* padding-bottom no mobile para não esconder conteúdo atrás da StickyCartBar */}
           <div className="min-h-dvh grid grid-rows-[auto,1fr] pb-16 md:pb-0">
             <Header />
             <WelcomeModal />
