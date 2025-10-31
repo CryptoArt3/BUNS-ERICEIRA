@@ -2,23 +2,29 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Evita smart-zoom / autosize no iOS */
-html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+/* —— iOS: trava o text autosize que faz a página arrancar ampliada —— */
+html { -webkit-text-size-adjust: none; text-size-adjust: none; }
 
-/* 🔒 impede que algo maior que 100vw crie zoom/scroll lateral */
-html, body { width: 100%; max-width: 100%; overflow-x: hidden; }
+/* Evita sangrar horizontal (às vezes força um “zoom” visual) */
+html, body { max-width: 100%; overflow-x: hidden; }
 
-/* Box sizing consistente (evita 1px “a mais” nas bordas) */
-*, *::before, *::after { box-sizing: border-box; }
+/* Controlos com ≥16px para não disparar auto-zoom ao focar (inputs/checkout) */
+input, select, textarea, button {
+  font-size: 17px;           /* 16/17px é o sweet spot no iOS */
+  line-height: 1.2;
+}
 
-/* Imagens e media nunca ultrapassam o content box */
-img, video, canvas, svg { max-width: 100%; height: auto; }
+/* Suaviza scroll horizontal em iOS (chips das categorias) */
+.ios-hscroll { -webkit-overflow-scrolling: touch; }
+
+/* Toca em botões sem “double-tap zoom” */
+body { touch-action: manipulation; }
 
 /* === Variáveis base === */
 :root {
   color-scheme: light;
-  --buns-accent: #FFD400; /* amarelo BUNS */
-  --buns-bg: #0c0c0c;     /* noite por defeito */
+  --buns-accent: #FFD400;
+  --buns-bg: #0c0c0c;
 }
 
 /* === Modos (Dia/Noite) === */
@@ -49,33 +55,23 @@ body {
 
 /* === HERO === */
 .hero { @apply rounded-[28px] overflow-hidden relative border border-white/10; min-height: 320px; }
-.mode-day .hero::before,
-.mode-night .hero::before {
-  content: '';
-  @apply absolute inset-0;
-  background-size: cover;
-  background-position: center;
-  transition: opacity .3s ease;
+.mode-day .hero::before, .mode-night .hero::before {
+  content: ''; @apply absolute inset-0;
+  background-size: cover; background-position: center; transition: opacity .3s ease;
 }
 .mode-day .hero::before {
-  background:
-    linear-gradient(to bottom, rgba(0,0,0,0.15), rgba(0,0,0,0.45)),
-    url('/hero-day.jpg');
+  background: linear-gradient(to bottom, rgba(0,0,0,0.15), rgba(0,0,0,0.45)), url('/hero-day.jpg');
 }
 .mode-night .hero::before {
-  background:
-    linear-gradient(to bottom, rgba(0,0,0,0.25), rgba(0,0,0,0.6)),
-    url('/hero-night.jpg');
+  background: linear-gradient(to bottom, rgba(0,0,0,0.25), rgba(0,0,0,0.6)), url('/hero-night.jpg');
 }
 .mode-day .hero.no-img::before {
-  background:
-    radial-gradient(circle at 60% 0%, rgba(255,212,0,.12), transparent 40%),
-    radial-gradient(circle at 0% 100%, rgba(31,138,133,.12), transparent 34%);
+  background: radial-gradient(circle at 60% 0%, rgba(255,212,0,.12), transparent 40%),
+              radial-gradient(circle at 0% 100%, rgba(31,138,133,.12), transparent 34%);
 }
 .mode-night .hero.no-img::before {
-  background:
-    radial-gradient(circle at 60% 0%, rgba(255,212,0,.08), transparent 40%),
-    radial-gradient(circle at 0% 100%, rgba(255,122,0,.08), transparent 34%);
+  background: radial-gradient(circle at 60% 0%, rgba(255,212,0,.08), transparent 40%),
+              radial-gradient(circle at 0% 100%, rgba(255,122,0,.08), transparent 34%);
 }
 .hero > .hero-content { @apply relative z-10 p-6 sm:p-8; }
 
@@ -95,33 +91,12 @@ body, .mode-day .hero::before, .mode-night .hero::before {
 /* === Pin hover === */
 .location-card .pin { transition: transform .2s ease, color .2s ease; }
 .location-card:hover .pin { color: var(--buns-accent); animation: pinPulse 1.2s infinite ease-in-out; }
-@keyframes pinPulse { 0%,100%{transform:scale(1);} 50%{transform:scale(1.15);} }
+@keyframes pinPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.15); } }
 
-/* Utilidades */
-@layer utilities {
-  .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
-  .no-scrollbar::-webkit-scrollbar { display: none; }
-  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-  /* scroll horizontal suave no iOS */
-  .x-scroll { -webkit-overflow-scrolling: touch; touch-action: pan-x; }
-}
-
-/* Mobile */
+/* === Mobile === */
 @media (max-width: 640px) {
   h1, h2, h3 { line-height: 1.25; }
   p { font-size: 1rem; line-height: 1.5; }
   .btn { @apply text-base py-3 px-4; }
   .card { @apply p-4; }
 }
-/* ——— iOS: impedir auto-zoom quando um input recebe foco ———
-   Safari faz zoom se o font-size do controlo < 16px */
-input, select, textarea, button {
-  font-size: 16px; /* garante >=16 */
-}
-
-/* iOS às vezes faz text autosize em botões/links — travamos isso aqui */
-html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
-
-/* Garantir que nada sangra horizontalmente (evita “zoom estranho” no load) */
-html, body { max-width: 100%; overflow-x: hidden; }

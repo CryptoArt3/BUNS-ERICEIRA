@@ -11,12 +11,11 @@ export const metadata: Metadata = {
   description: 'Born in Ericeira. Surf · Graffiti · Smash Burgers.',
 }
 
-// 👉 deixa o Safari gerir o zoom normalmente
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
-};
+}
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
