@@ -8,7 +8,7 @@ import { Check } from 'lucide-react'
 export default function ProductCard({ product }: { product: Product }) {
   const { add } = useCart()
 
-  // 👉 Destacar MENU (a maioria compra menu)
+  // Destacar MENU por defeito (quando existir)
   const hasMenu = typeof product.menuPrice === 'number'
   const [variant, setVariant] = useState<'burger' | 'menu'>(hasMenu ? 'menu' : 'burger')
 
@@ -20,7 +20,7 @@ export default function ProductCard({ product }: { product: Product }) {
     [variant, hasMenu, product.price, product.menuPrice]
   )
 
-  // só tilt em dispositivos com rato
+  // Tilt só em dispositivos com rato
   const canTilt =
     typeof window !== 'undefined' &&
     typeof window.matchMedia === 'function' &&
@@ -72,14 +72,14 @@ export default function ProductCard({ product }: { product: Product }) {
         style={{ background: 'radial-gradient(600px 120px at 10% -10%, rgba(255,212,0,.25), transparent 60%)' }}
       />
 
-      {/* imagem com proporção estável */}
+      {/* imagem com proporção estável (iOS friendly) */}
       <div className="mb-3 overflow-hidden rounded-2xl border border-white/10 bg-black/30">
         {product.image ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={product.image}
             alt={product.name}
-            className="w-full aspect-[16/9] object-cover md:aspect-[3/1]"
+            className="w-full max-w-full aspect-[16/9] object-cover md:aspect-[3/1]"
           />
         ) : (
           <div className="w-full aspect-[16/9] bg-gradient-to-br from-white/10 to-white/0" />
