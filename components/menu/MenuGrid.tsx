@@ -28,11 +28,11 @@ export default function MenuGrid() {
 
   return (
     <section className="w-full">
-      {/* TABS — sticky + scroll horizontal em mobile */}
+      {/* TABS — sticky em relação ao header (h-16) */}
       <div className="sticky top-16 z-20 bg-black/60 backdrop-blur-sm border-b border-white/10">
         <div
           ref={chipsRef}
-          className="flex gap-2 px-2 py-3 overflow-x-auto no-scrollbar"
+          className="flex gap-2 px-2 py-3 overflow-x-auto no-scrollbar w-full"
         >
           <Chip active={filter === 'all'} onClick={() => setFilter('all')} data-active={filter === 'all'}>
             🍔 Tudo
@@ -51,7 +51,7 @@ export default function MenuGrid() {
         </div>
       </div>
 
-      {/* Grelha (mesmas densidades que o resto) */}
+      {/* Grelha alinhada com o resto do site */}
       <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
         {visible.map((p: Product) => (
           <ProductCard key={p.id} product={p} />

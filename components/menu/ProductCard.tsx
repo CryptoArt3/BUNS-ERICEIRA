@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useRef, useState, useEffect } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import type { Product } from './data'
 import { useCart } from '@/components/cart/CartContext'
 import { Check } from 'lucide-react'
@@ -64,7 +64,7 @@ export default function ProductCard({ product }: { product: Product }) {
       ref={cardRef}
       onMouseMove={handleMove}
       onMouseLeave={handleLeave}
-      className="group relative rounded-3xl border border-white/10 bg-white/5 p-4 sm:p-5 shadow-buns transition-transform will-change-transform"
+      className="group relative rounded-3xl border border-white/10 bg-white/5 p-4 sm:p-5 shadow-buns transition-transform will-change-transform overflow-hidden"
     >
       {/* glow hover */}
       <div

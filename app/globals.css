@@ -2,8 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Evita “smart zoom / text autosize” no Safari iOS */
+/* Evita “smart zoom / text autosize” no Safari iOS e qualquer overflow horizontal */
+html, body { max-width: 100%; overflow-x: hidden; }
 html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+/* garante que imagens/vídeos nunca estouram a largura */
+img, video { max-width: 100%; height: auto; }
 
 /* === Variáveis base === */
 :root {

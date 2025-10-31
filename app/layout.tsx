@@ -11,7 +11,6 @@ export const metadata: Metadata = {
   description: 'Born in Ericeira. Surf · Graffiti · Smash Burgers.',
 }
 
-// Evita zoom automático e usa a safe-area no iOS
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,

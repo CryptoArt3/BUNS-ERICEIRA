@@ -22,9 +22,11 @@ export const Header = () => {
   const router = useRouter()
   const { cart } = useCart()
 
+  // evitar hydration mismatch
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
 
+  // sessão
   const [email, setEmail] = useState<string | null>(null)
   useEffect(() => {
     let unsub: (() => void) | undefined
@@ -49,7 +51,8 @@ export const Header = () => {
 
   return (
     <header className="sticky top-0 z-40 backdrop-blur border-b border-white/10 bg-black/50">
-      <div className="mx-auto max-w-6xl px-4 h-16 flex items-center justify-between">
+      {/* wrapper idêntico às outras páginas */}
+      <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         {/* logo */}
         <Link href="/" className="font-display text-2xl tracking-wider flex items-center gap-3">
           <img src="/logo-buns.svg" alt="BUNS" className="h-6 w-auto hidden sm:block" />
@@ -58,10 +61,20 @@ export const Header = () => {
 
         {/* botões externos (desktop) */}
         <div className="hidden md:flex items-center gap-2">
-          <a href={UBER_LINK} target="_blank" rel="noopener noreferrer" className="btn-outline flex items-center gap-2">
+          <a
+            href={UBER_LINK}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-outline flex items-center gap-2"
+          >
             Uber Eats <ExternalLink className="w-3.5 h-3.5" />
           </a>
-          <a href={ERICEIRA_EATS} target="_blank" rel="noopener noreferrer" className="btn-outline flex items-center gap-2">
+          <a
+            href={ERICEIRA_EATS}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-outline flex items-center gap-2"
+          >
             Ericeira Eats <ExternalLink className="w-3.5 h-3.5" />
           </a>
         </div>
@@ -99,8 +112,8 @@ export const Header = () => {
         <MobileNav />
       </div>
 
-      {/* CTA mobile externos */}
-      <div className="md:hidden mx-auto max-w-6xl px-4 py-2 flex gap-2">
+      {/* CTA mobile externos – mesma largura do container */}
+      <div className="md:hidden container mx-auto px-4 py-2 flex gap-2">
         <a href={UBER_LINK} target="_blank" rel="noopener noreferrer" className="btn-outline flex-1 text-center">
           Uber Eats <ExternalLink className="inline w-3.5 h-3.5 ml-1" />
         </a>
