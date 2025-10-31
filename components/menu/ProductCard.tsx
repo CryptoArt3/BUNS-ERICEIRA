@@ -8,7 +8,6 @@ import { Check } from 'lucide-react'
 export default function ProductCard({ product }: { product: Product }) {
   const { add } = useCart()
 
-  // Destacar MENU por defeito (quando existir)
   const hasMenu = typeof product.menuPrice === 'number'
   const [variant, setVariant] = useState<'burger' | 'menu'>(hasMenu ? 'menu' : 'burger')
 
@@ -20,7 +19,6 @@ export default function ProductCard({ product }: { product: Product }) {
     [variant, hasMenu, product.price, product.menuPrice]
   )
 
-  // Tilt só em dispositivos com rato
   const canTilt =
     typeof window !== 'undefined' &&
     typeof window.matchMedia === 'function' &&
@@ -35,8 +33,6 @@ export default function ProductCard({ product }: { product: Product }) {
       qty: 1,
       variant,
     })
-
-    // feedback visual no botão
     setAdded(true)
     window.setTimeout(() => setAdded(false), 900)
   }
@@ -64,22 +60,22 @@ export default function ProductCard({ product }: { product: Product }) {
       ref={cardRef}
       onMouseMove={handleMove}
       onMouseLeave={handleLeave}
-      className="group relative rounded-3xl border border-white/10 bg-white/5 p-4 sm:p-5 shadow-buns transition-transform will-change-transform overflow-hidden"
+      className="group relative rounded-3xl border border-white/10 bg-white/5 p-4 sm:p-5 shadow-buns transition-transform will-change-transform overflow-hidden max-w-[100vw]"
     >
-      {/* glow hover */}
+      {/* efeito glow */}
       <div
         className="pointer-events-none absolute -inset-px rounded-3xl opacity-0 blur-md transition group-hover:opacity-100"
         style={{ background: 'radial-gradient(600px 120px at 10% -10%, rgba(255,212,0,.25), transparent 60%)' }}
       />
 
-      {/* imagem com proporção estável (iOS friendly) */}
+      {/* imagem com proporção estável */}
       <div className="mb-3 overflow-hidden rounded-2xl border border-white/10 bg-black/30">
         {product.image ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={product.image}
             alt={product.name}
-            className="w-full max-w-full aspect-[16/9] object-cover md:aspect-[3/1]"
+            className="block w-full max-w-full aspect-[16/9] object-cover md:aspect-[3/1]"
           />
         ) : (
           <div className="w-full aspect-[16/9] bg-gradient-to-br from-white/10 to-white/0" />

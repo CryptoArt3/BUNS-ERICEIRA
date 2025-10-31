@@ -11,7 +11,6 @@ export const metadata: Metadata = {
   description: 'Born in Ericeira. Surf · Graffiti · Smash Burgers.',
 }
 
-// Viewport — permite pinch-zoom e usa a safe-area do iOS (sem maximumScale)
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
@@ -23,14 +22,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="pt">
       <body suppressHydrationWarning>
         <CartProvider>
-          {/* padding-bottom no mobile para não esconder conteúdo atrás da StickyCartBar */}
-          <div className="min-h-dvh grid grid-rows-[auto,1fr] pb-16 md:pb-0">
+          {/* wrapper anti-bleed: nada passa de 100vw */}
+          <div className="app-shell min-h-dvh grid grid-rows-[auto,1fr] pb-16 md:pb-0">
             <Header />
             <WelcomeModal />
             {children}
           </div>
 
-          {/* CTA do carrinho sempre visível no mobile */}
           <StickyCartBar />
         </CartProvider>
       </body>

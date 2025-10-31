@@ -13,10 +13,9 @@ export default function MenuGrid() {
 
   const visible: Product[] = useMemo(() => {
     if (filter === 'all') return PRODUCTS
-    return PRODUCTS.filter((p: Product) => p.category === filter)
+    return PRODUCTS.filter((p) => p.category === filter)
   }, [filter])
 
-  // centra o chip activo no viewport em mobile
   useEffect(() => {
     const el = chipsRef.current
     if (!el) return
@@ -27,12 +26,12 @@ export default function MenuGrid() {
   }, [filter])
 
   return (
-    <section className="w-full">
-      {/* sticky logo abaixo do header (h-16 = 64px) */}
-      <div className="sticky top-16 z-20 bg-black/60 backdrop-blur-sm border-b border-white/10">
+    <section className="w-full max-w-[100vw] overflow-x-hidden">
+      {/* Tabs (stick abaixo do header 64px) */}
+      <div className="sticky top-[64px] z-20 bg-black/60 backdrop-blur-sm border-b border-white/10">
         <div
           ref={chipsRef}
-          className="flex gap-2 px-2 py-3 overflow-x-auto no-scrollbar ios-hscroll"
+          className="ios-hscroll no-scrollbar flex gap-2 px-4 py-3 overflow-x-auto"
         >
           <Chip active={filter === 'all'} onClick={() => setFilter('all')} data-active={filter === 'all'}>
             🍔 Tudo
@@ -53,7 +52,7 @@ export default function MenuGrid() {
 
       {/* Grelha */}
       <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-        {visible.map((p: Product) => (
+        {visible.map((p) => (
           <ProductCard key={p.id} product={p} />
         ))}
       </div>
@@ -62,13 +61,11 @@ export default function MenuGrid() {
         <div className="text-white/60 p-6 text-center">Sem produtos nesta categoria.</div>
       )}
 
-      {/* espaço para a barra sticky do carrinho no mobile */}
       <div className="h-20 md:h-0" />
     </section>
   )
 }
 
-/* — Chip — */
 function Chip(
   { children, active, onClick, ...rest }:
   { children: React.ReactNode, active?: boolean, onClick?: () => void } & React.HTMLAttributes<HTMLButtonElement>
