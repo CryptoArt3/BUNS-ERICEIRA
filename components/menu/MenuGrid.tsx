@@ -28,8 +28,8 @@ export default function MenuGrid() {
 
   return (
     <section className="w-full">
-      {/* TABS — sticky em relação ao header (h-16) */}
-      <div className="sticky top-16 z-20 bg-black/60 backdrop-blur-sm border-b border-white/10">
+      {/* TABS — sticky: compensa header (64px) + barra Uber/Eats (~44px) no mobile */}
+      <div className="sticky top-[7.5rem] md:top-16 z-20 bg-black/60 backdrop-blur-sm border-b border-white/10">
         <div
           ref={chipsRef}
           className="flex gap-2 px-2 py-3 overflow-x-auto no-scrollbar w-full"
@@ -62,6 +62,7 @@ export default function MenuGrid() {
         <div className="text-white/60 p-6 text-center">Sem produtos nesta categoria.</div>
       )}
 
+      {/* espaço para a sticky cart bar no mobile */}
       <div className="h-20 md:h-0" />
     </section>
   )
