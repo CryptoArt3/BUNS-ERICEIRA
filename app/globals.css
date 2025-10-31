@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Evita “smart zoom / text autosize” no Safari iOS */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+
 /* === Variáveis base === */
 :root {
   color-scheme: light;
@@ -48,19 +51,18 @@ body {
   background-position: center;
   transition: opacity .3s ease;
 }
-/* Dia → surfista ao pôr-do-sol */
+/* Dia */
 .mode-day .hero::before {
   background:
     linear-gradient(to bottom, rgba(0,0,0,0.15), rgba(0,0,0,0.45)),
     url('/hero-day.jpg');
 }
-/* Noite → graffiti BUNS */
+/* Noite */
 .mode-night .hero::before {
   background:
     linear-gradient(to bottom, rgba(0,0,0,0.25), rgba(0,0,0,0.6)),
     url('/hero-night.jpg');
 }
-/* fallback (remove quando tiveres as imagens) */
 .mode-day .hero.no-img::before {
   background:
     radial-gradient(circle at 60% 0%, rgba(255,212,0,.12), transparent 40%),
@@ -97,19 +99,18 @@ body, .mode-day .hero::before, .mode-night .hero::before {
   border-radius: inherit;
 }
 
-/* === Efeito hover no ícone de pin === */
+/* === Pin hover === */
 .location-card .pin { transition: transform .2s ease, color .2s ease; }
 .location-card:hover .pin { color: var(--buns-accent); animation: pinPulse 1.2s infinite ease-in-out; }
-@keyframes pinPulse {
-  0%, 100% { transform: scale(1); }
-  50%      { transform: scale(1.15); }
-}
-/* Utilidades para mobile/safe-area e esconder scrollbars dos chips */
+@keyframes pinPulse { 0%,100%{transform:scale(1);} 50%{transform:scale(1.15);} }
+
+/* Utilidades */
 @layer utilities {
   .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 }
+
 /* === Ajustes gerais mobile === */
 @media (max-width: 640px) {
   h1, h2, h3 { line-height: 1.25; }
