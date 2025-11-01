@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { ShoppingCart, ExternalLink, LogIn, User, LogOut } from 'lucide-react'
+
 import { useCart } from '@/components/cart/CartContext'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { ModeToggle } from '@/components/ui/ModeToggle'
@@ -48,30 +49,51 @@ export const Header = () => {
   return (
     <header className="sticky top-0 z-50 backdrop-blur border-b border-white/10 bg-black/50">
       <div className="mx-auto max-w-6xl px-4 h-16 flex items-center justify-between">
-        <Link href="/" className="font-display text-2xl tracking-wider flex items-center gap-3">
-          <img src="/logo-buns.svg" alt="BUNS" className="h-6 w-auto hidden sm:block" />
+        {/* logo — só texto (removido o logo pequeno) */}
+        <Link
+          href="/"
+          className="font-display text-2xl tracking-wider flex items-center"
+          aria-label="BUNS — início"
+        >
           <span className="text-buns-yellow">BUNS</span>
         </Link>
 
-        {/* desktop – externos */}
+        {/* desktop – links externos */}
         <div className="hidden md:flex items-center gap-2">
-          <a href={UBER_LINK} target="_blank" rel="noopener noreferrer" className="btn-outline flex items-center gap-2">
+          <a
+            href={UBER_LINK}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-outline flex items-center gap-2"
+          >
             Uber Eats <ExternalLink className="w-3.5 h-3.5" />
           </a>
-          <a href={ERICEIRA_EATS} target="_blank" rel="noopener noreferrer" className="btn-outline flex items-center gap-2">
+          <a
+            href={ERICEIRA_EATS}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-outline flex items-center gap-2"
+          >
             Ericeira Eats <ExternalLink className="w-3.5 h-3.5" />
           </a>
         </div>
 
-        {/* desktop – nav */}
+        {/* desktop – navegação */}
         <nav className="hidden md:flex items-center gap-2">
           <ModeToggle />
           <ThemeToggle />
-          <NavLink href="/menu" active={path.startsWith('/menu')}>Menu</NavLink>
+
+          <NavLink href="/menu" active={path.startsWith('/menu')}>
+            Menu
+          </NavLink>
 
           {email ? (
             <>
-              <NavLink href="/account" active={path.startsWith('/account')} icon={<User className="w-4 h-4" />}>
+              <NavLink
+                href="/account"
+                active={path.startsWith('/account')}
+                icon={<User className="w-4 h-4" />}
+              >
                 Conta
               </NavLink>
               <button onClick={handleSignOut} className="btn btn-ghost">
@@ -80,7 +102,11 @@ export const Header = () => {
               </button>
             </>
           ) : (
-            <NavLink href="/login" active={path.startsWith('/login')} icon={<LogIn className="w-4 h-4" />}>
+            <NavLink
+              href="/login"
+              active={path.startsWith('/login')}
+              icon={<LogIn className="w-4 h-4" />}
+            >
               Entrar
             </NavLink>
           )}
@@ -91,18 +117,28 @@ export const Header = () => {
           </Link>
         </nav>
 
-        {/* mobile – hambúrguer */}
-        <div className="md:hidden">
+        {/* mobile – hambúrguer com pequeno respiro à direita */}
+        <div className="md:hidden pr-1">
           <MobileNav />
         </div>
       </div>
 
       {/* mobile – links externos */}
       <div className="md:hidden mx-auto max-w-6xl px-4 py-2 flex gap-2">
-        <a href={UBER_LINK} target="_blank" rel="noopener noreferrer" className="btn-outline flex-1 text-center">
+        <a
+          href={UBER_LINK}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn-outline flex-1 text-center"
+        >
           Uber Eats <ExternalLink className="inline w-3.5 h-3.5 ml-1" />
         </a>
-        <a href={ERICEIRA_EATS} target="_blank" rel="noopener noreferrer" className="btn-outline flex-1 text-center">
+        <a
+          href={ERICEIRA_EATS}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn-outline flex-1 text-center"
+        >
           Ericeira Eats <ExternalLink className="inline w-3.5 h-3.5 ml-1" />
         </a>
       </div>
