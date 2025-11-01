@@ -6,11 +6,10 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
 import { useCart } from '@/components/cart/CartContext'
 
-/* ——— helpers ——— */
+/* helpers */
 function currency(x: number) {
   return new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(x)
 }
-
 function calcFeeAndMeta(zoneOrTakeaway: string) {
   if (zoneOrTakeaway === 'TAKEAWAY') {
     return { delivery_type: 'TAKEAWAY' as const, zone: 'Ericeira', delivery_fee: 0 }
@@ -23,16 +22,14 @@ function calcFeeAndMeta(zoneOrTakeaway: string) {
   return { delivery_type: 'DELIVERY' as const, zone, delivery_fee: 3.5 }
 }
 
-/* ——— page ——— */
 export default function CheckoutPage() {
   const router = useRouter()
   const { cart, clear } = useCart()
 
-  // 👇 exigir login
   const [mustLogin, setMustLogin] = useState(false)
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      setMustLogin(!data?.session) // true se não estiver logado
+      setMustLogin(!data?.session)
     })
   }, [])
 
@@ -41,23 +38,14 @@ export default function CheckoutPage() {
   const [address, setAddress] = useState('')
   const [zoneChoice, setZoneChoice] =
     useState<'TAKEAWAY' | 'Ericeira' | 'Ribamar' | 'Achada' | 'Sobreiro' | 'Outro'>('TAKEAWAY')
-  const [paymentMethod, setPaymentMethod] =
-    useState<'cash' | 'mbway' | 'card'>('cash')
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'mbway' | 'card'>('cash')
 
   const [loading, setLoading] = useState(false)
   const [err, setErr] = useState<string | null>(null)
 
   const items = cart?.items ?? []
-  const subtotal = useMemo(
-    () => items.reduce((acc, it) => acc + it.price * it.qty, 0),
-    [items]
-  )
-
-  const { delivery_type, zone, delivery_fee } = useMemo(
-    () => calcFeeAndMeta(zoneChoice),
-    [zoneChoice]
-  )
-
+  const subtotal = useMemo(() => items.reduce((acc, it) => acc + it.price * it.qty, 0), [items])
+  const { delivery_type, zone, delivery_fee } = useMemo(() => calcFeeAndMeta(zoneChoice), [zoneChoice])
   const total = useMemo(() => subtotal + delivery_fee, [subtotal, delivery_fee])
   const needsAddress = delivery_type === 'DELIVERY'
 
@@ -71,18 +59,15 @@ export default function CheckoutPage() {
     }
     if (!name.trim()) return setErr('Indica o teu nome.')
 
-    // só dígitos (até 15)
     const phoneClean = (phone.match(/\d/g) ?? []).join('').slice(0, 15)
     if (!phoneClean) return setErr('Indica o teu telemóvel.')
-
     if (needsAddress && !address.trim()) return setErr('Indica a morada para entrega.')
     if (items.length === 0) return setErr('O carrinho está vazio.')
 
     const items_count = items.reduce((n, it) => n + it.qty, 0)
-
     setLoading(true)
+
     try {
-      // 👉 apanha sessão (gravamos user_id)
       const { data: sessionData } = await supabase.auth.getSession()
       const userId = sessionData?.session?.user?.id ?? null
       if (!userId) {
@@ -92,21 +77,16 @@ export default function CheckoutPage() {
       }
 
       const payload = {
-        // dados do cliente
         name: name.trim(),
         phone: phoneClean,
         address: needsAddress ? address.trim() : '',
-        // entrega
         zone,
         delivery_type,
-        // pagamento
-        payment_method: paymentMethod, // NOT NULL
-        // valores
+        payment_method: paymentMethod,
         subtotal,
         delivery_fee,
-        fee: delivery_fee, // compat
+        fee: delivery_fee,
         total,
-        // itens (com note/variant/options)
         items: items.map((it) => ({
           id: it.id,
           name: it.name,
@@ -115,17 +95,14 @@ export default function CheckoutPage() {
           variant: (it as any).variant ?? null,
           options: (it as any).options ?? null,
           note: (it as any).options?.note ?? null,
-        })),            // JSONB
-        items_count,      // NOT NULL
-        // meta
+        })),
+        items_count,
         order_type: delivery_type,
         acknowledged: false as boolean | undefined,
         status: 'pending' as const,
-        // ligação ao utilizador (obrigatória para RLS)
         user_id: userId,
       }
 
-      // 👉 Guardar e obter o ID da encomenda
       const { data, error } = await supabase
         .from('orders')
         .insert(payload)
@@ -133,20 +110,17 @@ export default function CheckoutPage() {
         .single()
 
       if (error) {
-        if (String(error.message).toLowerCase().includes('row-level security')) {
-          setErr('Não foi possível criar o pedido devido às regras de segurança. Inicia sessão e tenta novamente.')
-        } else {
-          setErr(error.message)
-        }
+        setErr(
+          String(error.message).toLowerCase().includes('row-level security')
+            ? 'Não foi possível criar o pedido devido às regras de segurança. Inicia sessão e tenta novamente.'
+            : error.message
+        )
         setLoading(false)
         return
       }
 
-      // limpa carrinho
       clear()
       localStorage.removeItem('cart')
-
-      // 👉 página de confirmação com o nº da encomenda
       router.push(`/obrigado?order=${data.id}`)
     } catch (e: any) {
       setErr(e?.message ?? 'Falha ao enviar o pedido.')
@@ -155,7 +129,6 @@ export default function CheckoutPage() {
     }
   }
 
-  // lembrar telefone localmente
   useEffect(() => {
     const saved = localStorage.getItem('checkout_phone')
     if (saved && !phone) setPhone(saved)
@@ -166,21 +139,19 @@ export default function CheckoutPage() {
   }, [phone])
 
   return (
-    // === mesmo frame do Menu/Home/Conta ===
-    <main className="container mx-auto px-4 pt-10 pb-24 safe-bottom space-y-6 sm:space-y-8">
-      {/* título no mesmo estilo do Menu */}
-      <h1 className="text-4xl sm:text-5xl font-display leading-tight tracking-tight">
+    <main className="mx-auto w-full max-w-[100vw] overflow-x-hidden px-3 sm:px-4 pt-10 pb-24 safe-bottom space-y-6 sm:space-y-8">
+      {/* título alinhado como o Menu */}
+      <h1 className="text-4xl sm:text-5xl font-display leading-tight tracking-tight px-1">
         <span className="text-buns-yellow">BUNS</span>
-        <span className="mx-2">Checkout</span>
+        <span className="ml-2">Checkout</span>
       </h1>
 
-      <p className="text-white/80 max-w-2xl text-base sm:text-lg">
+      <p className="text-white/80 max-w-2xl text-base sm:text-lg px-1">
         Preenche os teus dados e confirma o pedido. Tarifa por zona é aplicada automaticamente.
       </p>
 
-      {/* Aviso de login + CTA */}
       {mustLogin && (
-        <div className="rounded-xl bg-orange-500/20 border border-orange-400/40 text-orange-200 p-3">
+        <div className="rounded-xl bg-orange-500/20 border border-orange-400/40 text-orange-200 p-3 mb-2">
           Para concluir o pedido e acompanhar o estado, inicia sessão.
           <Link href="/login?next=/checkout" className="btn btn-primary ml-3 inline-block">
             Iniciar sessão
@@ -188,14 +159,13 @@ export default function CheckoutPage() {
         </div>
       )}
 
-      {/* Conteúdo principal: mesma largura visual das outras páginas */}
+      {/* largura controlada como nas outras páginas */}
       <form onSubmit={handleSubmit} className="card p-6 sm:p-8 space-y-6 max-w-3xl">
-        {/* Nome + Telefone */}
         <div className="grid sm:grid-cols-2 gap-4">
           <label className="flex flex-col gap-2">
             <span className="text-sm text-white/70">Nome</span>
             <input
-              className="rounded-xl bg-white/5 border border-white/10 p-3 outline-none focus:border-white/20"
+              className="w-full rounded-xl bg-white/5 border border-white/10 p-3 outline-none focus:border-white/20"
               placeholder="O teu nome"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -204,7 +174,7 @@ export default function CheckoutPage() {
           <label className="flex flex-col gap-2">
             <span className="text-sm text-white/70">Telefone</span>
             <input
-              className="rounded-xl bg-white/5 border border-white/10 p-3 outline-none focus:border-white/20"
+              className="w-full rounded-xl bg-white/5 border border-white/10 p-3 outline-none focus:border-white/20"
               placeholder="962 000 000"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
@@ -212,18 +182,14 @@ export default function CheckoutPage() {
           </label>
         </div>
 
-        {/* Zona */}
         <label className="flex flex-col gap-2">
           <span className="text-sm text-white/70">Zona</span>
           <select
-            className="rounded-xl bg-white/5 border border-white/10 p-3 outline-none focus:border-white/20"
+            className="w-full rounded-xl bg-white/5 border border-white/10 p-3 outline-none focus:border-white/20"
             value={zoneChoice}
             onChange={(e) => setZoneChoice(e.target.value as typeof zoneChoice)}
           >
-            {/* Ativo */}
             <option value="TAKEAWAY">Levantamento em loja (Takeaway)</option>
-
-            {/* Delivery desativado mas visível */}
             <option value="Ericeira" disabled>Entrega — Ericeira (+2,50€) — brevemente</option>
             <option value="Ribamar" disabled>Entrega — Ribamar (+3,50€) — brevemente</option>
             <option value="Achada" disabled>Entrega — Achada (+3,50€) — brevemente</option>
@@ -235,12 +201,11 @@ export default function CheckoutPage() {
           </span>
         </label>
 
-        {/* Morada (só quando delivery estiver ativo) */}
         {needsAddress && (
           <label className="flex flex-col gap-2">
             <span className="text-sm text-white/70">Morada de entrega</span>
             <input
-              className="rounded-xl bg-white/5 border border-white/10 p-3 outline-none focus:border-white/20"
+              className="w-full rounded-xl bg-white/5 border border-white/10 p-3 outline-none focus:border-white/20"
               placeholder="Rua e nº, localidade"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
@@ -248,11 +213,10 @@ export default function CheckoutPage() {
           </label>
         )}
 
-        {/* Método de pagamento */}
         <label className="flex flex-col gap-2">
           <span className="text-sm text-white/70">Método de pagamento</span>
           <select
-            className="rounded-xl bg-white/5 border border-white/10 p-3 outline-none focus:border-white/20"
+            className="w-full rounded-xl bg-white/5 border border-white/10 p-3 outline-none focus:border-white/20"
             value={paymentMethod}
             onChange={(e) => setPaymentMethod(e.target.value as 'cash'|'mbway'|'card')}
           >
@@ -262,7 +226,6 @@ export default function CheckoutPage() {
           </select>
         </label>
 
-        {/* Resumo */}
         <div className="rounded-2xl bg-white/5 border border-white/10 p-4">
           <div className="flex items-center justify-between py-1">
             <span className="text-white/70">Subtotal</span>
@@ -281,21 +244,12 @@ export default function CheckoutPage() {
           </div>
         </div>
 
-        {err && (
-          <div className="rounded-xl bg-red-900/40 border border-red-500/30 text-red-200 p-3">
-            {err}
-          </div>
-        )}
+        {err && <div className="rounded-xl bg-red-900/40 border border-red-500/30 text-red-200 p-3">{err}</div>}
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="btn btn-primary w-full sm:w-auto disabled:opacity-60"
-        >
+        <button type="submit" disabled={loading} className="btn btn-primary w-full sm:w-auto disabled:opacity-60">
           {loading ? 'A enviar…' : 'Confirmar pedido'}
         </button>
 
-        {/* Itens (leitura) */}
         <div className="pt-4">
           <h3 className="text-white/80 font-semibold mb-2">
             Itens ({items.reduce((n, it) => n + it.qty, 0)})
