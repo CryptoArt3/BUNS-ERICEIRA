@@ -18,8 +18,9 @@ export default function CartPage() {
 
   return (
     <main className="mx-auto w-full max-w-[100vw] overflow-x-hidden px-3 sm:px-4 pt-10 pb-24 space-y-6 sm:space-y-8">
-      <div className="max-w-6xl mx-auto pl-2 sm:pl-3">
-        <h1 className="text-4xl sm:text-5xl font-display leading-tight tracking-tight px-1">
+      {/* wrapper com padding simétrico para alinhar em todos os ecrãs */}
+      <div className="max-w-6xl mx-auto px-1">
+        <h1 className="text-4xl sm:text-5xl font-display leading-tight tracking-tight">
           <span className="text-buns-yellow">BUNS</span>
           <span className="ml-2">Carrinho</span>
         </h1>
@@ -37,7 +38,9 @@ export default function CartPage() {
                     <div className="flex items-center justify-between gap-3">
                       <div>
                         <div className="text-xl font-semibold">{it.name}</div>
-                        <div className="text-white/70">{currency(it.price)} × {it.qty}</div>
+                        <div className="text-white/70">
+                          {currency(it.price)} × {it.qty}
+                        </div>
                       </div>
 
                       <div className="flex items-center gap-2">
