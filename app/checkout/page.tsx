@@ -160,7 +160,7 @@ export default function CheckoutPage() {
       )}
 
       {/* largura controlada como nas outras páginas */}
-      <form onSubmit={handleSubmit} className="card p-6 sm:p-8 space-y-6 max-w-3xl">
+      <form onSubmit={handleSubmit} className="card p-6 sm:p-8 space-y-6 max-w-3xl mx-auto">
         <div className="grid sm:grid-cols-2 gap-4">
           <label className="flex flex-col gap-2">
             <span className="text-sm text-white/70">Nome</span>

@@ -17,8 +17,11 @@ export default function CartPage() {
   )
 
   return (
-    <main className="container mx-auto px-4 py-8 pb-24 md:pb-8">
-      <h1 className="text-5xl font-display mb-6">Carrinho</h1>
+    <main className="mx-auto w-full max-w-[100vw] overflow-x-hidden px-3 sm:px-4 pt-10 pb-24 space-y-6 sm:space-y-8">
+      <h1 className="text-4xl sm:text-5xl font-display leading-tight tracking-tight px-1">
+        <span className="text-buns-yellow">BUNS</span>
+        <span className="ml-2">Carrinho</span>
+      </h1>
 
       {cart.items.length === 0 ? (
         <div className="card p-6">Carrinho vazio.</div>
@@ -27,10 +30,7 @@ export default function CartPage() {
           {/* itens */}
           <div className="space-y-4">
             {cart.items.map((it) => {
-              // Evitar ?. e ?? no JSX para contornar o erro do TS
-              const note =
-                it.options && typeof it.options.note === 'string' ? it.options.note : ''
-
+              const note = it.options && typeof it.options.note === 'string' ? it.options.note : ''
               return (
                 <div key={it.id} className="card p-5">
                   <div className="flex items-center justify-between gap-3">

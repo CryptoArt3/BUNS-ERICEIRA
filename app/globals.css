@@ -100,3 +100,13 @@ body, .mode-day .hero::before, .mode-night .hero::before{
   .btn{ @apply text-base py-3 px-4; }
   .card{ @apply p-4; }
 }
+/* —— Safe area lateral (iOS) —— */
+.safe-x {
+  padding-left: max(env(safe-area-inset-left), 0px);
+  padding-right: max(env(safe-area-inset-right), 0px);
+}
+
+/* Evitar scroll horizontal fantasma em alguns devices largos */
+html, body {
+  overflow-x: hidden;
+}

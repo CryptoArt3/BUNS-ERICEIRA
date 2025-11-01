@@ -5,19 +5,23 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { CheckCircle2 } from 'lucide-react'
 
-/** Componente que usa o hook (fica dentro do <Suspense>) */
 function ObrigadoInner() {
   const sp = useSearchParams()
   const orderId = sp.get('order')
 
   return (
-    <main className="container mx-auto px-4 py-12 max-w-2xl">
-      <div className="card p-8 text-center space-y-5">
+    <main className="mx-auto w-full max-w-[100vw] overflow-x-hidden px-3 sm:px-4 pt-10 pb-24 space-y-6 sm:space-y-8">
+      <h1 className="text-4xl sm:text-5xl font-display leading-tight tracking-tight px-1">
+        <span className="text-buns-yellow">BUNS</span>
+        <span className="ml-2">Obrigado</span>
+      </h1>
+
+      <div className="card p-8 text-center space-y-5 max-w-2xl mx-auto">
         <div className="flex justify-center">
           <CheckCircle2 className="w-12 h-12 text-green-400" />
         </div>
 
-        <h1 className="text-3xl font-display">Pedido confirmado! 🎉</h1>
+        <h2 className="text-3xl font-display">Pedido confirmado! 🎉</h2>
 
         <p className="text-white/80">
           Recebemos a tua encomenda{' '}
@@ -46,13 +50,12 @@ function ObrigadoInner() {
   )
 }
 
-/** Página: apenas envolve o filho num Suspense */
 export default function ObrigadoPage() {
   return (
     <Suspense
       fallback={
-        <main className="container mx-auto px-4 py-12 max-w-2xl">
-          <div className="card p-8 text-center">A carregar…</div>
+        <main className="mx-auto w-full max-w-[100vw] overflow-x-hidden px-3 sm:px-4 pt-10 pb-24">
+          <div className="card p-8 text-center max-w-2xl mx-auto">A carregar…</div>
         </main>
       }
     >
