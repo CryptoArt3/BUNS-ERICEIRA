@@ -11,7 +11,7 @@ import { ModeToggle } from '@/components/ui/ModeToggle'
 import MobileNav from '@/components/ui/MobileNav'
 import { supabase } from '@/lib/supabase/client'
 
-const UBER_LINK = 'https://www.ubereats.com/pt'
+const UBER_LINK = 'https://www.ubereats.com/pt/store/buns-smash-burger/O_JvrmwGUeSg0zoFNkw6AQ?diningMode=DELIVERY&pl=JTdCJTIyYWRkcmVzcyUyMiUzQSUyMkVyaWNlaXJhJTIyJTJDJTIycmVmZXJlbmNlJTIyJTNBJTIyQ2hJSmwyXzlyUTRuSHcwUlRLb1FER0VNTEhRJTIyJTJDJTIycmVmZXJlbmNlVHlwZSUyMiUzQSUyMmdvb2dsZV9wbGFjZXMlMjIlMkMlMjJsYXRpdHVkZSUyMiUzQTM4Ljk2ODEyNzclMkMlMjJsb25naXR1ZGUlMjIlM0EtOS40MDczMDA0JTdE'
 const ERICEIRA_EATS = 'https://ericeiraeats.pt'
 
 type AppRoute = '/' | '/menu' | '/cart' | '/checkout' | '/login' | '/account'
