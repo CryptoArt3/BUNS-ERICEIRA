@@ -24,14 +24,14 @@ export default function CartPage() {
         <span className="ml-2">Carrinho</span>
       </h1>
 
-      {/* conteúdo com leve bias à esquerda em ecrãs grandes */}
+      {/* wrapper com bias à esquerda para ecrãs maiores */}
       {cart.items.length === 0 ? (
-        <div className="pl-1 pr-2">
+        <div className="pl-1 pr-4 sm:pr-6 lg:pr-8 xl:pr-10">
           <div className="card p-6 mt-2">Carrinho vazio.</div>
         </div>
       ) : (
-        <div className="pl-1 pr-2">
-          <div className="grid lg:grid-cols-[minmax(0,1fr),420px] gap-6 mt-2">
+        <div className="pl-1 pr-4 sm:pr-6 lg:pr-8 xl:pr-10">
+          <div className="grid lg:grid-cols-[minmax(0,1fr),400px] gap-6 mt-2">
             {/* itens */}
             <div className="space-y-4">
               {cart.items.map((it) => {
