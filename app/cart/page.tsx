@@ -17,11 +17,18 @@ export default function CartPage() {
   )
 
   return (
-    // ⚡️ usamos w-screen e overflow-x-hidden para eliminar o corte lateral
-    <main className="w-screen overflow-x-hidden px-3 sm:px-4 pt-10 pb-24 space-y-6 sm:space-y-8">
-      {/* wrapper centralizado perfeitamente em todos os tamanhos */}
-      <div className="max-w-6xl mx-auto px-2 sm:px-3 md:px-4">
-        <h1 className="text-4xl sm:text-5xl font-display leading-tight tracking-tight">
+    // viewport estável + safe-areas + sem overflow lateral
+    <main
+      className="
+        w-screen overflow-x-clip
+        pl-[max(env(safe-area-inset-left),0.75rem)]
+        pr-[max(env(safe-area-inset-right),1rem)]
+        sm:px-4 pt-10 pb-24 space-y-6 sm:space-y-8
+      "
+    >
+      {/* wrapper centralizado como no checkout */}
+      <div className="max-w-6xl mx-auto w-full">
+        <h1 className="text-4xl sm:text-5xl font-display leading-tight tracking-tight px-1">
           <span className="text-buns-yellow">BUNS</span>
           <span className="ml-2">Carrinho</span>
         </h1>
@@ -31,13 +38,13 @@ export default function CartPage() {
         ) : (
           <div className="grid lg:grid-cols-[1fr,420px] gap-6 mt-6">
             {/* itens */}
-            <div className="space-y-4">
+            <div className="space-y-4 min-w-0">
               {cart.items.map((it) => {
                 const note = it.options && typeof it.options.note === 'string' ? it.options.note : ''
                 return (
                   <div key={it.id} className="card p-5">
                     <div className="flex items-center justify-between gap-3">
-                      <div>
+                      <div className="min-w-0">
                         <div className="text-xl font-semibold">{it.name}</div>
                         <div className="text-white/70">{currency(it.price)} × {it.qty}</div>
                       </div>
@@ -67,7 +74,7 @@ export default function CartPage() {
             </div>
 
             {/* resumo */}
-            <aside className="card p-5 h-fit">
+            <aside className="card p-5 h-fit min-w-0">
               <div className="flex items-center justify-between py-1">
                 <span className="text-white/70">Subtotal</span>
                 <span className="font-semibold">{currency(subtotal)}</span>
