@@ -18,20 +18,20 @@ export default function CartPage() {
 
   return (
     <main className="mx-auto w-full max-w-[100vw] overflow-x-hidden px-3 sm:px-4 pt-10 pb-24 space-y-6 sm:space-y-8">
-      {/* título no mesmo frame do Menu/Checkout */}
+      {/* título alinhado como Menu/Checkout */}
       <h1 className="text-4xl sm:text-5xl font-display leading-tight tracking-tight px-1">
         <span className="text-buns-yellow">BUNS</span>
         <span className="ml-2">Carrinho</span>
       </h1>
 
-      {/* conteúdo com padding simétrico (px-1) para evitar desvio à direita em ecrãs grandes */}
+      {/* conteúdo com leve bias à esquerda em ecrãs grandes */}
       {cart.items.length === 0 ? (
-        <div className="px-1">
+        <div className="pl-1 pr-2">
           <div className="card p-6 mt-2">Carrinho vazio.</div>
         </div>
       ) : (
-        <div className="px-1">
-          <div className="grid lg:grid-cols-[1fr,420px] gap-6 mt-2">
+        <div className="pl-1 pr-2">
+          <div className="grid lg:grid-cols-[minmax(0,1fr),420px] gap-6 mt-2">
             {/* itens */}
             <div className="space-y-4">
               {cart.items.map((it) => {
