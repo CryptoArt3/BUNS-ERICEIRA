@@ -28,11 +28,11 @@ export default function CheckoutPage() {
   const router = useRouter()
   const { cart, clear } = useCart()
 
-  // 👇 novo: exigir login
+  // exigir login
   const [mustLogin, setMustLogin] = useState(false)
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      setMustLogin(!data?.session) // true se não estiver logado
+      setMustLogin(!data?.session)
     })
   }, [])
 
@@ -65,18 +65,13 @@ export default function CheckoutPage() {
     e.preventDefault()
     setErr(null)
 
-    // 👇 trava se não estiver logado
     if (mustLogin) {
       setErr('Para concluir o pedido e acompanhar o estado, inicia sessão primeiro.')
       return
     }
-
     if (!name.trim()) return setErr('Indica o teu nome.')
-
-    // só dígitos (até 15)
     const phoneClean = (phone.match(/\d/g) ?? []).join('').slice(0, 15)
     if (!phoneClean) return setErr('Indica o teu telemóvel.')
-
     if (needsAddress && !address.trim()) return setErr('Indica a morada para entrega.')
     if (items.length === 0) return setErr('O carrinho está vazio.')
 
@@ -84,7 +79,6 @@ export default function CheckoutPage() {
 
     setLoading(true)
     try {
-      // 👉 apanha sessão (gravamos user_id)
       const { data: sessionData } = await supabase.auth.getSession()
       const userId = sessionData?.session?.user?.id ?? null
       if (!userId) {
@@ -94,21 +88,16 @@ export default function CheckoutPage() {
       }
 
       const payload = {
-        // dados do cliente
         name: name.trim(),
         phone: phoneClean,
         address: needsAddress ? address.trim() : '',
-        // entrega
         zone,
         delivery_type,
-        // pagamento
-        payment_method: paymentMethod, // NOT NULL
-        // valores
+        payment_method: paymentMethod,
         subtotal,
         delivery_fee,
-        fee: delivery_fee, // compat
+        fee: delivery_fee,
         total,
-        // itens (com note/variant/options)
         items: items.map((it) => ({
           id: it.id,
           name: it.name,
@@ -117,17 +106,14 @@ export default function CheckoutPage() {
           variant: (it as any).variant ?? null,
           options: (it as any).options ?? null,
           note: (it as any).options?.note ?? null,
-        })),            // JSONB
-        items_count,      // NOT NULL
-        // meta
+        })),
+        items_count,
         order_type: delivery_type,
         acknowledged: false as boolean | undefined,
         status: 'pending' as const,
-        // ligação ao utilizador (obrigatória para RLS)
         user_id: userId,
       }
 
-      // 👉 Guardar e obter o ID da encomenda
       const { data, error } = await supabase
         .from('orders')
         .insert(payload)
@@ -135,7 +121,6 @@ export default function CheckoutPage() {
         .single()
 
       if (error) {
-        // mensagem mais amigável se for RLS
         if (String(error.message).toLowerCase().includes('row-level security')) {
           setErr('Não foi possível criar o pedido devido às regras de segurança. Inicia sessão e tenta novamente.')
         } else {
@@ -145,11 +130,8 @@ export default function CheckoutPage() {
         return
       }
 
-      // limpa carrinho
       clear()
       localStorage.removeItem('cart')
-
-      // 👉 página de confirmação com o nº da encomenda
       router.push(`/obrigado?order=${data.id}`)
     } catch (e: any) {
       setErr(e?.message ?? 'Falha ao enviar o pedido.')
@@ -169,15 +151,16 @@ export default function CheckoutPage() {
   }, [phone])
 
   return (
-    <div className="max-w-5xl mx-auto p-6 sm:p-10">
-      <h1 className="text-4xl sm:text-5xl font-display mb-6">Checkout</h1>
-      <p className="text-white/80 mb-8">
+    // 🔧 mesmas dimensões/spacing do Menu/Home/Conta
+    <main className="container mx-auto px-4 pt-10 pb-24 safe-bottom space-y-6 sm:space-y-8">
+      <h1 className="text-4xl sm:text-5xl font-display leading-tight">Checkout</h1>
+      <p className="text-white/80 max-w-2xl">
         Preenche os teus dados e confirma o pedido. Tarifa por zona é aplicada automaticamente.
       </p>
 
       {/* Aviso de login + CTA */}
       {mustLogin && (
-        <div className="rounded-xl bg-orange-500/20 border border-orange-400/40 text-orange-200 p-3 mb-6">
+        <div className="rounded-xl bg-orange-500/20 border border-orange-400/40 text-orange-200 p-3">
           Para concluir o pedido e acompanhar o estado, inicia sessão.
           <Link href="/login?next=/checkout" className="btn btn-primary ml-3 inline-block">
             Iniciar sessão
@@ -185,7 +168,8 @@ export default function CheckoutPage() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="card p-6 sm:p-8 space-y-6">
+      {/* limitamos o conteúdo a uma largura confortável, como nas outras páginas */}
+      <form onSubmit={handleSubmit} className="card p-6 sm:p-8 space-y-6 max-w-3xl">
         {/* Nome + Telefone */}
         <div className="grid sm:grid-cols-2 gap-4">
           <label className="flex flex-col gap-2">
@@ -216,10 +200,7 @@ export default function CheckoutPage() {
             value={zoneChoice}
             onChange={(e) => setZoneChoice(e.target.value as typeof zoneChoice)}
           >
-            {/* Ativo */}
             <option value="TAKEAWAY">Levantamento em loja (Takeaway)</option>
-
-            {/* Delivery desativado mas visível */}
             <option value="Ericeira" disabled>Entrega — Ericeira (+2,50€) — brevemente</option>
             <option value="Ribamar" disabled>Entrega — Ribamar (+3,50€) — brevemente</option>
             <option value="Achada" disabled>Entrega — Achada (+3,50€) — brevemente</option>
@@ -310,6 +291,6 @@ export default function CheckoutPage() {
           )}
         </div>
       </form>
-    </div>
+    </main>
   )
 }
