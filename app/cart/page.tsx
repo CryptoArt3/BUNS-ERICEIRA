@@ -17,9 +17,10 @@ export default function CartPage() {
   )
 
   return (
-    <main className="mx-auto w-full max-w-[100vw] overflow-x-hidden pl-3 pr-2 sm:pl-4 sm:pr-3 pt-10 pb-24 space-y-6 sm:space-y-8">
-      {/* wrapper: ligeiro empurrão à esquerda nos ecrãs maiores */}
-      <div className="max-w-6xl mx-auto pl-1 pr-0 sm:pl-2 sm:pr-1 md:ml-[-4px] lg:ml-[-6px] xl:ml-[-8px] 2xl:ml-[-12px]">
+    // ⚡️ usamos w-screen e overflow-x-hidden para eliminar o corte lateral
+    <main className="w-screen overflow-x-hidden px-3 sm:px-4 pt-10 pb-24 space-y-6 sm:space-y-8">
+      {/* wrapper centralizado perfeitamente em todos os tamanhos */}
+      <div className="max-w-6xl mx-auto px-2 sm:px-3 md:px-4">
         <h1 className="text-4xl sm:text-5xl font-display leading-tight tracking-tight">
           <span className="text-buns-yellow">BUNS</span>
           <span className="ml-2">Carrinho</span>
