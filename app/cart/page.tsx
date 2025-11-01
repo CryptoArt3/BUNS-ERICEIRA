@@ -18,29 +18,31 @@ export default function CartPage() {
 
   return (
     <main className="mx-auto w-full max-w-[100vw] overflow-x-hidden px-3 sm:px-4 pt-10 pb-24 space-y-6 sm:space-y-8">
-      {/* wrapper com padding simétrico para alinhar em todos os ecrãs */}
-      <div className="max-w-6xl mx-auto px-1">
-        <h1 className="text-4xl sm:text-5xl font-display leading-tight tracking-tight">
-          <span className="text-buns-yellow">BUNS</span>
-          <span className="ml-2">Carrinho</span>
-        </h1>
+      {/* título no mesmo frame do Menu/Checkout */}
+      <h1 className="text-4xl sm:text-5xl font-display leading-tight tracking-tight px-1">
+        <span className="text-buns-yellow">BUNS</span>
+        <span className="ml-2">Carrinho</span>
+      </h1>
 
-        {cart.items.length === 0 ? (
-          <div className="card p-6 mt-4">Carrinho vazio.</div>
-        ) : (
-          <div className="grid lg:grid-cols-[1fr,420px] gap-6 mt-6">
+      {/* conteúdo com padding simétrico (px-1) para evitar desvio à direita em ecrãs grandes */}
+      {cart.items.length === 0 ? (
+        <div className="px-1">
+          <div className="card p-6 mt-2">Carrinho vazio.</div>
+        </div>
+      ) : (
+        <div className="px-1">
+          <div className="grid lg:grid-cols-[1fr,420px] gap-6 mt-2">
             {/* itens */}
             <div className="space-y-4">
               {cart.items.map((it) => {
-                const note = it.options && typeof it.options.note === 'string' ? it.options.note : ''
+                const note =
+                  it.options && typeof it.options.note === 'string' ? it.options.note : ''
                 return (
                   <div key={it.id} className="card p-5">
                     <div className="flex items-center justify-between gap-3">
                       <div>
                         <div className="text-xl font-semibold">{it.name}</div>
-                        <div className="text-white/70">
-                          {currency(it.price)} × {it.qty}
-                        </div>
+                        <div className="text-white/70">{currency(it.price)} × {it.qty}</div>
                       </div>
 
                       <div className="flex items-center gap-2">
@@ -91,8 +93,8 @@ export default function CartPage() {
               </Link>
             </aside>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* CTA fixo no fundo (apenas mobile) */}
       {cart.items.length > 0 && (
