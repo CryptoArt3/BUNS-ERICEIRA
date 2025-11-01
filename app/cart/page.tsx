@@ -18,25 +18,21 @@ export default function CartPage() {
 
   return (
     <main className="mx-auto w-full max-w-[100vw] overflow-x-hidden px-3 sm:px-4 pt-10 pb-24 space-y-6 sm:space-y-8">
-      {/* título alinhado como Menu/Checkout */}
-      <h1 className="text-4xl sm:text-5xl font-display leading-tight tracking-tight px-1">
-        <span className="text-buns-yellow">BUNS</span>
-        <span className="ml-2">Carrinho</span>
-      </h1>
+      {/* wrapper: ligeiro empurrão à esquerda nos ecrãs maiores */}
+      <div className="max-w-6xl mx-auto pl-1 pr-0 sm:pl-2 sm:pr-1 md:ml-[-2px] lg:ml-[-3px]">
+        <h1 className="text-4xl sm:text-5xl font-display leading-tight tracking-tight">
+          <span className="text-buns-yellow">BUNS</span>
+          <span className="ml-2">Carrinho</span>
+        </h1>
 
-      {/* wrapper com bias à esquerda para ecrãs maiores */}
-      {cart.items.length === 0 ? (
-        <div className="pl-1 pr-4 sm:pr-6 lg:pr-8 xl:pr-10">
-          <div className="card p-6 mt-2">Carrinho vazio.</div>
-        </div>
-      ) : (
-        <div className="pl-1 pr-4 sm:pr-6 lg:pr-8 xl:pr-10">
-          <div className="grid lg:grid-cols-[minmax(0,1fr),400px] gap-6 mt-2">
+        {cart.items.length === 0 ? (
+          <div className="card p-6 mt-4">Carrinho vazio.</div>
+        ) : (
+          <div className="grid lg:grid-cols-[1fr,420px] gap-6 mt-6">
             {/* itens */}
             <div className="space-y-4">
               {cart.items.map((it) => {
-                const note =
-                  it.options && typeof it.options.note === 'string' ? it.options.note : ''
+                const note = it.options && typeof it.options.note === 'string' ? it.options.note : ''
                 return (
                   <div key={it.id} className="card p-5">
                     <div className="flex items-center justify-between gap-3">
@@ -93,8 +89,8 @@ export default function CartPage() {
               </Link>
             </aside>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* CTA fixo no fundo (apenas mobile) */}
       {cart.items.length > 0 && (
