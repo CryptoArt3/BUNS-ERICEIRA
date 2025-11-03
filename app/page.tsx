@@ -30,11 +30,6 @@ export default function Home() {
             <Link className="btn btn-primary" href="/menu">Ver Menu</Link>
             <Link className="btn btn-ghost" href="/cart">Ver Carrinho</Link>
           </div>
-
-          {/* ——— Horários + relógio ao vivo ——— */}
-          <div className="mt-5 sm:mt-6">
-            <OperatingHours />
-          </div>
         </motion.div>
 
         {/* Hero visual */}
@@ -79,6 +74,11 @@ export default function Home() {
           >
             Abrir no Google Maps
           </a>
+
+          {/* ---- Horários: AGORA FICA AQUI, por baixo da geolocation ---- */}
+          <div className="mt-5">
+            <OperatingHours />
+          </div>
         </div>
 
         {/* Informação de produto / menu */}
@@ -180,7 +180,7 @@ export default function Home() {
   )
 }
 
-/* ——— Componente: Horário + relógio ——— */
+/* ——— Componente: Horário + relógio (estilo BUNS) ——— */
 function OperatingHours() {
   const [now, setNow] = useState<Date>(new Date())
 
@@ -191,7 +191,6 @@ function OperatingHours() {
   }, [])
 
   const tz = 'Europe/Lisbon'
-  // label tipo "seg · 19:14"
   const label = useMemo(() => {
     const day = new Intl.DateTimeFormat('pt-PT', { weekday: 'short', timeZone: tz }).format(now)
     const time = new Intl.DateTimeFormat('pt-PT', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: tz }).format(now)
@@ -206,27 +205,33 @@ function OperatingHours() {
   }, [now])
 
   return (
-    <div className="rounded-2xl bg-white/5 border border-white/10 backdrop-blur p-3 sm:p-4 max-w-xl">
-      <div className="flex items-center gap-2">
-        <Clock className="w-4 h-4 text-white/80" />
-        <span className="text-sm sm:text-base text-white/90">{label}</span>
-        <span className={`ml-auto inline-flex items-center gap-2 text-xs sm:text-sm px-2 py-1 rounded-full border ${
-          isOpen ? 'bg-green-500/15 border-green-400/30 text-green-300' : 'bg-red-500/15 border-red-400/30 text-red-300'
-        }`}>
-          <span className={`h-2 w-2 rounded-full ${isOpen ? 'bg-green-400' : 'bg-red-400'}`}></span>
-          {isOpen ? 'Aberto' : 'Fechado'}
-        </span>
-      </div>
+    <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-r from-buns-yellow/10 via-orange-500/10 to-pink-500/10 p-[1px]">
+      <div className="rounded-2xl bg-black/40 backdrop-blur p-4">
+        <div className="flex items-center gap-2">
+          <Clock className="w-4 h-4 text-white/80" />
+          <span className="text-sm sm:text-base text-white/90">{label}</span>
+          <span className={`ml-auto inline-flex items-center gap-2 text-xs sm:text-sm px-2 py-1 rounded-full border ${
+            isOpen ? 'bg-green-500/15 border-green-400/30 text-green-300' : 'bg-red-500/15 border-red-400/30 text-red-300'
+          }`}>
+            <span className={`h-2 w-2 rounded-full ${isOpen ? 'bg-green-400' : 'bg-red-400'}`} />
+            {isOpen ? 'Aberto' : 'Fechado'}
+          </span>
+        </div>
 
-      <div className="mt-3 flex flex-wrap gap-2">
-        <span className="inline-flex items-center gap-2 text-xs sm:text-sm px-3 py-1 rounded-full bg-black/30 border border-white/10">
-          <Store className="w-3.5 h-3.5" />
-          Takeaway: 11:00–23:00
-        </span>
-        <span className="inline-flex items-center gap-2 text-xs sm:text-sm px-3 py-1 rounded-full bg-black/30 border border-white/10">
-          <Truck className="w-3.5 h-3.5" />
-          Delivery: brevemente
-        </span>
+        {/* chips */}
+        <div className="mt-3 flex flex-wrap gap-2">
+          <span className="inline-flex items-center gap-2 text-xs sm:text-sm px-3 py-1 rounded-full bg-white/5 border border-white/10">
+            <Store className="w-3.5 h-3.5" />
+            Takeaway: 11:00–23:00
+          </span>
+          <span className="inline-flex items-center gap-2 text-xs sm:text-sm px-3 py-1 rounded-full bg-white/5 border border-white/10">
+            <Truck className="w-3.5 h-3.5" />
+            Delivery: brevemente
+          </span>
+        </div>
+
+        {/* glow subtil */}
+        <div className="pointer-events-none absolute -inset-20 bg-[radial-gradient(ellipse_at_center,rgba(255,200,0,0.08),transparent_50%)]" />
       </div>
     </div>
   )
