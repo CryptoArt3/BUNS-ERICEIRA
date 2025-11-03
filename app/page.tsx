@@ -2,8 +2,9 @@
 
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { MapPin } from 'lucide-react'
+import { MapPin, Clock, Store, Truck } from 'lucide-react'
 import { Sizzle } from '@/components/ui/Sizzle'
+import { useEffect, useMemo, useState } from 'react'
 
 export default function Home() {
   return (
@@ -28,6 +29,11 @@ export default function Home() {
           <div className="mt-5 sm:mt-6 flex gap-3">
             <Link className="btn btn-primary" href="/menu">Ver Menu</Link>
             <Link className="btn btn-ghost" href="/cart">Ver Carrinho</Link>
+          </div>
+
+          {/* ——— Horários + relógio ao vivo ——— */}
+          <div className="mt-5 sm:mt-6">
+            <OperatingHours />
           </div>
         </motion.div>
 
@@ -171,6 +177,58 @@ export default function Home() {
         </div>
       </footer>
     </main>
+  )
+}
+
+/* ——— Componente: Horário + relógio ——— */
+function OperatingHours() {
+  const [now, setNow] = useState<Date>(new Date())
+
+  // atualiza a cada 30s
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 30_000)
+    return () => clearInterval(t)
+  }, [])
+
+  const tz = 'Europe/Lisbon'
+  // label tipo "seg · 19:14"
+  const label = useMemo(() => {
+    const day = new Intl.DateTimeFormat('pt-PT', { weekday: 'short', timeZone: tz }).format(now)
+    const time = new Intl.DateTimeFormat('pt-PT', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: tz }).format(now)
+    return `${day.replace('.', '')} · ${time}`
+  }, [now])
+
+  // aberto 11:00–22:59
+  const isOpen = useMemo(() => {
+    const parts = new Intl.DateTimeFormat('en-GB', { hour: 'numeric', minute: 'numeric', hour12: false, timeZone: tz }).formatToParts(now)
+    const h = Number(parts.find(p => p.type === 'hour')?.value ?? '0')
+    return h >= 11 && h < 23
+  }, [now])
+
+  return (
+    <div className="rounded-2xl bg-white/5 border border-white/10 backdrop-blur p-3 sm:p-4 max-w-xl">
+      <div className="flex items-center gap-2">
+        <Clock className="w-4 h-4 text-white/80" />
+        <span className="text-sm sm:text-base text-white/90">{label}</span>
+        <span className={`ml-auto inline-flex items-center gap-2 text-xs sm:text-sm px-2 py-1 rounded-full border ${
+          isOpen ? 'bg-green-500/15 border-green-400/30 text-green-300' : 'bg-red-500/15 border-red-400/30 text-red-300'
+        }`}>
+          <span className={`h-2 w-2 rounded-full ${isOpen ? 'bg-green-400' : 'bg-red-400'}`}></span>
+          {isOpen ? 'Aberto' : 'Fechado'}
+        </span>
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        <span className="inline-flex items-center gap-2 text-xs sm:text-sm px-3 py-1 rounded-full bg-black/30 border border-white/10">
+          <Store className="w-3.5 h-3.5" />
+          Takeaway: 11:00–23:00
+        </span>
+        <span className="inline-flex items-center gap-2 text-xs sm:text-sm px-3 py-1 rounded-full bg-black/30 border border-white/10">
+          <Truck className="w-3.5 h-3.5" />
+          Delivery: brevemente
+        </span>
+      </div>
+    </div>
   )
 }
 
