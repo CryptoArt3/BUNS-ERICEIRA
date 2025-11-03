@@ -75,7 +75,7 @@ export default function Home() {
             Abrir no Google Maps
           </a>
 
-          {/* ---- Horários: AGORA FICA AQUI, por baixo da geolocation ---- */}
+          {/* ---- Horários: por baixo da geolocation ---- */}
           <div className="mt-5">
             <OperatingHours />
           </div>
@@ -108,6 +108,19 @@ export default function Home() {
           <p className="text-white/80 mt-3 leading-relaxed text-[15px] sm:text-base">
             O BUNS é a nova hamburgueria da Ericeira dedicada aos verdadeiros amantes de smash burgers. Ingredientes frescos, carne prensada na chapa como manda a tradição e combinações únicas que respeitam o sabor e a simplicidade. Além dos clássicos, temos opções vegetarianas, batatas doces, frozen Bunanas artesanais e um ambiente urbano inspirado no surf e lifestyle da vila. Ideal para um almoço rápido ou um jantar com amigos. Visita-nos e descobre o smash perfeito.
           </p>
+
+          {/* 🔥 Link para a Wall of Fame */}
+          <div className="mt-5 rounded-xl bg-white/5 border border-white/10 p-4 text-center sm:text-left">
+            <h4 className="font-display text-lg text-buns-yellow">🔥 Wall of Fame</h4>
+            <p className="text-white/80 text-sm sm:text-base mt-1">
+              Acreditas que consegues comer mais do que o campeão atual?
+              Junta-te à nossa{' '}
+              <Link href="/wall-of-fame" className="text-buns-yellow font-semibold hover:underline">
+                Wall of Fame
+              </Link>{' '}
+              e coloca o teu nome na história da BUNS.
+            </p>
+          </div>
         </div>
 
         <div className="card overflow-hidden p-0">
@@ -210,9 +223,11 @@ function OperatingHours() {
         <div className="flex items-center gap-2">
           <Clock className="w-4 h-4 text-white/80" />
           <span className="text-sm sm:text-base text-white/90">{label}</span>
-          <span className={`ml-auto inline-flex items-center gap-2 text-xs sm:text-sm px-2 py-1 rounded-full border ${
-            isOpen ? 'bg-green-500/15 border-green-400/30 text-green-300' : 'bg-red-500/15 border-red-400/30 text-red-300'
-          }`}>
+          <span
+            className={`ml-auto inline-flex items-center gap-2 text-xs sm:text-sm px-2 py-1 rounded-full border ${
+              isOpen ? 'bg-green-500/15 border-green-400/30 text-green-300' : 'bg-red-500/15 border-red-400/30 text-red-300'
+            }`}
+          >
             <span className={`h-2 w-2 rounded-full ${isOpen ? 'bg-green-400' : 'bg-red-400'}`} />
             {isOpen ? 'Aberto' : 'Fechado'}
           </span>
