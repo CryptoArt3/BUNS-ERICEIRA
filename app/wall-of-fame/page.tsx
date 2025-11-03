@@ -8,7 +8,7 @@ import { Trophy, Flame, Crown, MapPin, Calendar, Beef } from "lucide-react";
  */
 const CHAMPION = {
   name: "Daniel Rodrigues",
-  city: "Santarem",
+  city: "Santarém",
   date: "1 Nov 2025",
   record: 4, // número de carnes
   photo: "/champions/daniel.png", // coloca o teu caminho (ex.: /champions/tiago.jpg)
