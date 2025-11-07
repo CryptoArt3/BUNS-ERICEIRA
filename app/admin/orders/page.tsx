@@ -53,34 +53,14 @@ function SoundToggle({
   );
 }
 
-/* ================== sons utilitários ================== */
+/* ================== sons utilitários (fallback antigo) ================== */
 function playOnce(srcs: string[], fallbackFreq?: number) {
   const tryPlay = (i: number) => {
-    if (i >= srcs.length) {
-      if (fallbackFreq) makeBeep(fallbackFreq);
-      return;
-    }
+    if (i >= srcs.length) return;
     const a = new Audio(srcs[i]);
     a.play().catch(() => tryPlay(i + 1));
   };
   tryPlay(0);
-}
-function makeBeep(freq = 880, duration = 0.18) {
-  try {
-    const ctx = new (window.AudioContext ||
-      (window as any).webkitAudioContext)();
-    const o = ctx.createOscillator();
-    const g = ctx.createGain();
-    o.type = 'sine';
-    o.frequency.value = freq;
-    g.gain.setValueAtTime(0.0001, ctx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.22, ctx.currentTime + 0.02);
-    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
-    o.connect(g).connect(ctx.destination);
-    o.start();
-    o.stop(ctx.currentTime + duration);
-    setTimeout(() => void ctx.close(), (duration + 0.1) * 1000);
-  } catch {}
 }
 
 /* ================== Tipos ================== */
@@ -118,12 +98,7 @@ type Order = {
   acknowledged: boolean;
 };
 
-const STATUSES: Order['status'][] = [
-  'pending',
-  'preparing',
-  'delivering',
-  'done',
-];
+const STATUSES: Order['status'][] = ['pending', 'preparing', 'delivering', 'done'];
 
 /* ================== Página ================== */
 export default function AdminOrdersPage() {
@@ -144,21 +119,63 @@ export default function AdminOrdersPage() {
   // ultimo evento recebido (para fallback de polling)
   const lastEventAt = useRef<number>(Date.now());
 
-  /* pré-carregar som quando liga o toggle (melhora autoplay) */
+  /* ====== ÁUDIO: elementos, prime e helpers ====== */
+  const newOrderRef = useRef<HTMLAudioElement | null>(null);
+  const preparingRef = useRef<HTMLAudioElement | null>(null);
+  const deliveredRef = useRef<HTMLAudioElement | null>(null);
+  const armedRef = useRef(false);
+
+  // "Prime" para desbloquear autoplay em prod (Vercel): 1º gesto do user
   useEffect(() => {
-    if (!sound) return;
-    const a = new Audio('/sounds/new-order.mp3');
-    a.load();
+    if (!sound || armedRef.current) return;
+
+    const prime = async () => {
+      const list = [
+        newOrderRef.current,
+        preparingRef.current,
+        deliveredRef.current,
+      ].filter(Boolean) as HTMLAudioElement[];
+      try {
+        for (const a of list) {
+          a.volume = 0;
+          await a.play().catch(() => {});
+          await new Promise((r) => setTimeout(r, 40));
+          a.pause();
+          a.currentTime = 0;
+          a.volume = 1;
+        }
+        armedRef.current = true;
+      } catch {}
+    };
+
+    const onGesture = () => {
+      prime();
+      document.removeEventListener('pointerdown', onGesture, true);
+      document.removeEventListener('keydown', onGesture, true);
+    };
+    document.addEventListener('pointerdown', onGesture, { once: true, capture: true } as any);
+    document.addEventListener('keydown', onGesture, { once: true, capture: true } as any);
+
+    return () => {
+      document.removeEventListener('pointerdown', onGesture, true);
+      document.removeEventListener('keydown', onGesture, true);
+    };
   }, [sound]);
+
+  const playElem = (el?: HTMLAudioElement | null) => {
+    if (!sound || !el) return;
+    el.currentTime = 0;
+    el.play().catch(() => {});
+  };
 
   /* ---- alarmes por pedido ---- */
   const alarmTimers = useRef<Map<string, number>>(new Map());
   const startAlarm = (id: string) => {
     if (!sound) return;
     if (alarmTimers.current.has(id)) return;
-    playOnce(['/sounds/new-order.mp3', '/sounds/new-order.wav'], 1046.5);
+    playElem(newOrderRef.current); // toca já
     const interval = window.setInterval(() => {
-      playOnce(['/sounds/new-order.mp3', '/sounds/new-order.wav'], 1046.5);
+      playElem(newOrderRef.current);
     }, 4000);
     alarmTimers.current.set(id, interval);
   };
@@ -228,13 +245,8 @@ export default function AdminOrdersPage() {
             const next = prev.map((o) => (o.id === row.id ? (row as Order) : o));
 
             if (oldS !== newS) {
-              if (newS === 'preparing')
-                playOnce(['/sounds/preparing.mp3', '/sounds/preparing.wav'], 740);
-              if (newS === 'done' || newS === 'delivering')
-                playOnce(
-                  ['/sounds/delivered.mp3', '/sounds/delivered.wav'],
-                  523.25
-                );
+              if (newS === 'preparing') playElem(preparingRef.current);
+              if (newS === 'done' || newS === 'delivering') playElem(deliveredRef.current);
             }
             if (newS !== 'pending' || row.acknowledged) stopAlarm(row.id);
             return next;
@@ -377,7 +389,7 @@ export default function AdminOrdersPage() {
               {item.variant}
             </span>
           )}
-          {fries && (
+            {fries && (
             <span className="px-2 py-0.5 rounded-full bg-white/10 border border-white/10">
               Batata: {fries}
             </span>
@@ -406,6 +418,11 @@ export default function AdminOrdersPage() {
   /* ---- render ---- */
   return (
     <main className="container mx-auto px-4 py-8 text-white">
+      {/* ÁUDIO escondido — fica aqui no DOM */}
+      <audio ref={newOrderRef} src="/sounds/new-order.wav" preload="auto" />
+      <audio ref={preparingRef} src="/sounds/preparing.wav" preload="auto" />
+      <audio ref={deliveredRef} src="/sounds/delivered.wav" preload="auto" />
+
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <h1 className="text-3xl font-display">Pedidos (Admin)</h1>
         <div className="flex items-center gap-2">
