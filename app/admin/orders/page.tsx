@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 
-/* ================== Toggle som (preferência) ================== */
+/* ================== UI: toggle som ================== */
 function SoundToggle({
   onChange,
   className = '',
@@ -12,7 +12,9 @@ function SoundToggle({
   className?: string;
 }) {
   const [enabled, setEnabled] = useState<boolean>(false);
+  const armedRef = useRef(false);
 
+  // Lê preferência gravada
   useEffect(() => {
     const saved =
       typeof window !== 'undefined'
@@ -21,15 +23,49 @@ function SoundToggle({
     if (saved) setEnabled(saved === '1');
   }, []);
 
+  // Grava e notifica
   useEffect(() => {
     if (typeof window !== 'undefined')
       localStorage.setItem('buns_admin_sound', enabled ? '1' : '0');
     onChange?.(enabled);
   }, [enabled, onChange]);
 
+  // "Prime" de áudio: tenta desbloquear assim que o utilizador faz 1º gesto
+  useEffect(() => {
+    if (!enabled || armedRef.current) return;
+
+    const armAudio = async () => {
+      try {
+        const a = new Audio();
+        // 1 frame de WAV silencioso só para abrir o contexto
+        a.src =
+          'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABYAAAAAAABAAAA';
+        await a.play().catch(() => {});
+        armedRef.current = true;
+      } catch {}
+    };
+
+    const onFirstGesture = () => {
+      armAudio();
+      document.removeEventListener('pointerdown', onFirstGesture, { capture: true } as any);
+      document.removeEventListener('keydown', onFirstGesture, { capture: true } as any);
+    };
+
+    // Se o browser bloquear autoplay, desbloqueamos no 1º gesto
+    document.addEventListener('pointerdown', onFirstGesture, { once: true, capture: true } as any);
+    document.addEventListener('keydown', onFirstGesture, { once: true, capture: true } as any);
+
+    return () => {
+      document.removeEventListener('pointerdown', onFirstGesture, { capture: true } as any);
+      document.removeEventListener('keydown', onFirstGesture, { capture: true } as any);
+    };
+  }, [enabled]);
+
+  const toggle = () => setEnabled((v) => !v);
+
   return (
     <button
-      onClick={() => setEnabled((v) => !v)}
+      onClick={toggle}
       className={`btn ${enabled ? 'btn-primary' : 'btn-ghost'} ${className}`}
       aria-pressed={enabled}
     >
@@ -38,12 +74,42 @@ function SoundToggle({
   );
 }
 
+/* ================== sons utilitários ================== */
+function playOnce(srcs: string[], fallbackFreq?: number) {
+  const tryPlay = (i: number) => {
+    if (i >= srcs.length) {
+      if (fallbackFreq) makeBeep(fallbackFreq);
+      return;
+    }
+    const a = new Audio(srcs[i]);
+    a.play().catch(() => tryPlay(i + 1));
+  };
+  tryPlay(0);
+}
+function makeBeep(freq = 880, duration = 0.18) {
+  try {
+    const ctx = new (window.AudioContext ||
+      (window as any).webkitAudioContext)();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = 'sine';
+    o.frequency.value = freq;
+    g.gain.setValueAtTime(0.0001, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.22, ctx.currentTime + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+    o.connect(g).connect(ctx.destination);
+    o.start();
+    o.stop(ctx.currentTime + duration);
+    setTimeout(() => void ctx.close(), (duration + 0.1) * 1000);
+  } catch {}
+}
+
 /* ================== Tipos ================== */
 type ItemOptions = {
   note?: string | null;
-  fries?: string | null;
-  drink?: string | null;
-  ingredients?: string[] | null;
+  fries?: string | null; // 'normal' | 'doce'
+  drink?: string | null; // ex.: 'Coca-Cola', 'Água'
+  ingredients?: string[] | null; // ingredientes removidos / escolhidos
 } | null;
 
 type Item = {
@@ -51,9 +117,9 @@ type Item = {
   name: string;
   qty: number;
   price: number;
-  note?: string | null;
-  variant?: string | null;
-  options?: ItemOptions;
+  note?: string | null; // nota direta do item (textarea do carrinho)
+  variant?: string | null; // 'burger' | 'menu'
+  options?: ItemOptions; // struct de opções
 };
 
 type Order = {
@@ -73,7 +139,12 @@ type Order = {
   acknowledged: boolean;
 };
 
-const STATUSES: Order['status'][] = ['pending', 'preparing', 'delivering', 'done'];
+const STATUSES: Order['status'][] = [
+  'pending',
+  'preparing',
+  'delivering',
+  'done',
+];
 
 /* ================== Página ================== */
 export default function AdminOrdersPage() {
@@ -88,75 +159,15 @@ export default function AdminOrdersPage() {
     return localStorage.getItem('buns_admin_sound') === '1';
   });
 
-  /* --------- Áudio: refs + prime --------- */
-  const newOrderRef = useRef<HTMLAudioElement | null>(null);
-  const preparingRef = useRef<HTMLAudioElement | null>(null);
-  const deliveredRef = useRef<HTMLAudioElement | null>(null);
-  const armedRef = useRef(false);
-
-  // Prime: no primeiro gesto do utilizador, toca com volume 0 e pausa — desbloqueia autoplay
-  useEffect(() => {
-    if (!sound || armedRef.current) return;
-
-    const prime = async () => {
-      const elms = [newOrderRef.current, preparingRef.current, deliveredRef.current].filter(
-        Boolean
-      ) as HTMLAudioElement[];
-      try {
-        for (const a of elms) {
-          a.volume = 0;
-          await a.play().catch(() => {});
-          await new Promise((r) => setTimeout(r, 50));
-          a.pause();
-          a.currentTime = 0;
-          a.volume = 1;
-        }
-        armedRef.current = true;
-      } catch {
-        // ignorar
-      }
-    };
-
-    const onFirstGesture = () => {
-      prime();
-      document.removeEventListener('pointerdown', onFirstGesture, { capture: true } as any);
-      document.removeEventListener('keydown', onFirstGesture, { capture: true } as any);
-    };
-
-    document.addEventListener('pointerdown', onFirstGesture, { once: true, capture: true } as any);
-    document.addEventListener('keydown', onFirstGesture, { once: true, capture: true } as any);
-
-    return () => {
-      document.removeEventListener('pointerdown', onFirstGesture, { capture: true } as any);
-      document.removeEventListener('keydown', onFirstGesture, { capture: true } as any);
-    };
-  }, [sound]);
-
-  // Helpers para tocar os sons
-  const playNewOrder = () => {
-    if (!sound || !newOrderRef.current) return;
-    // Garante que toca sempre desde o início
-    newOrderRef.current.currentTime = 0;
-    newOrderRef.current.play().catch(() => {});
-  };
-  const playPreparing = () => {
-    if (!sound || !preparingRef.current) return;
-    preparingRef.current.currentTime = 0;
-    preparingRef.current.play().catch(() => {});
-  };
-  const playDelivered = () => {
-    if (!sound || !deliveredRef.current) return;
-    deliveredRef.current.currentTime = 0;
-    deliveredRef.current.play().catch(() => {});
-  };
-
-  /* ---- alarmes por pedido (loop até "visto" ou sair de pending) ---- */
+  /* ---- alarmes por pedido ---- */
   const alarmTimers = useRef<Map<string, number>>(new Map());
   const startAlarm = (id: string) => {
     if (!sound) return;
     if (alarmTimers.current.has(id)) return;
-    playNewOrder(); // toca já à entrada
-    const interval = window.setInterval(() => playNewOrder(), 4000);
+    playOnce(['/sounds/new-order.wav'], 1046.5);
+    const interval = window.setInterval(() => {
+      playOnce(['/sounds/new-order.wav'], 1046.5);
+    }, 4000);
     alarmTimers.current.set(id, interval);
   };
   const stopAlarm = (id: string) => {
@@ -183,22 +194,26 @@ export default function AdminOrdersPage() {
     setLoading(false);
   };
 
-  /* ---- realtime (INSERT/UPDATE) sem refresh ---- */
+  /* ---- subscrição realtime (sem refresh) ---- */
   useEffect(() => {
     let mounted = true;
 
     const bootstrap = async () => {
-      await fetchOrders();
+      await fetchOrders(); // 1º load
 
+      // Canal dedicado com INSERT + UPDATE
       const channel = supabase
         .channel('orders-rt')
+        // INSERTs
         .on(
           'postgres_changes',
           { event: 'INSERT', schema: 'public', table: 'orders' },
           (payload) => {
             const row = payload.new as any as Order;
 
+            // optimista: coloca no topo sem novo fetch
             setOrders((prev) => {
+              // evita duplicado se já existir
               if (prev.find((p) => p.id === row.id)) return prev;
               return [row, ...prev].sort((a, b) =>
                 a.created_at > b.created_at ? -1 : 1
@@ -212,6 +227,7 @@ export default function AdminOrdersPage() {
             }
           }
         )
+        // UPDATEs
         .on(
           'postgres_changes',
           { event: 'UPDATE', schema: 'public', table: 'orders' },
@@ -227,16 +243,22 @@ export default function AdminOrdersPage() {
             const newS = row.status;
 
             if (oldS !== newS) {
-              if (newS === 'preparing') playPreparing();
-              if (newS === 'done' || newS === 'delivering') playDelivered();
+              if (newS === 'preparing')
+                playOnce(['/sounds/preparing.wav'], 740);
+              if (newS === 'done' || newS === 'delivering')
+                playOnce(['/sounds/delivered.wav'], 523.25);
             }
             if (newS !== 'pending' || row.acknowledged) {
               stopAlarm(row.id);
             }
           }
         )
-        .subscribe();
+        .subscribe((status) => {
+          // útil para debug
+          // console.log('realtime status:', status);
+        });
 
+      // cleanup
       return () => {
         if (mounted) supabase.removeChannel(channel);
       };
@@ -253,8 +275,12 @@ export default function AdminOrdersPage() {
     try {
       setSavingId(id);
       setErrMsg(null);
-      const { error } = await supabase.from('orders').update({ status }).eq('id', id);
+      const { error } = await supabase
+        .from('orders')
+        .update({ status })
+        .eq('id', id);
       if (error) throw error;
+      // Não fazemos fetch — o realtime UPDATE já atualiza a UI
     } catch (e: any) {
       console.error(e);
       setErrMsg(e?.message || 'Falhou a atualização do estado.');
@@ -273,6 +299,7 @@ export default function AdminOrdersPage() {
         .update({ acknowledged: true })
         .eq('id', id);
       if (error) throw error;
+      // Realtime atualiza a UI
     } catch (e: any) {
       console.error(e);
       setErrMsg(e?.message || 'Falhou ao marcar como visto.');
@@ -311,6 +338,7 @@ export default function AdminOrdersPage() {
     </button>
   );
 
+  /* ---- helpers UI para opções/nota ---- */
   const ItemExtras = ({ item }: { item: Item }) => {
     const note = item.note || item.options?.note;
     const fries = item.options?.fries;
@@ -319,6 +347,7 @@ export default function AdminOrdersPage() {
 
     return (
       <>
+        {/* badges pequenas */}
         <div className="mt-1 flex flex-wrap gap-2 text-sm">
           {item.variant && (
             <span className="px-2 py-0.5 rounded-full bg-white/10 border border-white/10">
@@ -342,6 +371,7 @@ export default function AdminOrdersPage() {
           )}
         </div>
 
+        {/* NOTA — destaque em laranja */}
         {note && note.trim() !== '' && (
           <div className="mt-2 rounded-xl border px-4 py-3 text-lg bg-orange-500/15 border-orange-500/30 text-orange-200">
             📝 <span className="font-semibold">Nota:</span> {note}
@@ -351,13 +381,9 @@ export default function AdminOrdersPage() {
     );
   };
 
+  /* ---- render ---- */
   return (
     <main className="container mx-auto px-4 py-8 text-white">
-      {/* Áudio escondido — pré-carregado */}
-      <audio ref={newOrderRef} src="/sounds/new-order.wav" preload="auto" />
-      <audio ref={preparingRef} src="/sounds/preparing.wav" preload="auto" />
-      <audio ref={deliveredRef} src="/sounds/delivered.wav" preload="auto" />
-
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <h1 className="text-4xl font-display">Pedidos (Admin)</h1>
         <div className="flex items-center gap-2">
