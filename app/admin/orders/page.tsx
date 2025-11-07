@@ -23,9 +23,8 @@ function SoundToggle({
   }, []);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined')
       localStorage.setItem('buns_admin_sound', enabled ? '1' : '0');
-    }
     onChange?.(enabled);
   }, [enabled, onChange]);
 
@@ -107,7 +106,7 @@ export default function AdminOrdersPage() {
   const lastEventAt = useRef<number>(Date.now());
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
-  /* ====== ÁUDIO: WebAudio (beep) + fallback ====== */
+  /* ====== ÁUDIO (beep) + fallback ====== */
   const audioCtxRef = useRef<AudioContext | null>(null);
   const unlockedRef = useRef(false);
   const fileFallbackRef = useRef<HTMLAudioElement | null>(null);
@@ -118,7 +117,7 @@ export default function AdminOrdersPage() {
       const ctx = audioCtxRef.current;
       const o = ctx.createOscillator();
       const g = ctx.createGain();
-      g.gain.value = 0; // inaudível
+      g.gain.value = 0;
       o.connect(g).connect(ctx.destination);
       o.start();
       o.stop(ctx.currentTime + 0.01);
@@ -156,7 +155,7 @@ export default function AdminOrdersPage() {
 
   const beep = () => {
     if (!sound) return;
-
+    // WebAudio
     if (audioCtxRef.current && unlockedRef.current) {
       try {
         const ctx = audioCtxRef.current;
@@ -173,7 +172,7 @@ export default function AdminOrdersPage() {
         return;
       } catch {}
     }
-
+    // Fallback
     if (fileFallbackRef.current) {
       try {
         fileFallbackRef.current.currentTime = 0;
@@ -182,47 +181,32 @@ export default function AdminOrdersPage() {
     }
   };
 
-  const stopAll = () => {
-    alarmTimers.current.forEach((t) => window.clearInterval(t));
-    alarmTimers.current.clear();
+  /* ========== ALARME GLOBAL (apenas pára no “Marcar como visto”) ========== */
+  const alarmIntervalRef = useRef<number | null>(null);
+
+  const startGlobalAlarm = () => {
+    if (!sound) return;
+    if (alarmIntervalRef.current != null) return; // já a tocar
+    beep(); // toca já uma vez
+    alarmIntervalRef.current = window.setInterval(() => beep(), 4000);
   };
 
-  // ao ligar, limpa e dá um beep de teste
+  const stopGlobalAlarm = () => {
+    if (alarmIntervalRef.current != null) {
+      window.clearInterval(alarmIntervalRef.current);
+      alarmIntervalRef.current = null;
+    }
+  };
+
+  // ligar/desligar toggle
   const handleToggleSound = async (enabled: boolean) => {
     setSound(enabled);
     if (!enabled) {
-      stopAll();
+      stopGlobalAlarm();
       return;
     }
-    stopAll();            // <— garante que nada fica preso
     await ensureAudio();
-    setTimeout(() => beep(), 60); // confirmação
   };
-
-  /* ---- alarmes por pedido (apenas NEW ORDER) ---- */
-  const alarmTimers = useRef<Map<string, number>>(new Map());
-  const startAlarm = (id: string) => {
-    if (!sound) return;
-    if (alarmTimers.current.has(id)) return;
-    beep(); // toca já uma vez
-    const interval = window.setInterval(() => beep(), 4000);
-    alarmTimers.current.set(id, interval);
-  };
-  const stopAlarm = (id: string) => {
-    const t = alarmTimers.current.get(id);
-    if (t) {
-      window.clearInterval(t);
-      alarmTimers.current.delete(id);
-    }
-  };
-
-  // se não existir nenhum pending & !acknowledged → pára tudo
-  useEffect(() => {
-    const hasActive = orders.some(
-      (o) => o.status === 'pending' && !o.acknowledged
-    );
-    if (!hasActive) stopAll();
-  }, [orders]);
 
   /* ---- fetch + realtime ---- */
   const fetchOrders = async () => {
@@ -252,10 +236,10 @@ export default function AdminOrdersPage() {
 
         setOrders((prev) => {
           if (p.eventType === 'INSERT') {
-            // novo pedido: dispara alarme se estiver pending e não visto
+            // novo pedido -> iniciar alarme (global)
             if (row.status === 'pending' && !row.acknowledged) {
               setNewId(row.id);
-              startAlarm(row.id);
+              startGlobalAlarm();
               setTimeout(() => setNewId(null), 8000);
             }
             if (prev.find((o) => o.id === row.id)) return prev;
@@ -263,14 +247,13 @@ export default function AdminOrdersPage() {
           }
 
           if (p.eventType === 'UPDATE') {
-            const newS = row.status;
+            // NÃO paramos alarme aqui. Só o botão "Marcar como visto" o faz.
             const next = prev.map((o) => (o.id === row.id ? (row as Order) : o));
-            if (newS !== 'pending' || row.acknowledged) stopAlarm(row.id);
             return next;
           }
 
           if (p.eventType === 'DELETE') {
-            stopAlarm(row?.id);
+            // também não paramos aqui; botão controla
             return prev.filter((o) => o.id !== row?.id);
           }
 
@@ -311,6 +294,7 @@ export default function AdminOrdersPage() {
       window.removeEventListener('focus', onFocus);
       window.clearInterval(poll);
       if (channelRef.current) supabase.removeChannel(channelRef.current);
+      stopGlobalAlarm();
     };
   }, [sound]);
 
@@ -337,7 +321,9 @@ export default function AdminOrdersPage() {
     try {
       setSavingId(id);
       setErrMsg(null);
-      stopAlarm(id); // <— corta logo o som
+      // **AQUI** é o único sítio que pára o alarme:
+      stopGlobalAlarm();
+
       const { error } = await supabase
         .from('orders')
         .update({ acknowledged: true })
@@ -429,7 +415,7 @@ export default function AdminOrdersPage() {
         <h1 className="text-3xl font-display">Pedidos (Admin)</h1>
         <div className="flex items-center gap-2">
           <SoundToggle onChange={handleToggleSound} />
-          <button className="btn btn-ghost" onClick={stopAll}>
+          <button className="btn btn-ghost" onClick={stopGlobalAlarm}>
             🔕 Silenciar todos
           </button>
         </div>
@@ -568,7 +554,7 @@ export default function AdminOrdersPage() {
                     className="btn btn-primary"
                     disabled={savingId === o.id}
                     onClick={() => markSeen(o.id)}
-                    title="Pára o alarme deste pedido"
+                    title="Pára o alarme"
                   >
                     👀 Marcar como visto
                   </button>
