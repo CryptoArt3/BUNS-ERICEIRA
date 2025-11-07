@@ -16,9 +16,9 @@ type Item = {
   name: string;
   qty: number;
   price: number;
-  note?: string | null;
+  note?: string | null;       // nota do item
   variant?: string | null;
-  options?: ItemOptions;
+  options?: ItemOptions;      // nota pode vir aqui também
 };
 
 type Order = {
@@ -36,130 +36,13 @@ type Order = {
   payment_method: 'cash' | 'mbway' | 'card';
   status: 'pending' | 'preparing' | 'delivering' | 'done';
   acknowledged: boolean;
+  // alguns setups guardam a nota geral aqui com nomes diferentes:
+  note?: string | null;
+  order_note?: string | null;
+  obs?: string | null;
 };
 
 const STATUSES: Order['status'][] = ['pending', 'preparing', 'delivering', 'done'];
-
-/* ================== Wake Lock helper ================== */
-async function requestWakeLock(): Promise<WakeLockSentinel | null> {
-  try {
-    // @ts-ignore
-    if ('wakeLock' in navigator) {
-      // @ts-ignore
-      return await navigator.wakeLock.request('screen');
-    }
-  } catch {}
-  return null;
-}
-
-/* ================== ALERTA (overlay) ================== */
-function NewOrderAlert({
-  order,
-  onClose,
-  onMarkSeen,
-}: {
-  order: Order | null;
-  onClose: () => void;
-  onMarkSeen: (id: string) => Promise<void>;
-}) {
-  // título a piscar
-  useEffect(() => {
-    if (!order) return;
-    const original = document.title;
-    let flag = false;
-    const t = window.setInterval(() => {
-      flag = !flag;
-      document.title = flag ? '🟡 NOVO PEDIDO! — BUNS Admin' : original;
-    }, 800);
-    return () => {
-      window.clearInterval(t);
-      document.title = original;
-    };
-  }, [order]);
-
-  // vibração curta (se suportado)
-  useEffect(() => {
-    if (!order) return;
-    try {
-      if ('vibrate' in navigator) navigator.vibrate(200);
-    } catch {}
-  }, [order]);
-
-  // manter ecrã ligado enquanto alerta estiver aberto
-  useEffect(() => {
-    let sentinel: WakeLockSentinel | null = null;
-    let cancelled = false;
-    (async () => {
-      if (!order) return;
-      sentinel = await requestWakeLock();
-      if (cancelled && sentinel) {
-        try { await sentinel.release(); } catch {}
-      }
-    })();
-    return () => {
-      cancelled = true;
-      if (sentinel) {
-        try { sentinel.release(); } catch {}
-      }
-    };
-  }, [order]);
-
-  if (!order) return null;
-
-  return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center">
-      {/* backdrop */}
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
-
-      {/* caixa a piscar */}
-      <div className="relative mx-4 max-w-3xl w-full">
-        <div className="animate-[pulse_1.2s_infinite] rounded-3xl border-4 border-buns-yellow bg-[#141A0F] shadow-[0_0_60px_rgba(255,214,10,0.35)]">
-          <div className="p-7">
-            <div className="text-3xl md:text-4xl font-extrabold text-buns-yellow mb-2">
-              🟡 Novo pedido!
-            </div>
-            <div className="text-white/90 text-lg mb-1">
-              <span className="font-semibold">#{order.id.slice(0, 8)}</span> —{' '}
-              <span className="font-semibold">{order.name}</span> ({order.phone})
-            </div>
-            <div className="text-white/70 mb-4">
-              {order.address} — {order.order_type === 'takeaway' ? 'Levantamento' : order.zone}
-            </div>
-
-            <div className="rounded-xl bg-black/30 border border-white/10 p-4 mb-4">
-              {order.items?.map((it, i) => (
-                <div key={i} className="flex items-center justify-between text-white/90 text-lg">
-                  <div className="font-bold">• {it.name} × {it.qty}</div>
-                  <div>€{(it.qty * it.price).toFixed(2)}</div>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex items-center justify-between text-2xl font-extrabold text-buns-yellow">
-              <div>Total</div>
-              <div>€{order.total.toFixed(2)}</div>
-            </div>
-
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
-              <button
-                className="px-5 py-4 rounded-xl text-lg font-bold bg-buns-yellow text-black hover:brightness-95"
-                onClick={() => onMarkSeen(order.id)}
-              >
-                👀 Marcar como visto
-              </button>
-              <button
-                className="px-5 py-4 rounded-xl text-lg font-bold bg-white/10 text-white hover:bg-white/20"
-                onClick={onClose}
-              >
-                Ir ao pedido
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 /* ================== Página ================== */
 export default function AdminOrdersPage() {
@@ -169,14 +52,10 @@ export default function AdminOrdersPage() {
   const [errMsg, setErrMsg] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | Order['status']>('all');
 
-  // alerta visual
-  const [alertOrderId, setAlertOrderId] = useState<string | null>(null);
-  const alertOrder = useMemo(
-    () => orders.find((o) => o.id === alertOrderId) || null,
-    [orders, alertOrderId]
-  );
+  // para destacar o último que entrou
+  const [newId, setNewId] = useState<string | null>(null);
 
-  // refs para dar scroll ao cartão do pedido
+  // refs de cartões para scroll
   const cardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const setCardRef = (id: string) => (el: HTMLDivElement | null) => {
     if (el) cardRefs.current.set(id, el);
@@ -215,8 +94,13 @@ export default function AdminOrdersPage() {
 
         setOrders((prev) => {
           if (p.eventType === 'INSERT') {
+            // destaque visual forte
             if (row.status === 'pending' && !row.acknowledged) {
-              setAlertOrderId(row.id); // abre overlay
+              setNewId(row.id);
+              // leva o cartão para a vista
+              setTimeout(() => scrollToOrder(row.id), 50);
+              // a borda pulsante dura 10s (opcional)
+              setTimeout(() => setNewId(null), 10000);
             }
             if (prev.find((o) => o.id === row.id)) return prev;
             return [row as Order, ...prev];
@@ -224,15 +108,15 @@ export default function AdminOrdersPage() {
 
           if (p.eventType === 'UPDATE') {
             const updated = prev.map((o) => (o.id === row.id ? (row as Order) : o));
-            // se este que está no overlay foi reconhecido, fecha
-            if (alertOrderId === row.id && (row.acknowledged || row.status !== 'pending')) {
-              setAlertOrderId(null);
+            // se deixou de estar pending / foi reconhecido, já não precisa do destaque
+            if (newId === row.id && (row.acknowledged || row.status !== 'pending')) {
+              setNewId(null);
             }
             return updated;
           }
 
           if (p.eventType === 'DELETE') {
-            if (alertOrderId === row?.id) setAlertOrderId(null);
+            if (newId === row?.id) setNewId(null);
             return prev.filter((o) => o.id !== row?.id);
           }
 
@@ -301,7 +185,7 @@ export default function AdminOrdersPage() {
         .update({ acknowledged: true })
         .eq('id', id);
       if (error) throw error;
-      setAlertOrderId(null); // fecha overlay imediatamente
+      setNewId(null); // remove o destaque imediatamente
       await fetchOrders();
     } catch (e: any) {
       console.error(e);
@@ -341,6 +225,12 @@ export default function AdminOrdersPage() {
     </button>
   );
 
+  /* ---- helpers de notas ---- */
+  const getOrderLevelNote = (o: Order): string | null => {
+    // cobre nomes comuns: note, order_note, obs
+    return (o.note || o.order_note || o.obs || '')?.toString()?.trim() || null;
+  };
+
   const ItemExtras = ({ item }: { item: Item }) => {
     const note = item.note || item.options?.note;
     const fries = item.options?.fries;
@@ -372,9 +262,10 @@ export default function AdminOrdersPage() {
           )}
         </div>
 
+        {/* NOTA do item */}
         {note && note.trim() !== '' && (
           <div className="mt-2 rounded-xl border px-3 py-2 text-sm bg-orange-500/15 border-orange-500/30 text-orange-200">
-            📝 <span className="font-semibold">Nota:</span> {note}
+            📝 <span className="font-semibold">Nota do item:</span> {note}
           </div>
         )}
       </>
@@ -384,25 +275,15 @@ export default function AdminOrdersPage() {
   /* ---- render ---- */
   return (
     <main className="container mx-auto px-4 py-8 text-white">
-      {/* ALERTA OVERLAY */}
-      <NewOrderAlert
-        order={alertOrder}
-        onClose={() => {
-          if (alertOrderId) scrollToOrder(alertOrderId);
-        }}
-        onMarkSeen={markSeen}
-      />
-
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <h1 className="text-3xl font-display">Pedidos (Admin)</h1>
         <div className="flex items-center gap-2">
-          {/* Já não precisamos do toggle de som; podes manter um "Silenciar todos" se quiseres */}
           <button
             className="btn btn-ghost"
-            onClick={() => setAlertOrderId(null)}
-            title="Fecha qualquer alerta aberto"
+            onClick={() => setNewId(null)}
+            title="Remove o destaque visual atual"
           >
-            🔕 Fechar alerta
+            🔕 Fechar destaque
           </button>
         </div>
       </div>
@@ -421,14 +302,7 @@ export default function AdminOrdersPage() {
             onClick={() => setFilter(s)}
             className={`btn ${filter === s ? 'btn-primary' : 'btn-ghost'}`}
           >
-            {s === 'pending'
-              ? 'Pendentes'
-              : s === 'preparing'
-              ? 'Em prep.'
-              : s === 'delivering'
-              ? 'A caminho'
-              : 'Entregues'}{' '}
-            ({orders.filter((o) => o.status === s).length})
+          {s === 'pending' ? 'Pendentes' : s === 'preparing' ? 'Em prep.' : s === 'delivering' ? 'A caminho' : 'Entregues'} ({orders.filter((o) => o.status === s).length})
           </button>
         ))}
       </div>
@@ -438,116 +312,132 @@ export default function AdminOrdersPage() {
       {!loading && filtered.length === 0 && <p className="mt-4">Sem pedidos neste filtro.</p>}
 
       <div className="grid gap-4 mt-6">
-        {filtered.map((o) => (
-          <div
-            key={o.id}
-            ref={setCardRef(o.id)}
-            className={`card p-5 border border-white/10 transition ${
-              o.status === 'pending' && !o.acknowledged ? 'animate-pulse' : ''
-            }`}
-          >
-            <div className="flex items-center justify-between flex-wrap gap-3">
-              <div>
-                <h2 className="text-xl font-semibold">
-                  #{o.id.slice(0, 8)} — {o.name} ({o.phone})
-                </h2>
-                <p className="text-white/70 text-sm mt-1">
-                  {o.address} — {o.order_type === 'takeaway' ? 'Levantamento' : o.zone}
-                </p>
-              </div>
-              <span className="text-sm text-white/60">
-                {new Date(o.created_at).toLocaleString()}
-              </span>
-            </div>
+        {filtered.map((o) => {
+          const orderNote = getOrderLevelNote(o);
+          const isNewHighlight = newId === o.id || (o.status === 'pending' && !o.acknowledged);
 
-            <div className="flex items-center gap-2 mt-3 text-sm text-white/70 flex-wrap">
-              <span
-                className={`px-3 py-1 rounded-full border capitalize ${
-                  o.status === 'pending'
-                    ? 'bg-buns-yellow/15 border-buns-yellow/40 text-buns-yellow'
-                    : 'bg-white/10 border-white/10 text-white/80'
-                }`}
-              >
-                {o.status}
-              </span>
-              <span className="px-3 py-1 rounded-full bg-white/10 border border-white/10">
-                {(o.order_type || 'delivery').toUpperCase()}
-              </span>
-              <span className="px-3 py-1 rounded-full bg-white/10 border border-white/10">
-                {o.items?.length || 0} item(s)
-              </span>
-              {o.status === 'pending' && !o.acknowledged && (
-                <span className="px-3 py-1 rounded-full bg-red-500/20 border border-red-500/30 text-red-200">
-                  Alarme ativo
+          return (
+            <div
+              key={o.id}
+              ref={setCardRef(o.id)}
+              className={`card p-5 border border-white/10 transition relative
+                ${isNewHighlight ? 'ring-4 ring-buns-yellow/60 shadow-[0_0_40px_rgba(255,214,10,0.35)] animate-pulse' : ''}`}
+            >
+              <div className="flex items-center justify-between flex-wrap gap-3">
+                <div>
+                  <h2 className="text-xl font-semibold">
+                    #{o.id.slice(0, 8)} — {o.name} ({o.phone})
+                  </h2>
+                  <p className="text-white/70 text-sm mt-1">
+                    {o.address} — {o.order_type === 'takeaway' ? 'Levantamento' : o.zone}
+                  </p>
+                </div>
+                <span className="text-sm text-white/60">
+                  {new Date(o.created_at).toLocaleString()}
                 </span>
-              )}
-            </div>
-
-            {o.items?.length > 0 && (
-              <ul className="mt-3 space-y-2">
-                {o.items.map((it, i) => (
-                  <li key={i} className="pb-2 border-b border-white/5 last:border-0">
-                    <div className="text-buns-yellow text-xl font-extrabold tracking-wide drop-shadow-[0_1px_0_rgba(0,0,0,0.6)]">
-                      • {it.name} × {it.qty}
-                      <span className="text-white/80 text-base font-semibold ml-2">
-                        — €{(it.qty * it.price).toFixed(2)}
-                      </span>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-
-            <div className="mt-4 flex items-center justify-between flex-wrap gap-3">
-              <div className="flex flex-wrap gap-2">
-                <StatusBtn
-                  disabled={savingId === o.id}
-                  active={o.status === 'pending'}
-                  onClick={() => updateStatus(o.id, 'pending')}
-                >
-                  Pending
-                </StatusBtn>
-                <StatusBtn
-                  disabled={savingId === o.id}
-                  active={o.status === 'preparing'}
-                  onClick={() => updateStatus(o.id, 'preparing')}
-                >
-                  Preparar
-                </StatusBtn>
-                <StatusBtn
-                  disabled={savingId === o.id}
-                  active={o.status === 'delivering'}
-                  onClick={() => updateStatus(o.id, 'delivering')}
-                >
-                  A caminho
-                </StatusBtn>
-                <StatusBtn
-                  disabled={savingId === o.id}
-                  active={o.status === 'done'}
-                  onClick={() => updateStatus(o.id, 'done')}
-                >
-                  Entregue
-                </StatusBtn>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 mt-3 text-sm text-white/70 flex-wrap">
+                <span
+                  className={`px-3 py-1 rounded-full border capitalize ${
+                    o.status === 'pending'
+                      ? 'bg-buns-yellow/15 border-buns-yellow/40 text-buns-yellow'
+                      : 'bg-white/10 border-white/10 text-white/80'
+                  }`}
+                >
+                  {o.status}
+                </span>
+                <span className="px-3 py-1 rounded-full bg-white/10 border border-white/10">
+                  {(o.order_type || 'delivery').toUpperCase()}
+                </span>
+                <span className="px-3 py-1 rounded-full bg-white/10 border border-white/10">
+                  {o.items?.length || 0} item(s)
+                </span>
                 {o.status === 'pending' && !o.acknowledged && (
-                  <button
-                    className="btn btn-primary"
-                    disabled={savingId === o.id}
-                    onClick={() => markSeen(o.id)}
-                    title="Marca o pedido como visto (fecha o alerta, se aberto)"
-                  >
-                    👀 Marcar como visto
-                  </button>
+                  <span className="px-3 py-1 rounded-full bg-red-500/20 border border-red-500/30 text-red-200">
+                    Alarme ativo
+                  </span>
                 )}
-                <div className="text-buns-yellow font-bold text-lg">
-                  Total: €{o.total.toFixed(2)}
+              </div>
+
+              {o.items?.length > 0 && (
+                <ul className="mt-3 space-y-2">
+                  {o.items.map((it, i) => (
+                    <li key={i} className="pb-2 border-b border-white/5 last:border-0">
+                      <div className="text-buns-yellow text-xl font-extrabold tracking-wide drop-shadow-[0_1px_0_rgba(0,0,0,0.6)]">
+                        • {it.name} × {it.qty}
+                        <span className="text-white/80 text-base font-semibold ml-2">
+                          — €{(it.qty * it.price).toFixed(2)}
+                        </span>
+                      </div>
+                      <ItemExtras item={it} />
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {/* NOTA GERAL DO PEDIDO (super importante) */}
+              {orderNote && (
+                <div className="mt-3 rounded-xl border px-4 py-3 text-base bg-orange-500/15 border-orange-500/30 text-orange-200">
+                  🧾 <span className="font-semibold">Nota do pedido:</span> {orderNote}
+                </div>
+              )}
+
+              <div className="mt-4 flex items-center justify-between flex-wrap gap-3">
+                <div className="flex flex-wrap gap-2">
+                  <StatusBtn
+                    disabled={savingId === o.id}
+                    active={o.status === 'pending'}
+                    onClick={() => updateStatus(o.id, 'pending')}
+                  >
+                    Pending
+                  </StatusBtn>
+                  <StatusBtn
+                    disabled={savingId === o.id}
+                    active={o.status === 'preparing'}
+                    onClick={() => updateStatus(o.id, 'preparing')}
+                  >
+                    Preparar
+                  </StatusBtn>
+                  <StatusBtn
+                    disabled={savingId === o.id}
+                    active={o.status === 'delivering'}
+                    onClick={() => updateStatus(o.id, 'delivering')}
+                  >
+                    A caminho
+                  </StatusBtn>
+                  <StatusBtn
+                    disabled={savingId === o.id}
+                    active={o.status === 'done'}
+                    onClick={() => updateStatus(o.id, 'done')}
+                  >
+                    Entregue
+                  </StatusBtn>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {o.status === 'pending' && !o.acknowledged && (
+                    <button
+                      className={`px-7 py-4 rounded-2xl font-extrabold text-lg
+                        ${isNewHighlight
+                          ? 'bg-[#0E4B46] text-white shadow-[0_0_30px_rgba(0,255,200,0.35)] animate-pulse'
+                          : 'btn btn-primary'}
+                      `}
+                      disabled={savingId === o.id}
+                      onClick={() => markSeen(o.id)}
+                      title="Assim que clicas, o destaque desaparece"
+                    >
+                      👀 Marcar como visto
+                    </button>
+                  )}
+                  <div className="text-buns-yellow font-bold text-lg">
+                    Total: €{o.total.toFixed(2)}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </main>
   );
