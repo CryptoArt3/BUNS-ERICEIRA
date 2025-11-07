@@ -29,6 +29,7 @@ function SoundToggle({
 
   const armAudio = async () => {
     try {
+      // pequeno "tick" para desbloquear autoplay
       const a = new Audio();
       a.src =
         'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABYAAAAAAABAAAA';
@@ -85,9 +86,9 @@ function makeBeep(freq = 880, duration = 0.18) {
 /* ================== Tipos ================== */
 type ItemOptions = {
   note?: string | null;
-  fries?: string | null; // 'normal' | 'doce'
-  drink?: string | null; // ex.: 'Coca-Cola', 'Água'
-  ingredients?: string[] | null; // ingredientes removidos / escolhidos
+  fries?: string | null;
+  drink?: string | null;
+  ingredients?: string[] | null;
 } | null;
 
 type Item = {
@@ -95,9 +96,9 @@ type Item = {
   name: string;
   qty: number;
   price: number;
-  note?: string | null; // nota direta do item (textarea do carrinho)
-  variant?: string | null; // 'burger' | 'menu'
-  options?: ItemOptions; // struct de opções
+  note?: string | null;
+  variant?: string | null;
+  options?: ItemOptions;
 };
 
 type Order = {
@@ -137,7 +138,13 @@ export default function AdminOrdersPage() {
     return localStorage.getItem('buns_admin_sound') === '1';
   });
 
-  /* pré-carregar um som quando o som é ativado (melhora autoplay) */
+  // para diagnosticar (ver na consola)
+  const log = (...a: any[]) => console.log('[orders-admin]', ...a);
+
+  // ultimo evento recebido (para fallback de polling)
+  const lastEventAt = useRef<number>(Date.now());
+
+  /* pré-carregar som quando liga o toggle (melhora autoplay) */
   useEffect(() => {
     if (!sound) return;
     const a = new Audio('/sounds/new-order.mp3');
@@ -175,69 +182,115 @@ export default function AdminOrdersPage() {
       .select('*')
       .order('created_at', { ascending: false })
       .limit(200);
-    if (!error && data) setOrders(data as unknown as Order[]);
+    if (!error && data) {
+      setOrders(data as unknown as Order[]);
+    } else if (error) {
+      log('fetch error', error);
+    }
     setLoading(false);
   };
 
+  // cria/renova o canal
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+
+  const openRealtime = () => {
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+
+    const ch = supabase.channel('orders-rt');
+
+    ch.on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'orders' },
+      (p) => {
+        lastEventAt.current = Date.now();
+        const row = p.new as any;
+
+        setOrders((prev) => {
+          if (p.eventType === 'INSERT') {
+            log('INSERT', row.id);
+            if (row.status === 'pending' && !row.acknowledged) {
+              setNewId(row.id);
+              startAlarm(row.id);
+              setTimeout(() => setNewId(null), 8000);
+            }
+            if (prev.find((o) => o.id === row.id)) return prev;
+            return [row as Order, ...prev];
+          }
+
+          if (p.eventType === 'UPDATE') {
+            const old = p.old as any;
+            const oldS = old?.status;
+            const newS = row.status;
+
+            const next = prev.map((o) => (o.id === row.id ? (row as Order) : o));
+
+            if (oldS !== newS) {
+              if (newS === 'preparing')
+                playOnce(['/sounds/preparing.mp3', '/sounds/preparing.wav'], 740);
+              if (newS === 'done' || newS === 'delivering')
+                playOnce(
+                  ['/sounds/delivered.mp3', '/sounds/delivered.wav'],
+                  523.25
+                );
+            }
+            if (newS !== 'pending' || row.acknowledged) stopAlarm(row.id);
+            return next;
+          }
+
+          if (p.eventType === 'DELETE') {
+            log('DELETE', row?.id);
+            stopAlarm(row?.id);
+            return prev.filter((o) => o.id !== row?.id);
+          }
+
+          return prev;
+        });
+      }
+    );
+
+    ch.subscribe((status) => {
+      log('channel status:', status);
+      if (status === 'SUBSCRIBED') {
+        lastEventAt.current = Date.now();
+      }
+      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        // tenta reabrir
+        setTimeout(openRealtime, 1200);
+      }
+    });
+
+    channelRef.current = ch;
+  };
+
   useEffect(() => {
-    const load = async () => {
+    (async () => {
       await fetchOrders();
+      openRealtime();
+    })().catch(console.error);
+
+    // quando regressa ao tab/ganha foco → refetch de segurança
+    const onVis = () => {
+      if (document.visibilityState === 'visible') fetchOrders();
     };
-    load().catch(console.error);
+    const onFocus = () => fetchOrders();
+    document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('focus', onFocus);
 
-    const ch = supabase
-      .channel('orders-rt')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'orders' },
-        (p) => {
-          const row = p.new as any;
-
-          // --- PATCH LOCAL: responder imediatamente ---
-          setOrders((prev) => {
-            if (p.eventType === 'INSERT') {
-              if (row.status === 'pending' && !row.acknowledged) {
-                setNewId(row.id);
-                startAlarm(row.id);
-                setTimeout(() => setNewId(null), 8000);
-              }
-              if (prev.find((o) => o.id === row.id)) return prev;
-              return [row as Order, ...prev];
-            }
-
-            if (p.eventType === 'UPDATE') {
-              const old = p.old as any;
-              const oldS = old?.status;
-              const newS = row.status;
-
-              const next = prev.map((o) => (o.id === row.id ? (row as Order) : o));
-
-              if (oldS !== newS) {
-                if (newS === 'preparing')
-                  playOnce(['/sounds/preparing.mp3', '/sounds/preparing.wav'], 740);
-                if (newS === 'done' || newS === 'delivering')
-                  playOnce(['/sounds/delivered.mp3', '/sounds/delivered.wav'], 523.25);
-              }
-              if (newS !== 'pending' || row.acknowledged) {
-                stopAlarm(row.id);
-              }
-              return next;
-            }
-
-            if (p.eventType === 'DELETE') {
-              stopAlarm(row?.id);
-              return prev.filter((o) => o.id !== row?.id);
-            }
-
-            return prev;
-          });
-        }
-      )
-      .subscribe();
+    // fallback polling: se passarem 15s sem eventos, refetch
+    const poll = window.setInterval(() => {
+      if (Date.now() - lastEventAt.current > 15000) {
+        fetchOrders();
+      }
+    }, 5000);
 
     return () => {
-      supabase.removeChannel(ch);
-      stopAll();
+      document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('focus', onFocus);
+      window.clearInterval(poll);
+      if (channelRef.current) supabase.removeChannel(channelRef.current);
     };
   }, [sound]);
 
@@ -251,7 +304,7 @@ export default function AdminOrdersPage() {
         .update({ status })
         .eq('id', id);
       if (error) throw error;
-      // realtime vai tratar do patch local; fetch de fallback
+      // realtime reflete; fetch de fallback
       await fetchOrders();
     } catch (e: any) {
       console.error(e);
@@ -271,7 +324,6 @@ export default function AdminOrdersPage() {
         .update({ acknowledged: true })
         .eq('id', id);
       if (error) throw error;
-      // realtime vai refletir; fetch de fallback
       await fetchOrders();
     } catch (e: any) {
       console.error(e);
@@ -311,7 +363,6 @@ export default function AdminOrdersPage() {
     </button>
   );
 
-  /* ---- helpers UI para opções/nota ---- */
   const ItemExtras = ({ item }: { item: Item }) => {
     const note = item.note || item.options?.note;
     const fries = item.options?.fries;
@@ -320,7 +371,6 @@ export default function AdminOrdersPage() {
 
     return (
       <>
-        {/* badges pequenas */}
         <div className="mt-1 flex flex-wrap gap-1 text-xs">
           {item.variant && (
             <span className="px-2 py-0.5 rounded-full bg-white/10 border border-white/10">
@@ -344,7 +394,6 @@ export default function AdminOrdersPage() {
           )}
         </div>
 
-        {/* NOTA — destaque em laranja */}
         {note && note.trim() !== '' && (
           <div className="mt-2 rounded-xl border px-3 py-2 text-sm bg-orange-500/15 border-orange-500/30 text-orange-200">
             📝 <span className="font-semibold">Nota:</span> {note}
@@ -455,14 +504,12 @@ export default function AdminOrdersPage() {
               <ul className="mt-3 space-y-2">
                 {o.items.map((it, i) => (
                   <li key={i} className="pb-2 border-b border-white/5 last:border-0">
-                    {/* LINHA DO ITEM — AMARELO + GRANDE */}
                     <div className="text-buns-yellow text-xl font-extrabold tracking-wide drop-shadow-[0_1px_0_rgba(0,0,0,0.6)]">
                       • {it.name} × {it.qty}
                       <span className="text-white/80 text-base font-semibold ml-2">
                         — €{(it.qty * it.price).toFixed(2)}
                       </span>
                     </div>
-
                     <ItemExtras item={it} />
                   </li>
                 ))}
