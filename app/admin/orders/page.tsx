@@ -94,12 +94,9 @@ export default function AdminOrdersPage() {
 
         setOrders((prev) => {
           if (p.eventType === 'INSERT') {
-            // destaque visual forte
             if (row.status === 'pending' && !row.acknowledged) {
               setNewId(row.id);
-              // leva o cartão para a vista
               setTimeout(() => scrollToOrder(row.id), 50);
-              // a borda pulsante dura 10s (opcional)
               setTimeout(() => setNewId(null), 10000);
             }
             if (prev.find((o) => o.id === row.id)) return prev;
@@ -108,7 +105,6 @@ export default function AdminOrdersPage() {
 
           if (p.eventType === 'UPDATE') {
             const updated = prev.map((o) => (o.id === row.id ? (row as Order) : o));
-            // se deixou de estar pending / foi reconhecido, já não precisa do destaque
             if (newId === row.id && (row.acknowledged || row.status !== 'pending')) {
               setNewId(null);
             }
@@ -227,7 +223,6 @@ export default function AdminOrdersPage() {
 
   /* ---- helpers de notas ---- */
   const getOrderLevelNote = (o: Order): string | null => {
-    // cobre nomes comuns: note, order_note, obs
     return (o.note || o.order_note || o.obs || '')?.toString()?.trim() || null;
   };
 
@@ -262,7 +257,6 @@ export default function AdminOrdersPage() {
           )}
         </div>
 
-        {/* NOTA do item */}
         {note && note.trim() !== '' && (
           <div className="mt-2 rounded-xl border px-3 py-2 text-sm bg-orange-500/15 border-orange-500/30 text-orange-200">
             📝 <span className="font-semibold">Nota do item:</span> {note}
@@ -302,7 +296,14 @@ export default function AdminOrdersPage() {
             onClick={() => setFilter(s)}
             className={`btn ${filter === s ? 'btn-primary' : 'btn-ghost'}`}
           >
-          {s === 'pending' ? 'Pendentes' : s === 'preparing' ? 'Em prep.' : s === 'delivering' ? 'A caminho' : 'Entregues'} ({orders.filter((o) => o.status === s).length})
+            {s === 'pending'
+              ? 'Pendentes'
+              : s === 'preparing'
+              ? 'Em prep.'
+              : s === 'delivering'
+              ? 'A caminho'
+              : 'Entregues'}{' '}
+            ({orders.filter((o) => o.status === s).length})
           </button>
         ))}
       </div>
@@ -314,14 +315,17 @@ export default function AdminOrdersPage() {
       <div className="grid gap-4 mt-6">
         {filtered.map((o) => {
           const orderNote = getOrderLevelNote(o);
-          const isNewHighlight = newId === o.id || (o.status === 'pending' && !o.acknowledged);
+          const isNewHighlight =
+            newId === o.id || (o.status === 'pending' && !o.acknowledged);
+          const isAttention = o.status === 'pending' && !o.acknowledged;
 
           return (
             <div
               key={o.id}
               ref={setCardRef(o.id)}
               className={`card p-5 border border-white/10 transition relative
-                ${isNewHighlight ? 'ring-4 ring-buns-yellow/60 shadow-[0_0_40px_rgba(255,214,10,0.35)] animate-pulse' : ''}`}
+                ${isNewHighlight ? 'ring-4 ring-buns-yellow/60 shadow-[0_0_40px_rgba(255,214,10,0.35)] animate-pulse' : ''}
+                ${isAttention ? 'pb-28' : ''}`}
             >
               <div className="flex items-center justify-between flex-wrap gap-3">
                 <div>
@@ -376,7 +380,7 @@ export default function AdminOrdersPage() {
                 </ul>
               )}
 
-              {/* NOTA GERAL DO PEDIDO (super importante) */}
+              {/* NOTA GERAL DO PEDIDO */}
               {orderNote && (
                 <div className="mt-3 rounded-xl border px-4 py-3 text-base bg-orange-500/15 border-orange-500/30 text-orange-200">
                   🧾 <span className="font-semibold">Nota do pedido:</span> {orderNote}
@@ -421,8 +425,7 @@ export default function AdminOrdersPage() {
                       className={`px-7 py-4 rounded-2xl font-extrabold text-lg
                         ${isNewHighlight
                           ? 'bg-[#0E4B46] text-white shadow-[0_0_30px_rgba(0,255,200,0.35)] animate-pulse'
-                          : 'btn btn-primary'}
-                      `}
+                          : 'btn btn-primary'}`}
                       disabled={savingId === o.id}
                       onClick={() => markSeen(o.id)}
                       title="Assim que clicas, o destaque desaparece"
@@ -435,10 +438,43 @@ export default function AdminOrdersPage() {
                   </div>
                 </div>
               </div>
+
+              {/* BOTÃO XXL FIXO — super visível (apenas quando pending e não lido) */}
+              {isAttention && (
+                <div className="pointer-events-none">
+                  <div className="absolute inset-x-0 bottom-0 px-4 pb-4">
+                    <button
+                      onClick={() => markSeen(o.id)}
+                      disabled={savingId === o.id}
+                      className="pointer-events-auto w-full py-5 rounded-2xl
+                                 bg-buns-yellow text-black text-2xl font-black
+                                 shadow-[0_12px_32px_rgba(255,214,10,0.35)]
+                                 border-4 border-black/20
+                                 animate-[wiggle_1.2s_ease-in-out_infinite]
+                                 hover:scale-[1.01] transition"
+                      title="Marcar como visto"
+                    >
+                      👀 MARCAR COMO VISTO
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}
       </div>
+
+      {/* animação global para o botão XXL */}
+      <style jsx global>{`
+        @keyframes wiggle {
+          0%, 100% { transform: translateX(0) rotate(0deg); }
+          15%      { transform: translateX(-2px) rotate(-0.4deg); }
+          30%      { transform: translateX(2px) rotate(0.4deg); }
+          45%      { transform: translateX(-2px) rotate(-0.3deg); }
+          60%      { transform: translateX(2px) rotate(0.3deg); }
+          75%      { transform: translateX(-1px) rotate(-0.2deg); }
+        }
+      `}</style>
     </main>
   );
 }
