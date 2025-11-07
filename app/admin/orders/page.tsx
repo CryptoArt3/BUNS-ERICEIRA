@@ -12,7 +12,9 @@ function SoundToggle({
   className?: string;
 }) {
   const [enabled, setEnabled] = useState<boolean>(false);
+  const armedRef = useRef(false);
 
+  // Lê preferência gravada
   useEffect(() => {
     const saved =
       typeof window !== 'undefined'
@@ -21,26 +23,45 @@ function SoundToggle({
     if (saved) setEnabled(saved === '1');
   }, []);
 
+  // Grava e notifica
   useEffect(() => {
     if (typeof window !== 'undefined')
       localStorage.setItem('buns_admin_sound', enabled ? '1' : '0');
     onChange?.(enabled);
   }, [enabled, onChange]);
 
-  const armAudio = async () => {
-    try {
-      // pequeno "tick" para desbloquear autoplay
-      const a = new Audio();
-      a.src =
-        'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABYAAAAAAABAAAA';
-      await a.play().catch(() => {});
-    } catch {}
-  };
+  // "Prime" de áudio: tenta desbloquear assim que o utilizador faz 1º gesto
+  useEffect(() => {
+    if (!enabled || armedRef.current) return;
 
-  const toggle = async () => {
-    if (!enabled) await armAudio();
-    setEnabled((v) => !v);
-  };
+    const armAudio = async () => {
+      try {
+        const a = new Audio();
+        // 1 frame de WAV silencioso só para abrir o contexto
+        a.src =
+          'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABYAAAAAAABAAAA';
+        await a.play().catch(() => {});
+        armedRef.current = true;
+      } catch {}
+    };
+
+    const onFirstGesture = () => {
+      armAudio();
+      document.removeEventListener('pointerdown', onFirstGesture, { capture: true } as any);
+      document.removeEventListener('keydown', onFirstGesture, { capture: true } as any);
+    };
+
+    // Se o browser bloquear autoplay, desbloqueamos no 1º gesto
+    document.addEventListener('pointerdown', onFirstGesture, { once: true, capture: true } as any);
+    document.addEventListener('keydown', onFirstGesture, { once: true, capture: true } as any);
+
+    return () => {
+      document.removeEventListener('pointerdown', onFirstGesture, { capture: true } as any);
+      document.removeEventListener('keydown', onFirstGesture, { capture: true } as any);
+    };
+  }, [enabled]);
+
+  const toggle = () => setEnabled((v) => !v);
 
   return (
     <button
@@ -86,9 +107,9 @@ function makeBeep(freq = 880, duration = 0.18) {
 /* ================== Tipos ================== */
 type ItemOptions = {
   note?: string | null;
-  fries?: string | null;
-  drink?: string | null;
-  ingredients?: string[] | null;
+  fries?: string | null; // 'normal' | 'doce'
+  drink?: string | null; // ex.: 'Coca-Cola', 'Água'
+  ingredients?: string[] | null; // ingredientes removidos / escolhidos
 } | null;
 
 type Item = {
@@ -96,9 +117,9 @@ type Item = {
   name: string;
   qty: number;
   price: number;
-  note?: string | null;
-  variant?: string | null;
-  options?: ItemOptions;
+  note?: string | null; // nota direta do item (textarea do carrinho)
+  variant?: string | null; // 'burger' | 'menu'
+  options?: ItemOptions; // struct de opções
 };
 
 type Order = {
@@ -138,27 +159,14 @@ export default function AdminOrdersPage() {
     return localStorage.getItem('buns_admin_sound') === '1';
   });
 
-  // para diagnosticar (ver na consola)
-  const log = (...a: any[]) => console.log('[orders-admin]', ...a);
-
-  // ultimo evento recebido (para fallback de polling)
-  const lastEventAt = useRef<number>(Date.now());
-
-  /* pré-carregar som quando liga o toggle (melhora autoplay) */
-  useEffect(() => {
-    if (!sound) return;
-    const a = new Audio('/sounds/new-order.mp3');
-    a.load();
-  }, [sound]);
-
   /* ---- alarmes por pedido ---- */
   const alarmTimers = useRef<Map<string, number>>(new Map());
   const startAlarm = (id: string) => {
     if (!sound) return;
     if (alarmTimers.current.has(id)) return;
-    playOnce(['/sounds/new-order.mp3', '/sounds/new-order.wav'], 1046.5);
+    playOnce(['/sounds/new-order.wav'], 1046.5);
     const interval = window.setInterval(() => {
-      playOnce(['/sounds/new-order.mp3', '/sounds/new-order.wav'], 1046.5);
+      playOnce(['/sounds/new-order.wav'], 1046.5);
     }, 4000);
     alarmTimers.current.set(id, interval);
   };
@@ -175,122 +183,90 @@ export default function AdminOrdersPage() {
   };
   useEffect(() => () => stopAll(), []);
 
-  /* ---- fetch + realtime ---- */
+  /* ---- fetch inicial ---- */
   const fetchOrders = async () => {
     const { data, error } = await supabase
       .from('orders')
       .select('*')
       .order('created_at', { ascending: false })
       .limit(200);
-    if (!error && data) {
-      setOrders(data as unknown as Order[]);
-    } else if (error) {
-      log('fetch error', error);
-    }
+    if (!error && data) setOrders(data as unknown as Order[]);
     setLoading(false);
   };
 
-  // cria/renova o canal
-  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  /* ---- subscrição realtime (sem refresh) ---- */
+  useEffect(() => {
+    let mounted = true;
 
-  const openRealtime = () => {
-    if (channelRef.current) {
-      supabase.removeChannel(channelRef.current);
-      channelRef.current = null;
-    }
+    const bootstrap = async () => {
+      await fetchOrders(); // 1º load
 
-    const ch = supabase.channel('orders-rt');
+      // Canal dedicado com INSERT + UPDATE
+      const channel = supabase
+        .channel('orders-rt')
+        // INSERTs
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'orders' },
+          (payload) => {
+            const row = payload.new as any as Order;
 
-    ch.on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'orders' },
-      (p) => {
-        lastEventAt.current = Date.now();
-        const row = p.new as any;
+            // optimista: coloca no topo sem novo fetch
+            setOrders((prev) => {
+              // evita duplicado se já existir
+              if (prev.find((p) => p.id === row.id)) return prev;
+              return [row, ...prev].sort((a, b) =>
+                a.created_at > b.created_at ? -1 : 1
+              );
+            });
 
-        setOrders((prev) => {
-          if (p.eventType === 'INSERT') {
-            log('INSERT', row.id);
             if (row.status === 'pending' && !row.acknowledged) {
               setNewId(row.id);
               startAlarm(row.id);
               setTimeout(() => setNewId(null), 8000);
             }
-            if (prev.find((o) => o.id === row.id)) return prev;
-            return [row as Order, ...prev];
           }
+        )
+        // UPDATEs
+        .on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'orders' },
+          (payload) => {
+            const row = payload.new as any as Order;
+            const old = payload.old as any as Order | null;
 
-          if (p.eventType === 'UPDATE') {
-            const old = p.old as any;
+            setOrders((prev) =>
+              prev.map((o) => (o.id === row.id ? { ...o, ...row } : o))
+            );
+
             const oldS = old?.status;
             const newS = row.status;
 
-            const next = prev.map((o) => (o.id === row.id ? (row as Order) : o));
-
             if (oldS !== newS) {
               if (newS === 'preparing')
-                playOnce(['/sounds/preparing.mp3', '/sounds/preparing.wav'], 740);
+                playOnce(['/sounds/preparing.wav'], 740);
               if (newS === 'done' || newS === 'delivering')
-                playOnce(
-                  ['/sounds/delivered.mp3', '/sounds/delivered.wav'],
-                  523.25
-                );
+                playOnce(['/sounds/delivered.wav'], 523.25);
             }
-            if (newS !== 'pending' || row.acknowledged) stopAlarm(row.id);
-            return next;
+            if (newS !== 'pending' || row.acknowledged) {
+              stopAlarm(row.id);
+            }
           }
-
-          if (p.eventType === 'DELETE') {
-            log('DELETE', row?.id);
-            stopAlarm(row?.id);
-            return prev.filter((o) => o.id !== row?.id);
-          }
-
-          return prev;
+        )
+        .subscribe((status) => {
+          // útil para debug
+          // console.log('realtime status:', status);
         });
-      }
-    );
 
-    ch.subscribe((status) => {
-      log('channel status:', status);
-      if (status === 'SUBSCRIBED') {
-        lastEventAt.current = Date.now();
-      }
-      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-        // tenta reabrir
-        setTimeout(openRealtime, 1200);
-      }
-    });
-
-    channelRef.current = ch;
-  };
-
-  useEffect(() => {
-    (async () => {
-      await fetchOrders();
-      openRealtime();
-    })().catch(console.error);
-
-    // quando regressa ao tab/ganha foco → refetch de segurança
-    const onVis = () => {
-      if (document.visibilityState === 'visible') fetchOrders();
+      // cleanup
+      return () => {
+        if (mounted) supabase.removeChannel(channel);
+      };
     };
-    const onFocus = () => fetchOrders();
-    document.addEventListener('visibilitychange', onVis);
-    window.addEventListener('focus', onFocus);
 
-    // fallback polling: se passarem 15s sem eventos, refetch
-    const poll = window.setInterval(() => {
-      if (Date.now() - lastEventAt.current > 15000) {
-        fetchOrders();
-      }
-    }, 5000);
-
+    bootstrap();
     return () => {
-      document.removeEventListener('visibilitychange', onVis);
-      window.removeEventListener('focus', onFocus);
-      window.clearInterval(poll);
-      if (channelRef.current) supabase.removeChannel(channelRef.current);
+      mounted = false;
     };
   }, [sound]);
 
@@ -304,8 +280,7 @@ export default function AdminOrdersPage() {
         .update({ status })
         .eq('id', id);
       if (error) throw error;
-      // realtime reflete; fetch de fallback
-      await fetchOrders();
+      // Não fazemos fetch — o realtime UPDATE já atualiza a UI
     } catch (e: any) {
       console.error(e);
       setErrMsg(e?.message || 'Falhou a atualização do estado.');
@@ -324,7 +299,7 @@ export default function AdminOrdersPage() {
         .update({ acknowledged: true })
         .eq('id', id);
       if (error) throw error;
-      await fetchOrders();
+      // Realtime atualiza a UI
     } catch (e: any) {
       console.error(e);
       setErrMsg(e?.message || 'Falhou ao marcar como visto.');
@@ -353,9 +328,9 @@ export default function AdminOrdersPage() {
     <button
       disabled={disabled}
       onClick={onClick}
-      className={`px-5 py-3 rounded-xl text-base font-semibold transition shadow-sm ${
+      className={`px-5 py-2 rounded-xl text-base font-semibold transition ${
         active
-          ? 'bg-buns-yellow text-black shadow-[0_0_0_2px_rgba(0,0,0,0.2)]'
+          ? 'bg-buns-yellow text-black'
           : 'bg-white/10 text-white hover:bg-white/20 disabled:opacity-50'
       }`}
     >
@@ -363,6 +338,7 @@ export default function AdminOrdersPage() {
     </button>
   );
 
+  /* ---- helpers UI para opções/nota ---- */
   const ItemExtras = ({ item }: { item: Item }) => {
     const note = item.note || item.options?.note;
     const fries = item.options?.fries;
@@ -371,7 +347,8 @@ export default function AdminOrdersPage() {
 
     return (
       <>
-        <div className="mt-1 flex flex-wrap gap-1 text-xs">
+        {/* badges pequenas */}
+        <div className="mt-1 flex flex-wrap gap-2 text-sm">
           {item.variant && (
             <span className="px-2 py-0.5 rounded-full bg-white/10 border border-white/10">
               {item.variant}
@@ -394,8 +371,9 @@ export default function AdminOrdersPage() {
           )}
         </div>
 
+        {/* NOTA — destaque em laranja */}
         {note && note.trim() !== '' && (
-          <div className="mt-2 rounded-xl border px-3 py-2 text-sm bg-orange-500/15 border-orange-500/30 text-orange-200">
+          <div className="mt-2 rounded-xl border px-4 py-3 text-lg bg-orange-500/15 border-orange-500/30 text-orange-200">
             📝 <span className="font-semibold">Nota:</span> {note}
           </div>
         )}
@@ -407,7 +385,7 @@ export default function AdminOrdersPage() {
   return (
     <main className="container mx-auto px-4 py-8 text-white">
       <div className="flex items-center justify-between gap-4 flex-wrap">
-        <h1 className="text-3xl font-display">Pedidos (Admin)</h1>
+        <h1 className="text-4xl font-display">Pedidos (Admin)</h1>
         <div className="flex items-center gap-2">
           <SoundToggle
             onChange={(v) => {
@@ -422,7 +400,7 @@ export default function AdminOrdersPage() {
       </div>
 
       {/* filtros */}
-      <div className="flex gap-2 mt-2">
+      <div className="flex gap-2 mt-3">
         <button
           onClick={() => setFilter('all')}
           className={`btn ${filter === 'all' ? 'btn-primary' : 'btn-ghost'}`}
@@ -457,34 +435,26 @@ export default function AdminOrdersPage() {
         {filtered.map((o) => (
           <div
             key={o.id}
-            className={`card p-5 border border-white/10 transition ${
-              newId === o.id
-                ? 'ring-2 ring-buns-yellow/60 shadow-[0_0_40px_rgba(255,214,10,0.25)]'
-                : ''
+            className={`card p-6 border border-white/10 transition ${
+              newId === o.id ? 'ring-2 ring-buns-yellow/60' : ''
             } ${o.status === 'pending' && !o.acknowledged ? 'animate-pulse' : ''}`}
           >
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div>
-                <h2 className="text-xl font-semibold">
+                <h2 className="text-2xl font-extrabold">
                   #{o.id.slice(0, 8)} — {o.name} ({o.phone})
                 </h2>
-                <p className="text-white/70 text-sm mt-1">
+                <p className="text-white/70 text-lg mt-1">
                   {o.address} — {o.order_type === 'takeaway' ? 'Levantamento' : o.zone}
                 </p>
               </div>
-              <span className="text-sm text-white/60">
+              <span className="text-base text-white/60">
                 {new Date(o.created_at).toLocaleString()}
               </span>
             </div>
 
-            <div className="flex items-center gap-2 mt-3 text-sm text-white/70 flex-wrap">
-              <span
-                className={`px-3 py-1 rounded-full border capitalize ${
-                  o.status === 'pending'
-                    ? 'bg-buns-yellow/15 border-buns-yellow/40 text-buns-yellow'
-                    : 'bg-white/10 border-white/10 text-white/80'
-                }`}
-              >
+            <div className="flex items-center gap-2 mt-3 text-base text-white/70 flex-wrap">
+              <span className="px-3 py-1 rounded-full bg-white/10 border border-white/10 capitalize">
                 {o.status}
               </span>
               <span className="px-3 py-1 rounded-full bg-white/10 border border-white/10">
@@ -501,12 +471,15 @@ export default function AdminOrdersPage() {
             </div>
 
             {o.items?.length > 0 && (
-              <ul className="mt-3 space-y-2">
+              <ul className="mt-4 space-y-3">
                 {o.items.map((it, i) => (
-                  <li key={i} className="pb-2 border-b border-white/5 last:border-0">
-                    <div className="text-buns-yellow text-xl font-extrabold tracking-wide drop-shadow-[0_1px_0_rgba(0,0,0,0.6)]">
-                      • {it.name} × {it.qty}
-                      <span className="text-white/80 text-base font-semibold ml-2">
+                  <li
+                    key={i}
+                    className="pb-3 border-b border-white/5 last:border-0 text-2xl font-extrabold text-buns-yellow"
+                  >
+                    <div>
+                      • {it.name} × {it.qty}{' '}
+                      <span className="text-white/80 text-xl font-semibold">
                         — €{(it.qty * it.price).toFixed(2)}
                       </span>
                     </div>
@@ -516,8 +489,8 @@ export default function AdminOrdersPage() {
               </ul>
             )}
 
-            <div className="mt-4 flex items-center justify-between flex-wrap gap-3">
-              <div className="flex flex-wrap gap-2">
+            <div className="mt-5 flex items-center justify-between flex-wrap gap-3">
+              <div className="flex flex-wrap gap-3">
                 <StatusBtn
                   disabled={savingId === o.id}
                   active={o.status === 'pending'}
@@ -559,7 +532,7 @@ export default function AdminOrdersPage() {
                     👀 Marcar como visto
                   </button>
                 )}
-                <div className="text-buns-yellow font-bold text-lg">
+                <div className="text-buns-yellow font-extrabold text-3xl">
                   Total: €{o.total.toFixed(2)}
                 </div>
               </div>
