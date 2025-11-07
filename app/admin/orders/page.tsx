@@ -420,7 +420,8 @@ export default function AdminOrdersPage() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  {o.status === 'pending' && !o.acknowledged && (
+                  {/* Botão pequeno só quando NÃO está em atenção */}
+                  {!isAttention && (
                     <button
                       className={`px-7 py-4 rounded-2xl font-extrabold text-lg
                         ${isNewHighlight
