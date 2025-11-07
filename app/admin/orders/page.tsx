@@ -1,4 +1,3 @@
-// app/admin/orders/page.tsx
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -28,9 +27,9 @@ function SoundToggle({
     onChange?.(enabled);
   }, [enabled, onChange]);
 
-  const primeAutoplay = async () => {
+  // pequeno click para armar o autoplay
+  const prime = async () => {
     try {
-      // pequeno click para desbloquear autoplay nos browsers
       const a = new Audio();
       a.src =
         'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABYAAAAAAABAAAA';
@@ -39,7 +38,7 @@ function SoundToggle({
   };
 
   const toggle = async () => {
-    if (!enabled) await primeAutoplay();
+    if (!enabled) await prime();
     setEnabled((v) => !v);
   };
 
@@ -100,16 +99,16 @@ export default function AdminOrdersPage() {
   const [filter, setFilter] = useState<'all' | Order['status']>('all');
   const [newId, setNewId] = useState<string | null>(null);
 
-  // som ligado/desligado
   const [sound, setSound] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
     return localStorage.getItem('buns_admin_sound') === '1';
   });
 
-  // ======== Áudio (beep) com fallback ========
+  /* ======== Web Audio — 100% sem .wav ======== */
   const audioCtxRef = useRef<AudioContext | null>(null);
-  const unlockedRef = useRef(false);
-  const wavRef = useRef<HTMLAudioElement | null>(null);
+  const armedRef = useRef<boolean>(false); // já desbloqueado por gesto?
+  const alarmIntervalRef = useRef<number | null>(null);
+  const alarmingOrderIdRef = useRef<string | null>(null);
 
   const ensureAudio = async () => {
     if (!sound) return;
@@ -123,82 +122,57 @@ export default function AdminOrdersPage() {
     }
     try {
       await audioCtxRef.current?.resume();
-      // arm beep (inaudível) para desbloquear
-      const ctx = audioCtxRef.current!;
-      const o = ctx.createOscillator();
-      const g = ctx.createGain();
-      g.gain.value = 0;
-      o.connect(g).connect(ctx.destination);
-      o.start();
-      o.stop(ctx.currentTime + 0.01);
-      unlockedRef.current = true;
+      armedRef.current = true;
     } catch {
-      unlockedRef.current = false;
-    }
-    if (!wavRef.current) {
-      const a = new Audio('/sounds/new-order.wav'); // <-- garante que existe
-      a.preload = 'auto';
-      (a as any).playsInline = true;
-      wavRef.current = a;
-      try {
-        await a.load();
-      } catch {}
+      armedRef.current = false;
     }
   };
 
-  const testBeep = () => {
-    // toca pequeno beep quando liga o toggle (confirma som ativo)
-    if (!sound) return;
-    if (audioCtxRef.current && unlockedRef.current) {
-      try {
-        const ctx = audioCtxRef.current;
-        const o = ctx.createOscillator();
-        const g = ctx.createGain();
-        o.type = 'sine';
-        o.frequency.value = 880;
-        g.gain.setValueAtTime(0.0001, ctx.currentTime);
-        g.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime + 0.02);
-        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.18);
-        o.connect(g).connect(ctx.destination);
-        o.start();
-        o.stop(ctx.currentTime + 0.2);
-        return;
-      } catch {}
-    }
-    if (wavRef.current) {
-      wavRef.current.currentTime = 0;
-      wavRef.current.play().catch(() => {});
-    }
+  const beep = (freq = 880, dur = 0.2) => {
+    if (!sound || !audioCtxRef.current || !armedRef.current) return;
+    try {
+      const ctx = audioCtxRef.current;
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      g.gain.setValueAtTime(0.0001, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.28, ctx.currentTime + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + dur);
+      osc.connect(g).connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + dur + 0.02);
+    } catch {}
   };
 
-  // ======== Alarme Global (apenas pára ao "Marcar como visto") ========
-  const alarmIntervalRef = useRef<number | null>(null);
-  const alarmingOrderIdRef = useRef<string | null>(null); // qual pedido está a tocar
-
-  const startAlarmFor = (orderId: string) => {
+  // começa a tocar (cada 4s) até “marcar como visto”
+  const startAlarmFor = async (orderId: string) => {
     if (!sound) return;
-    if (document.visibilityState !== 'visible') return; // evita tocar quando o tab está escondido
-    // se já estamos a tocar para este pedido, não duplica
-    if (alarmIntervalRef.current != null && alarmingOrderIdRef.current === orderId) return;
+    await ensureAudio();
+    if (!armedRef.current) return;
 
-    // se estava a tocar para outro pedido, pára e troca
-    if (alarmIntervalRef.current != null && alarmingOrderIdRef.current !== orderId) {
+    // se já está a tocar para este ID, ignora
+    if (alarmingOrderIdRef.current === orderId && alarmIntervalRef.current != null) return;
+
+    // se estava a tocar outro -> pára
+    if (alarmIntervalRef.current != null) {
       window.clearInterval(alarmIntervalRef.current);
       alarmIntervalRef.current = null;
     }
 
     alarmingOrderIdRef.current = orderId;
 
-    // toca já
-    testBeep();
-    // loop de 4s
-    alarmIntervalRef.current = window.setInterval(() => testBeep(), 4000);
+    // beep imediato e loop
+    beep();
+    alarmIntervalRef.current = window.setInterval(() => beep(), 4000);
   };
 
   const stopAlarmIfMatches = (orderId: string) => {
-    if (alarmingOrderIdRef.current === orderId && alarmIntervalRef.current != null) {
-      window.clearInterval(alarmIntervalRef.current);
-      alarmIntervalRef.current = null;
+    if (alarmingOrderIdRef.current === orderId) {
+      if (alarmIntervalRef.current != null) {
+        window.clearInterval(alarmIntervalRef.current);
+        alarmIntervalRef.current = null;
+      }
       alarmingOrderIdRef.current = null;
     }
   };
@@ -211,7 +185,6 @@ export default function AdminOrdersPage() {
     alarmingOrderIdRef.current = null;
   };
 
-  // quando muda o toggle do som
   const handleToggleSound = async (enabled: boolean) => {
     setSound(enabled);
     if (!enabled) {
@@ -219,10 +192,11 @@ export default function AdminOrdersPage() {
       return;
     }
     await ensureAudio();
-    testBeep(); // beep de confirmação ao ligar
+    // beep de confirmação quando liga
+    beep(1000, 0.15);
   };
 
-  // ======== Fetch + Realtime ========
+  /* ======== Fetch + Realtime ======== */
   const fetchOrders = async () => {
     const { data, error } = await supabase
       .from('orders')
@@ -237,26 +211,22 @@ export default function AdminOrdersPage() {
   const lastEventAt = useRef<number>(Date.now());
 
   const openRealtime = () => {
-    if (channelRef.current) {
-      supabase.removeChannel(channelRef.current);
-      channelRef.current = null;
-    }
+    if (channelRef.current) supabase.removeChannel(channelRef.current);
 
     const ch = supabase.channel('orders-rt');
 
     ch.on(
       'postgres_changes',
       { event: '*', schema: 'public', table: 'orders' },
-      (p) => {
+      async (p) => {
         lastEventAt.current = Date.now();
         const row = p.new as any;
 
         setOrders((prev) => {
           if (p.eventType === 'INSERT') {
-            // NOVA ENCOMENDA: toca até alguém marcar como visto
             if (row.status === 'pending' && !row.acknowledged) {
               setNewId(row.id);
-              startAlarmFor(row.id);
+              startAlarmFor(row.id).catch(() => {});
               setTimeout(() => setNewId(null), 8000);
             }
             if (prev.find((o) => o.id === row.id)) return prev;
@@ -264,13 +234,11 @@ export default function AdminOrdersPage() {
           }
 
           if (p.eventType === 'UPDATE') {
-            // Não paramos o som aqui (só ao "Marcar como visto")
-            const next = prev.map((o) => (o.id === row.id ? (row as Order) : o));
-            return next;
+            // Não paramos o som aqui; só ao “Marcar como visto”
+            return prev.map((o) => (o.id === row.id ? (row as Order) : o));
           }
 
           if (p.eventType === 'DELETE') {
-            // Se por acaso apagarem, cala só se for o mesmo pedido
             stopAlarmIfMatches(row?.id);
             return prev.filter((o) => o.id !== row?.id);
           }
@@ -336,10 +304,7 @@ export default function AdminOrdersPage() {
     try {
       setSavingId(id);
       setErrMsg(null);
-
-      // pára o som *imediatamente* se o alarme pertence a este pedido
-      stopAlarmIfMatches(id);
-
+      stopAlarmIfMatches(id); // cala na hora
       const { error } = await supabase
         .from('orders')
         .update({ acknowledged: true })
@@ -430,11 +395,7 @@ export default function AdminOrdersPage() {
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <h1 className="text-3xl font-display">Pedidos (Admin)</h1>
         <div className="flex items-center gap-2">
-          <SoundToggle
-            onChange={async (enabled) => {
-              await handleToggleSound(enabled);
-            }}
-          />
+          <SoundToggle onChange={handleToggleSound} />
           <button className="btn btn-ghost" onClick={stopAll}>
             🔕 Silenciar todos
           </button>
