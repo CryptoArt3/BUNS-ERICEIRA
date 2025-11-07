@@ -420,20 +420,7 @@ export default function AdminOrdersPage() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  {/* Botão pequeno só quando NÃO está em atenção */}
-                  {!isAttention && (
-                    <button
-                      className={`px-7 py-4 rounded-2xl font-extrabold text-lg
-                        ${isNewHighlight
-                          ? 'bg-[#0E4B46] text-white shadow-[0_0_30px_rgba(0,255,200,0.35)] animate-pulse'
-                          : 'btn btn-primary'}`}
-                      disabled={savingId === o.id}
-                      onClick={() => markSeen(o.id)}
-                      title="Assim que clicas, o destaque desaparece"
-                    >
-                      👀 Marcar como visto
-                    </button>
-                  )}
+                  {/* <-- Botão pequeno foi REMOVIDO para não confundir --> */}
                   <div className="text-buns-yellow font-bold text-lg">
                     Total: €{o.total.toFixed(2)}
                   </div>
