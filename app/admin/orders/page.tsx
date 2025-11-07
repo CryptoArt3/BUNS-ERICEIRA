@@ -3,56 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 
-/* ================== UI: toggle som ================== */
-function SoundToggle({
-  onChange,
-  className = '',
-}: {
-  onChange?: (enabled: boolean) => void;
-  className?: string;
-}) {
-  const [enabled, setEnabled] = useState<boolean>(false);
-
-  useEffect(() => {
-    const saved =
-      typeof window !== 'undefined'
-        ? localStorage.getItem('buns_admin_sound')
-        : null;
-    if (saved) setEnabled(saved === '1');
-  }, []);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined')
-      localStorage.setItem('buns_admin_sound', enabled ? '1' : '0');
-    onChange?.(enabled);
-  }, [enabled, onChange]);
-
-  // pequeno click para armar o autoplay
-  const prime = async () => {
-    try {
-      const a = new Audio();
-      a.src =
-        'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABYAAAAAAABAAAA';
-      await a.play().catch(() => {});
-    } catch {}
-  };
-
-  const toggle = async () => {
-    if (!enabled) await prime();
-    setEnabled((v) => !v);
-  };
-
-  return (
-    <button
-      onClick={toggle}
-      className={`btn ${enabled ? 'btn-primary' : 'btn-ghost'} ${className}`}
-      aria-pressed={enabled}
-    >
-      {enabled ? '🔊 Som ativo' : '🔈 Ativar som'}
-    </button>
-  );
-}
-
 /* ================== Tipos ================== */
 type ItemOptions = {
   note?: string | null;
@@ -90,6 +40,127 @@ type Order = {
 
 const STATUSES: Order['status'][] = ['pending', 'preparing', 'delivering', 'done'];
 
+/* ================== Wake Lock helper ================== */
+async function requestWakeLock(): Promise<WakeLockSentinel | null> {
+  try {
+    // @ts-ignore
+    if ('wakeLock' in navigator) {
+      // @ts-ignore
+      return await navigator.wakeLock.request('screen');
+    }
+  } catch {}
+  return null;
+}
+
+/* ================== ALERTA (overlay) ================== */
+function NewOrderAlert({
+  order,
+  onClose,
+  onMarkSeen,
+}: {
+  order: Order | null;
+  onClose: () => void;
+  onMarkSeen: (id: string) => Promise<void>;
+}) {
+  // título a piscar
+  useEffect(() => {
+    if (!order) return;
+    const original = document.title;
+    let flag = false;
+    const t = window.setInterval(() => {
+      flag = !flag;
+      document.title = flag ? '🟡 NOVO PEDIDO! — BUNS Admin' : original;
+    }, 800);
+    return () => {
+      window.clearInterval(t);
+      document.title = original;
+    };
+  }, [order]);
+
+  // vibração curta (se suportado)
+  useEffect(() => {
+    if (!order) return;
+    try {
+      if ('vibrate' in navigator) navigator.vibrate(200);
+    } catch {}
+  }, [order]);
+
+  // manter ecrã ligado enquanto alerta estiver aberto
+  useEffect(() => {
+    let sentinel: WakeLockSentinel | null = null;
+    let cancelled = false;
+    (async () => {
+      if (!order) return;
+      sentinel = await requestWakeLock();
+      if (cancelled && sentinel) {
+        try { await sentinel.release(); } catch {}
+      }
+    })();
+    return () => {
+      cancelled = true;
+      if (sentinel) {
+        try { sentinel.release(); } catch {}
+      }
+    };
+  }, [order]);
+
+  if (!order) return null;
+
+  return (
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center">
+      {/* backdrop */}
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+
+      {/* caixa a piscar */}
+      <div className="relative mx-4 max-w-3xl w-full">
+        <div className="animate-[pulse_1.2s_infinite] rounded-3xl border-4 border-buns-yellow bg-[#141A0F] shadow-[0_0_60px_rgba(255,214,10,0.35)]">
+          <div className="p-7">
+            <div className="text-3xl md:text-4xl font-extrabold text-buns-yellow mb-2">
+              🟡 Novo pedido!
+            </div>
+            <div className="text-white/90 text-lg mb-1">
+              <span className="font-semibold">#{order.id.slice(0, 8)}</span> —{' '}
+              <span className="font-semibold">{order.name}</span> ({order.phone})
+            </div>
+            <div className="text-white/70 mb-4">
+              {order.address} — {order.order_type === 'takeaway' ? 'Levantamento' : order.zone}
+            </div>
+
+            <div className="rounded-xl bg-black/30 border border-white/10 p-4 mb-4">
+              {order.items?.map((it, i) => (
+                <div key={i} className="flex items-center justify-between text-white/90 text-lg">
+                  <div className="font-bold">• {it.name} × {it.qty}</div>
+                  <div>€{(it.qty * it.price).toFixed(2)}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex items-center justify-between text-2xl font-extrabold text-buns-yellow">
+              <div>Total</div>
+              <div>€{order.total.toFixed(2)}</div>
+            </div>
+
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
+              <button
+                className="px-5 py-4 rounded-xl text-lg font-bold bg-buns-yellow text-black hover:brightness-95"
+                onClick={() => onMarkSeen(order.id)}
+              >
+                👀 Marcar como visto
+              </button>
+              <button
+                className="px-5 py-4 rounded-xl text-lg font-bold bg-white/10 text-white hover:bg-white/20"
+                onClick={onClose}
+              >
+                Ir ao pedido
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ================== Página ================== */
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -97,106 +168,26 @@ export default function AdminOrdersPage() {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [errMsg, setErrMsg] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | Order['status']>('all');
-  const [newId, setNewId] = useState<string | null>(null);
 
-  const [sound, setSound] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false;
-    return localStorage.getItem('buns_admin_sound') === '1';
-  });
+  // alerta visual
+  const [alertOrderId, setAlertOrderId] = useState<string | null>(null);
+  const alertOrder = useMemo(
+    () => orders.find((o) => o.id === alertOrderId) || null,
+    [orders, alertOrderId]
+  );
 
-  /* ======== Web Audio — 100% sem .wav ======== */
-  const audioCtxRef = useRef<AudioContext | null>(null);
-  const armedRef = useRef<boolean>(false); // já desbloqueado por gesto?
-  const alarmIntervalRef = useRef<number | null>(null);
-  const alarmingOrderIdRef = useRef<string | null>(null);
-
-  const ensureAudio = async () => {
-    if (!sound) return;
-    if (!audioCtxRef.current) {
-      try {
-        audioCtxRef.current =
-          new (window.AudioContext || (window as any).webkitAudioContext)();
-      } catch {
-        audioCtxRef.current = null;
-      }
-    }
-    try {
-      await audioCtxRef.current?.resume();
-      armedRef.current = true;
-    } catch {
-      armedRef.current = false;
-    }
+  // refs para dar scroll ao cartão do pedido
+  const cardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const setCardRef = (id: string) => (el: HTMLDivElement | null) => {
+    if (el) cardRefs.current.set(id, el);
+    else cardRefs.current.delete(id);
+  };
+  const scrollToOrder = (id: string) => {
+    const el = cardRefs.current.get(id);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  const beep = (freq = 880, dur = 0.2) => {
-    if (!sound || !audioCtxRef.current || !armedRef.current) return;
-    try {
-      const ctx = audioCtxRef.current;
-      const osc = ctx.createOscillator();
-      const g = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.value = freq;
-      g.gain.setValueAtTime(0.0001, ctx.currentTime);
-      g.gain.exponentialRampToValueAtTime(0.28, ctx.currentTime + 0.02);
-      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + dur);
-      osc.connect(g).connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + dur + 0.02);
-    } catch {}
-  };
-
-  // começa a tocar (cada 4s) até “marcar como visto”
-  const startAlarmFor = async (orderId: string) => {
-    if (!sound) return;
-    await ensureAudio();
-    if (!armedRef.current) return;
-
-    // se já está a tocar para este ID, ignora
-    if (alarmingOrderIdRef.current === orderId && alarmIntervalRef.current != null) return;
-
-    // se estava a tocar outro -> pára
-    if (alarmIntervalRef.current != null) {
-      window.clearInterval(alarmIntervalRef.current);
-      alarmIntervalRef.current = null;
-    }
-
-    alarmingOrderIdRef.current = orderId;
-
-    // beep imediato e loop
-    beep();
-    alarmIntervalRef.current = window.setInterval(() => beep(), 4000);
-  };
-
-  const stopAlarmIfMatches = (orderId: string) => {
-    if (alarmingOrderIdRef.current === orderId) {
-      if (alarmIntervalRef.current != null) {
-        window.clearInterval(alarmIntervalRef.current);
-        alarmIntervalRef.current = null;
-      }
-      alarmingOrderIdRef.current = null;
-    }
-  };
-
-  const stopAll = () => {
-    if (alarmIntervalRef.current != null) {
-      window.clearInterval(alarmIntervalRef.current);
-      alarmIntervalRef.current = null;
-    }
-    alarmingOrderIdRef.current = null;
-  };
-
-  const handleToggleSound = async (enabled: boolean) => {
-    setSound(enabled);
-    if (!enabled) {
-      stopAll();
-      return;
-    }
-    await ensureAudio();
-    // beep de confirmação quando liga
-    beep(1000, 0.15);
-  };
-
-  /* ======== Fetch + Realtime ======== */
+  /* ---- fetch + realtime ---- */
   const fetchOrders = async () => {
     const { data, error } = await supabase
       .from('orders')
@@ -218,28 +209,30 @@ export default function AdminOrdersPage() {
     ch.on(
       'postgres_changes',
       { event: '*', schema: 'public', table: 'orders' },
-      async (p) => {
+      (p) => {
         lastEventAt.current = Date.now();
         const row = p.new as any;
 
         setOrders((prev) => {
           if (p.eventType === 'INSERT') {
             if (row.status === 'pending' && !row.acknowledged) {
-              setNewId(row.id);
-              startAlarmFor(row.id).catch(() => {});
-              setTimeout(() => setNewId(null), 8000);
+              setAlertOrderId(row.id); // abre overlay
             }
             if (prev.find((o) => o.id === row.id)) return prev;
             return [row as Order, ...prev];
           }
 
           if (p.eventType === 'UPDATE') {
-            // Não paramos o som aqui; só ao “Marcar como visto”
-            return prev.map((o) => (o.id === row.id ? (row as Order) : o));
+            const updated = prev.map((o) => (o.id === row.id ? (row as Order) : o));
+            // se este que está no overlay foi reconhecido, fecha
+            if (alertOrderId === row.id && (row.acknowledged || row.status !== 'pending')) {
+              setAlertOrderId(null);
+            }
+            return updated;
           }
 
           if (p.eventType === 'DELETE') {
-            stopAlarmIfMatches(row?.id);
+            if (alertOrderId === row?.id) setAlertOrderId(null);
             return prev.filter((o) => o.id !== row?.id);
           }
 
@@ -280,9 +273,8 @@ export default function AdminOrdersPage() {
       window.removeEventListener('focus', onFocus);
       window.clearInterval(poll);
       if (channelRef.current) supabase.removeChannel(channelRef.current);
-      stopAll();
     };
-  }, [sound]);
+  }, []);
 
   /* ---- ações ---- */
   const updateStatus = async (id: string, status: Order['status']) => {
@@ -304,12 +296,12 @@ export default function AdminOrdersPage() {
     try {
       setSavingId(id);
       setErrMsg(null);
-      stopAlarmIfMatches(id); // cala na hora
       const { error } = await supabase
         .from('orders')
         .update({ acknowledged: true })
         .eq('id', id);
       if (error) throw error;
+      setAlertOrderId(null); // fecha overlay imediatamente
       await fetchOrders();
     } catch (e: any) {
       console.error(e);
@@ -392,12 +384,25 @@ export default function AdminOrdersPage() {
   /* ---- render ---- */
   return (
     <main className="container mx-auto px-4 py-8 text-white">
+      {/* ALERTA OVERLAY */}
+      <NewOrderAlert
+        order={alertOrder}
+        onClose={() => {
+          if (alertOrderId) scrollToOrder(alertOrderId);
+        }}
+        onMarkSeen={markSeen}
+      />
+
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <h1 className="text-3xl font-display">Pedidos (Admin)</h1>
         <div className="flex items-center gap-2">
-          <SoundToggle onChange={handleToggleSound} />
-          <button className="btn btn-ghost" onClick={stopAll}>
-            🔕 Silenciar todos
+          {/* Já não precisamos do toggle de som; podes manter um "Silenciar todos" se quiseres */}
+          <button
+            className="btn btn-ghost"
+            onClick={() => setAlertOrderId(null)}
+            title="Fecha qualquer alerta aberto"
+          >
+            🔕 Fechar alerta
           </button>
         </div>
       </div>
@@ -430,19 +435,16 @@ export default function AdminOrdersPage() {
 
       {errMsg && <p className="text-red-400 mt-3">{errMsg}</p>}
       {loading && <p className="text-white/70 mt-4">A carregar…</p>}
-      {!loading && filtered.length === 0 && (
-        <p className="mt-4">Sem pedidos neste filtro.</p>
-      )}
+      {!loading && filtered.length === 0 && <p className="mt-4">Sem pedidos neste filtro.</p>}
 
       <div className="grid gap-4 mt-6">
         {filtered.map((o) => (
           <div
             key={o.id}
+            ref={setCardRef(o.id)}
             className={`card p-5 border border-white/10 transition ${
-              newId === o.id
-                ? 'ring-2 ring-buns-yellow/60 shadow-[0_0_40px_rgba(255,214,10,0.25)]'
-                : ''
-            } ${o.status === 'pending' && !o.acknowledged ? 'animate-pulse' : ''}`}
+              o.status === 'pending' && !o.acknowledged ? 'animate-pulse' : ''
+            }`}
           >
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div>
@@ -491,7 +493,6 @@ export default function AdminOrdersPage() {
                         — €{(it.qty * it.price).toFixed(2)}
                       </span>
                     </div>
-                    <ItemExtras item={it} />
                   </li>
                 ))}
               </ul>
@@ -535,7 +536,7 @@ export default function AdminOrdersPage() {
                     className="btn btn-primary"
                     disabled={savingId === o.id}
                     onClick={() => markSeen(o.id)}
-                    title="Pára o alarme deste pedido"
+                    title="Marca o pedido como visto (fecha o alerta, se aberto)"
                   >
                     👀 Marcar como visto
                   </button>
