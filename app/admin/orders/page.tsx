@@ -1,3 +1,4 @@
+// app/admin/orders/page.tsx
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -28,7 +29,6 @@ function SoundToggle({
     onChange?.(enabled);
   }, [enabled, onChange]);
 
-  // pequeno "tick" para desbloquear áudio em mobile/iOS
   const armAudio = async () => {
     try {
       const a = new Audio();
@@ -39,7 +39,7 @@ function SoundToggle({
   };
 
   const toggle = async () => {
-    if (!enabled) await armAudio();
+    if (!enabled) await armAudio(); // desbloqueia autoplay
     setEnabled((v) => !v);
   };
 
@@ -104,18 +104,29 @@ export default function AdminOrdersPage() {
     return localStorage.getItem('buns_admin_sound') === '1';
   });
 
-  // log auxiliar
-  const log = (...a: any[]) => console.log('[orders-admin]', ...a);
-
-  // ultimo evento (para fallback polling)
   const lastEventAt = useRef<number>(Date.now());
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   /* ====== ÁUDIO: WebAudio (beep) + fallback ====== */
   const audioCtxRef = useRef<AudioContext | null>(null);
   const unlockedRef = useRef(false);
   const fileFallbackRef = useRef<HTMLAudioElement | null>(null);
 
-  const unlockAudio = async () => {
+  // "prime" do contexto: necessário em iOS/Chrome para realmente desbloquear
+  const primeAudioContext = () => {
+    if (!audioCtxRef.current) return;
+    try {
+      const ctx = audioCtxRef.current;
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      g.gain.value = 0; // inaudível
+      o.connect(g).connect(ctx.destination);
+      o.start();
+      o.stop(ctx.currentTime + 0.01);
+    } catch {}
+  };
+
+  const ensureAudio = async () => {
     if (!sound) return;
     if (!audioCtxRef.current) {
       try {
@@ -127,69 +138,67 @@ export default function AdminOrdersPage() {
     }
     try {
       await audioCtxRef.current?.resume();
+      primeAudioContext();
       unlockedRef.current = true;
     } catch {
       unlockedRef.current = false;
     }
+    if (!fileFallbackRef.current) {
+      const a = new Audio('/sounds/new-order.wav');
+      a.crossOrigin = 'anonymous';
+      a.preload = 'auto';
+      // playsinline ajuda em iOS
+      (a as any).playsInline = true;
+      fileFallbackRef.current = a;
+      try {
+        // não precisa tocar agora; só preparar
+        await a.load();
+      } catch {}
+    }
   };
-
-  // quando ligas o som: tentamos desbloquear já
-  useEffect(() => {
-    if (!sound) return;
-    const onGesture = () => {
-      unlockAudio();
-      document.removeEventListener('pointerdown', onGesture, true);
-      document.removeEventListener('keydown', onGesture, true);
-    };
-    // se o utilizador tocar após ligar o som, desbloqueia 100%
-    document.addEventListener('pointerdown', onGesture, { once: true, capture: true } as any);
-    document.addEventListener('keydown', onGesture, { once: true, capture: true } as any);
-    // tenta de imediato também
-    unlockAudio();
-    return () => {
-      document.removeEventListener('pointerdown', onGesture, true);
-      document.removeEventListener('keydown', onGesture, true);
-    };
-  }, [sound]);
 
   const beep = () => {
     if (!sound) return;
 
-    // 1) Tenta WebAudio (mais robusto na Vercel)
     if (audioCtxRef.current && unlockedRef.current) {
       try {
         const ctx = audioCtxRef.current;
         const o = ctx.createOscillator();
         const g = ctx.createGain();
         o.type = 'sine';
-        o.frequency.value = 880; // tom
+        o.frequency.value = 880;
         g.gain.setValueAtTime(0.0001, ctx.currentTime);
-        g.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime + 0.02);
-        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.2);
+        g.gain.exponentialRampToValueAtTime(0.28, ctx.currentTime + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.22);
         o.connect(g).connect(ctx.destination);
         o.start();
-        o.stop(ctx.currentTime + 0.22);
+        o.stop(ctx.currentTime + 0.24);
         return;
       } catch {}
     }
 
-    // 2) Fallback para ficheiro (caso WebAudio falhe)
-    if (!fileFallbackRef.current) {
-      fileFallbackRef.current = new Audio('/sounds/new-order.wav');
-      fileFallbackRef.current.preload = 'auto';
+    if (fileFallbackRef.current) {
+      try {
+        fileFallbackRef.current.currentTime = 0;
+        fileFallbackRef.current.play().catch(() => {});
+      } catch {}
     }
-    try {
-      fileFallbackRef.current.currentTime = 0;
-      fileFallbackRef.current.play().catch(() => {});
-    } catch {}
   };
 
-  /* ---- alarmes por pedido (só new order) ---- */
+  // quando liga som: garantir contexto e tocar 1 beep de teste
+  const handleToggleSound = async (enabled: boolean) => {
+    setSound(enabled);
+    if (!enabled) return stopAll();
+    await ensureAudio();
+    setTimeout(() => beep(), 60); // confirmação audível
+  };
+
+  /* ---- alarmes por pedido (apenas NEW ORDER) ---- */
   const alarmTimers = useRef<Map<string, number>>(new Map());
   const startAlarm = (id: string) => {
     if (!sound) return;
     if (alarmTimers.current.has(id)) return;
-    beep();
+    beep(); // toca já uma vez
     const interval = window.setInterval(() => beep(), 4000);
     alarmTimers.current.set(id, interval);
   };
@@ -213,15 +222,9 @@ export default function AdminOrdersPage() {
       .select('*')
       .order('created_at', { ascending: false })
       .limit(200);
-    if (!error && data) {
-      setOrders(data as unknown as Order[]);
-    } else if (error) {
-      log('fetch error', error);
-    }
+    if (!error && data) setOrders(data as unknown as Order[]);
     setLoading(false);
   };
-
-  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const openRealtime = () => {
     if (channelRef.current) {
@@ -250,17 +253,9 @@ export default function AdminOrdersPage() {
           }
 
           if (p.eventType === 'UPDATE') {
-            const old = p.old as any;
-            const oldS = old?.status;
             const newS = row.status;
-
             const next = prev.map((o) => (o.id === row.id ? (row as Order) : o));
-
-            // saiu de pending ou ficou acknowledged → parar
-            if (newS !== 'pending' || row.acknowledged) {
-              stopAlarm(row.id);
-            }
-            // (sem sons por estado)
+            if (newS !== 'pending' || row.acknowledged) stopAlarm(row.id);
             return next;
           }
 
@@ -275,10 +270,7 @@ export default function AdminOrdersPage() {
     );
 
     ch.subscribe((status) => {
-      log('channel status:', status);
-      if (status === 'SUBSCRIBED') {
-        lastEventAt.current = Date.now();
-      }
+      if (status === 'SUBSCRIBED') lastEventAt.current = Date.now();
       if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
         setTimeout(openRealtime, 1200);
       }
@@ -301,9 +293,7 @@ export default function AdminOrdersPage() {
     window.addEventListener('focus', onFocus);
 
     const poll = window.setInterval(() => {
-      if (Date.now() - lastEventAt.current > 15000) {
-        fetchOrders();
-      }
+      if (Date.now() - lastEventAt.current > 15000) fetchOrders();
     }, 5000);
 
     return () => {
@@ -428,12 +418,7 @@ export default function AdminOrdersPage() {
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <h1 className="text-3xl font-display">Pedidos (Admin)</h1>
         <div className="flex items-center gap-2">
-          <SoundToggle
-            onChange={(v) => {
-              setSound(v);
-              if (!v) stopAll();
-            }}
-          />
+          <SoundToggle onChange={handleToggleSound} />
           <button className="btn btn-ghost" onClick={stopAll}>
             🔕 Silenciar todos
           </button>
