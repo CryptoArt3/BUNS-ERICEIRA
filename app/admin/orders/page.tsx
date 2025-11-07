@@ -112,7 +112,6 @@ export default function AdminOrdersPage() {
   const unlockedRef = useRef(false);
   const fileFallbackRef = useRef<HTMLAudioElement | null>(null);
 
-  // "prime" do contexto: necessário em iOS/Chrome para realmente desbloquear
   const primeAudioContext = () => {
     if (!audioCtxRef.current) return;
     try {
@@ -147,11 +146,9 @@ export default function AdminOrdersPage() {
       const a = new Audio('/sounds/new-order.wav');
       a.crossOrigin = 'anonymous';
       a.preload = 'auto';
-      // playsinline ajuda em iOS
       (a as any).playsInline = true;
       fileFallbackRef.current = a;
       try {
-        // não precisa tocar agora; só preparar
         await a.load();
       } catch {}
     }
@@ -185,12 +182,21 @@ export default function AdminOrdersPage() {
     }
   };
 
-  // quando liga som: garantir contexto e tocar 1 beep de teste
+  const stopAll = () => {
+    alarmTimers.current.forEach((t) => window.clearInterval(t));
+    alarmTimers.current.clear();
+  };
+
+  // ao ligar, limpa e dá um beep de teste
   const handleToggleSound = async (enabled: boolean) => {
     setSound(enabled);
-    if (!enabled) return stopAll();
+    if (!enabled) {
+      stopAll();
+      return;
+    }
+    stopAll();            // <— garante que nada fica preso
     await ensureAudio();
-    setTimeout(() => beep(), 60); // confirmação audível
+    setTimeout(() => beep(), 60); // confirmação
   };
 
   /* ---- alarmes por pedido (apenas NEW ORDER) ---- */
@@ -209,11 +215,14 @@ export default function AdminOrdersPage() {
       alarmTimers.current.delete(id);
     }
   };
-  const stopAll = () => {
-    alarmTimers.current.forEach((t) => window.clearInterval(t));
-    alarmTimers.current.clear();
-  };
-  useEffect(() => () => stopAll(), []);
+
+  // se não existir nenhum pending & !acknowledged → pára tudo
+  useEffect(() => {
+    const hasActive = orders.some(
+      (o) => o.status === 'pending' && !o.acknowledged
+    );
+    if (!hasActive) stopAll();
+  }, [orders]);
 
   /* ---- fetch + realtime ---- */
   const fetchOrders = async () => {
@@ -243,6 +252,7 @@ export default function AdminOrdersPage() {
 
         setOrders((prev) => {
           if (p.eventType === 'INSERT') {
+            // novo pedido: dispara alarme se estiver pending e não visto
             if (row.status === 'pending' && !row.acknowledged) {
               setNewId(row.id);
               startAlarm(row.id);
@@ -327,7 +337,7 @@ export default function AdminOrdersPage() {
     try {
       setSavingId(id);
       setErrMsg(null);
-      stopAlarm(id);
+      stopAlarm(id); // <— corta logo o som
       const { error } = await supabase
         .from('orders')
         .update({ acknowledged: true })
