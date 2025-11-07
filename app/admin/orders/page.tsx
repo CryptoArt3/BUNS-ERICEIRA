@@ -137,6 +137,13 @@ export default function AdminOrdersPage() {
     return localStorage.getItem('buns_admin_sound') === '1';
   });
 
+  /* pré-carregar um som quando o som é ativado (melhora autoplay) */
+  useEffect(() => {
+    if (!sound) return;
+    const a = new Audio('/sounds/new-order.mp3');
+    a.load();
+  }, [sound]);
+
   /* ---- alarmes por pedido ---- */
   const alarmTimers = useRef<Map<string, number>>(new Map());
   const startAlarm = (id: string) => {
@@ -185,39 +192,52 @@ export default function AdminOrdersPage() {
         { event: '*', schema: 'public', table: 'orders' },
         (p) => {
           const row = p.new as any;
-          if (p.eventType === 'INSERT') {
-            if (row.status === 'pending' && !row.acknowledged) {
-              setNewId(row.id);
-              startAlarm(row.id);
-              setTimeout(() => setNewId(null), 8000);
+
+          // --- PATCH LOCAL: responder imediatamente ---
+          setOrders((prev) => {
+            if (p.eventType === 'INSERT') {
+              if (row.status === 'pending' && !row.acknowledged) {
+                setNewId(row.id);
+                startAlarm(row.id);
+                setTimeout(() => setNewId(null), 8000);
+              }
+              if (prev.find((o) => o.id === row.id)) return prev;
+              return [row as Order, ...prev];
             }
-          }
-          if (p.eventType === 'UPDATE') {
-            const oldS = (p.old as any)?.status;
-            const newS = row.status;
-            if (oldS !== newS) {
-              if (newS === 'preparing')
-                playOnce(
-                  ['/sounds/preparing.mp3', '/sounds/preparing.wav'],
-                  740
-                );
-              if (newS === 'done' || newS === 'delivering')
-                playOnce(
-                  ['/sounds/delivered.mp3', '/sounds/delivered.wav'],
-                  523.25
-                );
+
+            if (p.eventType === 'UPDATE') {
+              const old = p.old as any;
+              const oldS = old?.status;
+              const newS = row.status;
+
+              const next = prev.map((o) => (o.id === row.id ? (row as Order) : o));
+
+              if (oldS !== newS) {
+                if (newS === 'preparing')
+                  playOnce(['/sounds/preparing.mp3', '/sounds/preparing.wav'], 740);
+                if (newS === 'done' || newS === 'delivering')
+                  playOnce(['/sounds/delivered.mp3', '/sounds/delivered.wav'], 523.25);
+              }
+              if (newS !== 'pending' || row.acknowledged) {
+                stopAlarm(row.id);
+              }
+              return next;
             }
-            if (newS !== 'pending' || row.acknowledged) {
-              stopAlarm(row.id);
+
+            if (p.eventType === 'DELETE') {
+              stopAlarm(row?.id);
+              return prev.filter((o) => o.id !== row?.id);
             }
-          }
-          fetchOrders();
+
+            return prev;
+          });
         }
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(ch);
+      stopAll();
     };
   }, [sound]);
 
@@ -231,6 +251,7 @@ export default function AdminOrdersPage() {
         .update({ status })
         .eq('id', id);
       if (error) throw error;
+      // realtime vai tratar do patch local; fetch de fallback
       await fetchOrders();
     } catch (e: any) {
       console.error(e);
@@ -250,6 +271,7 @@ export default function AdminOrdersPage() {
         .update({ acknowledged: true })
         .eq('id', id);
       if (error) throw error;
+      // realtime vai refletir; fetch de fallback
       await fetchOrders();
     } catch (e: any) {
       console.error(e);
@@ -279,9 +301,9 @@ export default function AdminOrdersPage() {
     <button
       disabled={disabled}
       onClick={onClick}
-      className={`px-3 py-1 rounded-lg text-sm font-medium transition ${
+      className={`px-5 py-3 rounded-xl text-base font-semibold transition shadow-sm ${
         active
-          ? 'bg-buns-yellow text-black'
+          ? 'bg-buns-yellow text-black shadow-[0_0_0_2px_rgba(0,0,0,0.2)]'
           : 'bg-white/10 text-white hover:bg-white/20 disabled:opacity-50'
       }`}
     >
@@ -387,7 +409,9 @@ export default function AdminOrdersPage() {
           <div
             key={o.id}
             className={`card p-5 border border-white/10 transition ${
-              newId === o.id ? 'ring-2 ring-buns-yellow/60' : ''
+              newId === o.id
+                ? 'ring-2 ring-buns-yellow/60 shadow-[0_0_40px_rgba(255,214,10,0.25)]'
+                : ''
             } ${o.status === 'pending' && !o.acknowledged ? 'animate-pulse' : ''}`}
           >
             <div className="flex items-center justify-between flex-wrap gap-3">
@@ -405,7 +429,13 @@ export default function AdminOrdersPage() {
             </div>
 
             <div className="flex items-center gap-2 mt-3 text-sm text-white/70 flex-wrap">
-              <span className="px-3 py-1 rounded-full bg-white/10 border border-white/10 capitalize">
+              <span
+                className={`px-3 py-1 rounded-full border capitalize ${
+                  o.status === 'pending'
+                    ? 'bg-buns-yellow/15 border-buns-yellow/40 text-buns-yellow'
+                    : 'bg-white/10 border-white/10 text-white/80'
+                }`}
+              >
                 {o.status}
               </span>
               <span className="px-3 py-1 rounded-full bg-white/10 border border-white/10">
@@ -422,12 +452,17 @@ export default function AdminOrdersPage() {
             </div>
 
             {o.items?.length > 0 && (
-              <ul className="mt-3 text-sm text-white/80 space-y-2">
+              <ul className="mt-3 space-y-2">
                 {o.items.map((it, i) => (
                   <li key={i} className="pb-2 border-b border-white/5 last:border-0">
-                    <div>
-                      • {it.name} × {it.qty} — €{(it.qty * it.price).toFixed(2)}
+                    {/* LINHA DO ITEM — AMARELO + GRANDE */}
+                    <div className="text-buns-yellow text-xl font-extrabold tracking-wide drop-shadow-[0_1px_0_rgba(0,0,0,0.6)]">
+                      • {it.name} × {it.qty}
+                      <span className="text-white/80 text-base font-semibold ml-2">
+                        — €{(it.qty * it.price).toFixed(2)}
+                      </span>
                     </div>
+
                     <ItemExtras item={it} />
                   </li>
                 ))}
