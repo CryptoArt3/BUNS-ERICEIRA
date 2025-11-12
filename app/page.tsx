@@ -133,6 +133,30 @@ export default function Home() {
         </div>
       </section>
 
+      {/* NOVA SECÇÃO — MANUAL / COMO USAR */}
+      <section className="grid md:grid-cols-2 gap-6 items-center">
+        <div className="card overflow-hidden p-0">
+          {/* Troca a imagem por qualquer foto do guia (ex.: /guia/hero.jpg) */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/como-usar.jpg"
+            alt="Guia: Como usar a app"
+            className="w-full h-64 sm:h-80 object-cover"
+          />
+        </div>
+        <div className="card p-6">
+          <h3 className="text-xl sm:text-2xl font-display">Manual / Como usar a app</h3>
+          <p className="text-white/80 mt-3 leading-relaxed text-[15px] sm:text-base">
+            Passo a passo com imagens: escolher produtos, escrever notas no carrinho,
+            login com Magic Link e acompanhar o estado do pedido na tua conta.
+          </p>
+          <div className="mt-5 flex gap-3">
+            <Link href="/como-usar" className="btn btn-primary">Abrir o Guia</Link>
+            <Link href="/menu" className="btn btn-ghost">Menu</Link>
+          </div>
+        </div>
+      </section>
+
       {/* EQUIPA */}
       <section className="space-y-4">
         <h3 className="text-xl sm:text-2xl font-display">A Equipa</h3>
@@ -171,6 +195,7 @@ export default function Home() {
               <li><Link href="/menu" className="hover:text-white">Menu</Link></li>
               <li><Link href="/cart" className="hover:text-white">Carrinho</Link></li>
               <li><Link href="/checkout" className="hover:text-white">Checkout</Link></li>
+              <li><Link href="/como-usar" className="hover:text-white">Manual / Como usar</Link></li>
               <li><Link href="/admin/login" className="hover:text-white">Área Admin</Link></li>
             </ul>
           </div>
