@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { AnimatePresence, motion } from 'framer-motion'
 
 const STORAGE_KEY = 'buns_welcome_seen_at'
@@ -23,6 +23,7 @@ function shouldOpen(): boolean {
 export default function WelcomeModal() {
   const [open, setOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const router = useRouter()
 
   useEffect(() => {
     setMounted(true)
@@ -31,14 +32,23 @@ export default function WelcomeModal() {
   }, [])
 
   const close = useCallback(() => {
-    try { localStorage.setItem(STORAGE_KEY, new Date().toISOString()) } catch {}
+    try {
+      localStorage.setItem(STORAGE_KEY, new Date().toISOString())
+    } catch {}
     setOpen(false)
   }, [])
+
+  const goToMenu = useCallback(() => {
+    close()
+    router.push('/menu')
+  }, [close, router])
 
   // ESC para fechar
   useEffect(() => {
     if (!open) return
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') close() }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') close()
+    }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [open, close])
@@ -71,7 +81,6 @@ export default function WelcomeModal() {
           >
             {/* Vídeo da mascote */}
             <div className="relative">
-              {/* Substitui os paths pelo teu ficheiro real */}
               <video
                 src="/mascote-poster.mp4"
                 poster="/mascote-poster.mp4"
@@ -102,9 +111,13 @@ export default function WelcomeModal() {
               </p>
 
               <div className="mt-4 flex flex-col sm:flex-row gap-2">
-                <Link href="/menu" className="btn btn-primary flex-1 text-center">
+                {/* Agora fecha e navega */}
+                <button
+                  onClick={goToMenu}
+                  className="btn btn-primary flex-1 text-center"
+                >
                   Ver Menu
-                </Link>
+                </button>
                 <button onClick={close} className="btn btn-ghost flex-1">
                   Fechar
                 </button>
