@@ -281,7 +281,7 @@ function OperatingHours() {
 const TEAM = [
   { name: 'Francisco', role: 'Chapa & Sabor', photo: '/francisco.png', quote: 'Smash é crosta, suco e respeito ao pão.' },
   { name: 'Pedro', role: 'Operações', photo: '/pedro.jpg', quote: 'Serviço rápido, sempre quente.' },
-  { name: 'Luis', role: 'Criativo', photo: '/luis.jpg', quote: 'Surf de dia, smash à noite.' },
+  { name: 'André', role: 'Criativo', photo: '/luis.jpg', quote: 'Surf de dia, smash à noite.' },
   { name: 'Bárbara', role: 'Front & Smile', photo: '/barbara.jpg', quote: 'O segredo? Bons ingredientes e boas vibrações.' },
   { name: 'Bruno', role: 'Prep & Qualidade', photo: '/bruno.jpg', quote: 'Detalhe a detalhe, burger a burger.' },
 ]
