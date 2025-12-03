@@ -3,16 +3,33 @@ import Link from "next/link";
 import { Trophy, Flame, Crown, MapPin, Calendar, Beef } from "lucide-react";
 
 /**
- * ► EDITA AQUI OS DADOS DO CAMPEÃO
- * Troca a imagem por um ficheiro teu em /public (ex.: /champions/tiago.jpg)
+ * ► CAMPEÃO ATUAL
+ * Garante que o ficheiro da foto existe em /public/champions/…
  */
 const CHAMPION = {
-  name: "Daniel Rodrigues",
-  city: "Santarém",
-  date: "1 Nov 2025",
-  record: 4, // número de carnes
-  photo: "/champions/daniel.png", // coloca o teu caminho (ex.: /champions/tiago.jpg)
+  name: `Adam "BIG BOY" Curry`,
+  city: "USA / Ericeira",
+  date: "2 Dez 2025",
+  record: 6, // número de carnes
+  photo: "/champions/adam-big-boy.png", // ajusta para o nome real do ficheiro
+  quote:
+    "Seis carnes. Uma missão épica. A crosta perfeita nunca foi tão respeitada. Até alguém igualar... o trono é dele.",
 };
+
+/**
+ * ► HISTÓRICO DE CAMPEÕES (ex-campeões, sem coroa)
+ */
+const PAST_CHAMPIONS = [
+  {
+    name: "Daniel Rodrigues",
+    city: "Santarém",
+    date: "1 Nov 2025",
+    record: 4,
+    photo: "/champions/daniel.png",
+    quote:
+      "Quatro carnes. O primeiro a erguer o standard BUNS e a abrir caminho para as próximas lendas.",
+  },
+];
 
 export const metadata = {
   title: "BUNS • Wall of Fame",
@@ -28,7 +45,8 @@ export default function WallOfFamePage() {
         aria-hidden
         className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
       >
-        <div className="absolute left-1/2 top-[-10%] h-[60vh] w-[120vw] -translate-x-1/2 rounded-[999px] blur-3xl opacity-30"
+        <div
+          className="absolute left-1/2 top-[-10%] h-[60vh] w-[120vw] -translate-x-1/2 rounded-[999px] blur-3xl opacity-30"
           style={{
             background:
               "radial-gradient(60% 60% at 50% 50%, rgba(255,136,0,0.8) 0%, rgba(255,51,0,0.6) 35%, rgba(0,0,0,0) 70%)",
@@ -107,14 +125,12 @@ export default function WallOfFamePage() {
                   <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-amber-400/30 bg-amber-400/10 px-4 py-2">
                     <Beef className="h-4 w-4 text-amber-300" />
                     <span className="text-amber-200">
-                      {CHAMPION.record} carnes — recorde oficial
+                      {CHAMPION.record} carnes — novo recorde oficial
                     </span>
                   </div>
 
                   <p className="mt-4 text-white/70 text-sm leading-relaxed">
-                    “Duas carnes do hambúrguer original + duas extras. Crosta na
-                    chapa, garra e respeito ao pão. Até alguém subir a fasquia,
-                    o trono é dele.” 🔥
+                    {CHAMPION.quote}
                   </p>
                 </div>
               </div>
@@ -145,25 +161,68 @@ export default function WallOfFamePage() {
           <ul className="mt-3 list-disc pl-5 text-white/80 space-y-1.5 text-sm sm:text-base">
             <li>O recorde é contado pelo número total de carnes ingeridas.</li>
             <li>O hambúrguer base tem 2 carnes; extras contam para o total.</li>
-            <li>Válido apenas em loja BUNS Ericeira e sob supervisão da equipa.</li>
-            <li>Registo com foto, nome, cidade e data — confirmado pela equipa.</li>
+            <li>
+              Válido apenas em loja BUNS Ericeira e sob supervisão da equipa.
+            </li>
+            <li>
+              Registo com foto, nome, cidade e data — confirmado pela equipa.
+            </li>
             <li>Em caso de empate, vale o registo mais antigo.</li>
           </ul>
         </div>
       </section>
 
-      {/* (Opcional) Histórico — ativa quando quiseres
-      <section className="mx-auto mt-8 max-w-6xl">
-        <h3 className="font-display text-xl sm:text-2xl mb-4">Hall de Campeões</h3>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="rounded-2xl border border-white/10 bg-white/5 p-4">
-              <div className="text-white/70 text-sm">Em breve…</div>
-            </div>
-          ))}
-        </div>
-      </section>
-      */}
+      {/* HISTÓRICO DE CAMPEÕES */}
+      {PAST_CHAMPIONS.length > 0 && (
+        <section className="mx-auto mt-8 max-w-6xl">
+          <h3 className="font-display text-xl sm:text-2xl mb-4">
+            Hall de Campeões
+          </h3>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {PAST_CHAMPIONS.map((champ) => (
+              <div
+                key={champ.name}
+                className="rounded-2xl border border-white/10 bg-white/5 p-4"
+              >
+                <div className="flex gap-4">
+                  <div className="relative w-20 h-24 overflow-hidden rounded-xl border border-white/15 bg-black/40">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={champ.photo}
+                      alt={`Foto de ${champ.name}`}
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-sm sm:text-base">
+                      {champ.name}
+                    </h4>
+                    <div className="mt-1 text-xs text-white/70 space-y-0.5">
+                      <div className="flex items-center gap-1.5">
+                        <MapPin className="h-3 w-3 text-amber-300" />
+                        <span>{champ.city}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Calendar className="h-3 w-3 text-amber-300" />
+                        <span>{champ.date}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Beef className="h-3 w-3 text-amber-300" />
+                        <span>{champ.record} carnes</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                {champ.quote && (
+                  <p className="mt-3 text-xs text-white/60 italic">
+                    “{champ.quote}”
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
     </main>
   );
 }
