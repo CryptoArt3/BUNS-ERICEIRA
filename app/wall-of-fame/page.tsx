@@ -9,7 +9,7 @@ import { Trophy, Flame, Crown, MapPin, Calendar, Beef } from "lucide-react";
 const CHAMPION = {
   name: `Adam "BIG BOY" Curry`,
   city: "USA / Ericeira",
-  date: "2 Dez 2025",
+  date: "3 Dez 2025",
   record: 6, // número de carnes
   photo: "/champions/adam-big-boy.png", // ajusta para o nome real do ficheiro
   quote:
