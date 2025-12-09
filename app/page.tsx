@@ -109,30 +109,31 @@ export default function Home() {
             O BUNS é a nova hamburgueria da Ericeira dedicada aos verdadeiros amantes de smash burgers. Ingredientes frescos, carne prensada na chapa como manda a tradição e combinações únicas que respeitam o sabor e a simplicidade. Além dos clássicos, temos opções vegetarianas, batatas doces, frozen Bunanas artesanais e um ambiente urbano inspirado no surf e lifestyle da vila. Ideal para um almoço rápido ou um jantar com amigos. Visita-nos e descobre o smash perfeito.
           </p>
 
-          {/* 🔥 Link para a Wall of Fame */}
-          <div className="mt-5 rounded-xl bg-white/5 border border-white/10 p-4 text-center sm:text-left">
+          {/* 🔥 Link para a Wall of Fame — box inteira clicável */}
+          <Link
+            href="/wall-of-fame"
+            className="mt-5 block rounded-xl bg-white/5 border border-white/10 p-4 text-center sm:text-left cursor-pointer transition hover:border-buns-yellow/70 hover:bg-white/10 hover:shadow-lg"
+          >
             <h4 className="font-display text-lg text-buns-yellow">🔥 Wall of Fame</h4>
             <p className="text-white/80 text-sm sm:text-base mt-1">
               Acreditas que consegues comer mais do que o campeão atual?
-              Junta-te à nossa{' '}
-              <Link href="/wall-of-fame" className="text-buns-yellow font-semibold hover:underline">
-                Wall of Fame
-              </Link>{' '}
+              Junta-te à nossa <span className="text-buns-yellow font-semibold">Wall of Fame</span>{' '}
               e coloca o teu nome na história da BUNS.
             </p>
-          </div>
+          </Link>
 
-          {/* 🎉 NOVA SECÇÃO — EVENTOS */}
-          <div className="mt-6 rounded-xl bg-white/5 border border-white/10 p-4 text-center sm:text-left">
+          {/* 🎉 BUNS Eventos — box inteira clicável */}
+          <Link
+            href="/eventos"
+            className="mt-6 block rounded-xl bg-white/5 border border-white/10 p-4 text-center sm:text-left cursor-pointer transition hover:border-buns-yellow/70 hover:bg-white/10 hover:shadow-lg"
+          >
             <h4 className="font-display text-lg text-buns-yellow">🎉 BUNS Eventos</h4>
             <p className="text-white/80 text-sm sm:text-base mt-1">
               Acontece sempre algo na BUNS — meetups, quizzes, record nights e eventos especiais.
               Vê o que está a acontecer agora na nossa página de{' '}
-              <Link href="/eventos" className="text-buns-yellow font-semibold hover:underline">
-                Eventos BUNS
-              </Link>.
+              <span className="text-buns-yellow font-semibold">Eventos BUNS</span>.
             </p>
-          </div>
+          </Link>
         </div>
 
         <div className="card overflow-hidden p-0">
