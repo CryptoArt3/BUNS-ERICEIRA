@@ -121,6 +121,18 @@ export default function Home() {
               e coloca o teu nome na história da BUNS.
             </p>
           </div>
+
+          {/* 🎉 NOVA SECÇÃO — EVENTOS */}
+          <div className="mt-6 rounded-xl bg-white/5 border border-white/10 p-4 text-center sm:text-left">
+            <h4 className="font-display text-lg text-buns-yellow">🎉 BUNS Eventos</h4>
+            <p className="text-white/80 text-sm sm:text-base mt-1">
+              Acontece sempre algo na BUNS — meetups, quizzes, record nights e eventos especiais.
+              Vê o que está a acontecer agora na nossa página de{' '}
+              <Link href="/eventos" className="text-buns-yellow font-semibold hover:underline">
+                Eventos BUNS
+              </Link>.
+            </p>
+          </div>
         </div>
 
         <div className="card overflow-hidden p-0">
