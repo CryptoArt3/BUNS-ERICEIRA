@@ -7,19 +7,31 @@ import { Trophy, Flame, Crown, MapPin, Calendar, Beef } from "lucide-react";
  * Garante que o ficheiro da foto existe em /public/champions/…
  */
 const CHAMPION = {
-  name: `Adam "BIG BOY" Curry`,
-  city: "USA / Ericeira",
-  date: "3 Dez 2025",
-  record: 6, // número de carnes
-  photo: "/champions/adam-big-boy.png", // ajusta para o nome real do ficheiro
+  title: "RECORDISTAS ATUAIS",
+  names: [`Peter “Big Back” Reinheimer`, `Brayden “Big Back” Gotsky`],
+  city: "Philadelphia / New York",
+  date: "Novo recorde oficial",
+  record: 7,
+  photo: "/champions/wall-of-fame-duo.jpeg",
   quote:
-    "Seis carnes. Uma missão épica. A crosta perfeita nunca foi tão respeitada. Até alguém igualar... o trono é dele.",
+    "Duas lendas. Catorze carnes. Imbatível. Só resta uma pergunta: quem vai ser a próxima dupla?",
+  subtitle: "Onde lendas do apetite nascem",
+  note: "novo recorde oficial em dupla",
 };
 
 /**
- * ► HISTÓRICO DE CAMPEÕES (ex-campeões, sem coroa)
+ * ► HISTÓRICO DE CAMPEÕES
  */
 const PAST_CHAMPIONS = [
+  {
+    name: `Adam "BIG BOY" Curry`,
+    city: "USA / Ericeira",
+    date: "3 Dez 2025",
+    record: 6,
+    photo: "/champions/adam-big-boy.png",
+    quote:
+      "Seis carnes. Uma missão épica. A crosta perfeita nunca foi tão respeitada. Até alguém igualar... o trono é dele.",
+  },
   {
     name: "Daniel Rodrigues",
     city: "Santarém",
@@ -40,7 +52,7 @@ export const metadata = {
 export default function WallOfFamePage() {
   return (
     <main className="relative mx-auto max-w-6xl px-4 py-10 sm:py-12">
-      {/* BACKDROP — gradiente quente + brilho suave */}
+      {/* BACKDROP */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
@@ -76,42 +88,48 @@ export default function WallOfFamePage() {
 
       {/* QUADRO DO CAMPEÃO ATUAL */}
       <section className="mt-8 sm:mt-10">
-        <div className="mx-auto max-w-3xl">
+        <div className="mx-auto max-w-4xl">
           <div className="relative rounded-[28px] p-[2px] bg-gradient-to-br from-yellow-300 via-amber-500 to-orange-600 shadow-[0_0_0_1px_rgba(255,255,255,0.08)]">
-            {/* Moldura interior */}
             <div className="rounded-[26px] bg-[#170f06]/90 backdrop-blur-sm p-5 sm:p-7 border border-white/10">
               <div className="flex items-center justify-center gap-2 text-amber-300">
                 <Crown className="h-5 w-5" />
                 <span className="font-semibold tracking-wide">
-                  CAMPEÃO ATUAL
+                  {CHAMPION.title}
                 </span>
                 <Trophy className="h-5 w-5" />
               </div>
 
-              <div className="mt-5 grid gap-6 sm:grid-cols-2 sm:items-center">
+              <div className="mt-5 grid gap-6 md:grid-cols-[1.1fr_1fr] md:items-center">
                 {/* FOTO */}
-                <div className="order-2 sm:order-1">
-                  <div className="relative mx-auto aspect-[4/5] w-full max-w-[360px] overflow-hidden rounded-[20px] border border-amber-400/30 shadow-[0_10px_40px_rgba(255,170,0,0.25)]">
+                <div>
+                  <div className="relative mx-auto aspect-[4/5] w-full max-w-[420px] overflow-hidden rounded-[20px] border border-amber-400/30 shadow-[0_10px_40px_rgba(255,170,0,0.25)]">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={CHAMPION.photo}
-                      alt={`Foto de ${CHAMPION.name}`}
+                      alt={`Foto de ${CHAMPION.names.join(" e ")}`}
                       className="h-full w-full object-cover"
                     />
-                    {/* Fita diagonal */}
-                    <div className="absolute -left-20 top-4 rotate-[-18deg] rounded px-4 py-1 text-sm font-semibold bg-gradient-to-br from-amber-400 to-orange-500 text-black shadow">
-                      RECORD: {CHAMPION.record} carnes
+
+                    <div className="absolute -left-16 top-4 rotate-[-18deg] rounded px-4 py-1 text-sm font-semibold bg-gradient-to-br from-amber-400 to-orange-500 text-black shadow">
+                      {CHAMPION.record} patties
                     </div>
                   </div>
                 </div>
 
                 {/* DADOS */}
-                <div className="order-1 sm:order-2 text-center sm:text-left">
-                  <h2 className="font-display text-2xl sm:text-3xl">
-                    {CHAMPION.name}
-                  </h2>
+                <div className="text-center md:text-left">
+                  <div className="text-xs uppercase tracking-[0.22em] text-white/55">
+                    Wall of Fame
+                  </div>
 
-                  <div className="mt-2 flex flex-wrap items-center justify-center sm:justify-start gap-3 text-white/80">
+                  <h2 className="mt-2 font-display text-2xl sm:text-3xl leading-tight">
+                    {CHAMPION.names[0]}
+                  </h2>
+                  <h3 className="font-display text-xl sm:text-2xl leading-tight text-white/90">
+                    {CHAMPION.names[1]}
+                  </h3>
+
+                  <div className="mt-3 flex flex-wrap items-center justify-center md:justify-start gap-3 text-white/80">
                     <span className="inline-flex items-center gap-1.5">
                       <MapPin className="h-4 w-4 text-amber-300" />
                       {CHAMPION.city}
@@ -125,7 +143,7 @@ export default function WallOfFamePage() {
                   <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-amber-400/30 bg-amber-400/10 px-4 py-2">
                     <Beef className="h-4 w-4 text-amber-300" />
                     <span className="text-amber-200">
-                      {CHAMPION.record} carnes — novo recorde oficial
+                      {CHAMPION.record} Patties — {CHAMPION.note}
                     </span>
                   </div>
 
@@ -159,14 +177,11 @@ export default function WallOfFamePage() {
         <div className="rounded-2xl border border-white/10 bg-white/5 p-5 sm:p-6">
           <h3 className="font-display text-xl sm:text-2xl">Como funciona</h3>
           <ul className="mt-3 list-disc pl-5 text-white/80 space-y-1.5 text-sm sm:text-base">
-            <li>O recorde é contado pelo número total de carnes ingeridas.</li>
+            <li>O recorde é contado pelo número total de patties/carnes ingeridas.</li>
             <li>O hambúrguer base tem 2 carnes; extras contam para o total.</li>
-            <li>
-              Válido apenas em loja BUNS Ericeira e sob supervisão da equipa.
-            </li>
-            <li>
-              Registo com foto, nome, cidade e data — confirmado pela equipa.
-            </li>
+            <li>Desafios em dupla também entram para o Wall of Fame.</li>
+            <li>Válido apenas em loja BUNS Ericeira e sob supervisão da equipa.</li>
+            <li>Registo com foto, nome, cidade e data — confirmado pela equipa.</li>
             <li>Em caso de empate, vale o registo mais antigo.</li>
           </ul>
         </div>
@@ -178,6 +193,7 @@ export default function WallOfFamePage() {
           <h3 className="font-display text-xl sm:text-2xl mb-4">
             Hall de Campeões
           </h3>
+
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {PAST_CHAMPIONS.map((champ) => (
               <div
@@ -185,7 +201,7 @@ export default function WallOfFamePage() {
                 className="rounded-2xl border border-white/10 bg-white/5 p-4"
               >
                 <div className="flex gap-4">
-                  <div className="relative w-20 h-24 overflow-hidden rounded-xl border border-white/15 bg-black/40">
+                  <div className="relative w-20 h-24 overflow-hidden rounded-xl border border-white/15 bg-black/40 shrink-0">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={champ.photo}
@@ -193,10 +209,12 @@ export default function WallOfFamePage() {
                       className="h-full w-full object-cover"
                     />
                   </div>
+
                   <div className="flex-1">
                     <h4 className="font-semibold text-sm sm:text-base">
                       {champ.name}
                     </h4>
+
                     <div className="mt-1 text-xs text-white/70 space-y-0.5">
                       <div className="flex items-center gap-1.5">
                         <MapPin className="h-3 w-3 text-amber-300" />
@@ -213,6 +231,7 @@ export default function WallOfFamePage() {
                     </div>
                   </div>
                 </div>
+
                 {champ.quote && (
                   <p className="mt-3 text-xs text-white/60 italic">
                     “{champ.quote}”
