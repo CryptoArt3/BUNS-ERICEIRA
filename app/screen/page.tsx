@@ -3,88 +3,101 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-type FallbackSlide = {
-  id: string;
-  title: string[];
-  subtitle: string;
-  lines: string[];
-};
-
-type BackendSlide = {
-  id?: string | null;
-  title?: string | null;
-  subtitle?: string | null;
-  lines?: string[] | null;
-};
-
-type ScreenApiResponse = {
-  ok?: boolean;
-  slide_type?: string | null;
-  slide?: BackendSlide | null;
-  updated_at?: string | null;
-};
-
 type DisplaySlide = {
   id: string;
   titleLines: string[];
   subtitle: string;
   lines: string[];
+  image: string | null;
+  durationMs: number;
+  type: string | null;
 };
 
-const FALLBACK_SLIDES: FallbackSlide[] = [
+type ScreenApiSlide = {
+  type?: string | null;
+  product_slug?: string | null;
+  headline?: string | null;
+  subheadline?: string | null;
+  cta?: string | null;
+  image?: string | null;
+  duration?: number | null;
+};
+
+type ScreenApiResponse = {
+  ok?: boolean;
+  status?: string | null;
+  slides?: ScreenApiSlide[] | null;
+  updated_at?: string | null;
+};
+
+const FALLBACK_SLIDES: DisplaySlide[] = [
   {
     id: "fallback-buns-adventures",
-    title: ["BUNS", "ADVENTURES"],
+    titleLines: ["BUNS", "ADVENTURES"],
     subtitle: "Buns & Bunana",
     lines: [],
+    image: null,
+    durationMs: 7000,
+    type: null,
   },
   {
     id: "fallback-smash-burgers",
-    title: ["SMASH", "BURGERS"],
+    titleLines: ["SMASH", "BURGERS"],
     subtitle: "Made in Ericeira",
     lines: [],
+    image: null,
+    durationMs: 7000,
+    type: null,
   },
   {
     id: "fallback-google-rating",
-    title: ["4.9★", "GOOGLE"],
+    titleLines: ["4.9*", "GOOGLE"],
     subtitle: "212 REVIEWS",
     lines: [],
+    image: null,
+    durationMs: 7000,
+    type: null,
   },
   {
     id: "fallback-kids-menu",
-    title: ["KIDS", "MENU"],
+    titleLines: ["KIDS", "MENU"],
     subtitle: "TOY INCLUDED",
     lines: [],
+    image: null,
+    durationMs: 7000,
+    type: null,
   },
 ];
 
-const AGENT_API_BASE_URL = process.env.NEXT_PUBLIC_AGENT_API_BASE_URL?.replace(/\/+$/, "");
-const BACKEND_ENDPOINT = AGENT_API_BASE_URL
-  ? `${AGENT_API_BASE_URL}/screen/next`
-  : null;
+const AGENT_API_BASE_URL = process.env.NEXT_PUBLIC_AGENT_API_BASE_URL?.replace(/\/+$/, "") ?? "";
+const SCREEN_PLAYLIST_URL = AGENT_API_BASE_URL ? `${AGENT_API_BASE_URL}/webdev/screen` : null;
 const FALLBACK_SLIDE_DURATION_MS = 7000;
-const POLL_INTERVAL_MS = 10_000;
-const BACKGROUND_VIDEO_SRC: string | null = null;
+const POLL_INTERVAL_MS = 15000;
+const MIN_LIVE_DURATION_MS = 4000;
 
 export default function ScreenPage() {
   const [index, setIndex] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [wakeLockActive, setWakeLockActive] = useState(false);
-  const [liveSlide, setLiveSlide] = useState<DisplaySlide | null>(null);
-  const [liveSlideKey, setLiveSlideKey] = useState<string | null>(null);
+  const [liveSlides, setLiveSlides] = useState<DisplaySlide[] | null>(null);
   const liveSignatureRef = useRef<string | null>(null);
 
-  useEffect(() => {
-    if (liveSlide) {
-      return;
-    }
+  const activeSlides = liveSlides && liveSlides.length > 0 ? liveSlides : FALLBACK_SLIDES;
+  const isLive = Boolean(liveSlides && liveSlides.length > 0);
+  const currentSlide = activeSlides[index] ?? activeSlides[0];
+  const slideDurationMs = currentSlide?.durationMs ?? FALLBACK_SLIDE_DURATION_MS;
 
+  useEffect(() => {
+    setIndex((current) => (current >= activeSlides.length ? 0 : current));
+  }, [activeSlides.length]);
+
+  useEffect(() => {
     const timeout = window.setTimeout(() => {
-      setIndex((prev) => (prev + 1) % FALLBACK_SLIDES.length);
-    }, FALLBACK_SLIDE_DURATION_MS);
+      setIndex((prev) => (prev + 1) % activeSlides.length);
+    }, slideDurationMs);
 
     return () => window.clearTimeout(timeout);
-  }, [index, liveSlide]);
+  }, [activeSlides.length, index, slideDurationMs]);
 
   useEffect(() => {
     let isMounted = true;
@@ -95,18 +108,17 @@ export default function ScreenPage() {
       }
 
       liveSignatureRef.current = null;
-      setLiveSlide(null);
-      setLiveSlideKey(null);
+      setLiveSlides(null);
     };
 
-    const fetchNextSlide = async () => {
-      try {
-        if (!BACKEND_ENDPOINT) {
-          applyFallback();
-          return;
-        }
+    const loadScreen = async () => {
+      if (!SCREEN_PLAYLIST_URL) {
+        applyFallback();
+        return;
+      }
 
-        const response = await fetch(BACKEND_ENDPOINT, {
+      try {
+        const response = await fetch(SCREEN_PLAYLIST_URL, {
           cache: "no-store",
         });
 
@@ -116,44 +128,37 @@ export default function ScreenPage() {
         }
 
         const payload = (await response.json()) as ScreenApiResponse;
-
-        if (payload.slide_type == null || !payload.slide) {
-          applyFallback();
-          return;
-        }
-
-        const normalized = normalizeBackendSlide(payload);
-
-        if (!normalized) {
-          applyFallback();
-          return;
-        }
-
-        const signature = JSON.stringify({
-          slideType: payload.slide_type,
-          updatedAt: payload.updated_at ?? null,
-          slide: normalized,
-        });
+        const normalizedSlides = normalizeLiveSlides(payload);
 
         if (!isMounted) {
           return;
         }
 
-        if (liveSignatureRef.current !== signature) {
-          liveSignatureRef.current = signature;
-          setLiveSlide(normalized);
-          setLiveSlideKey(
-            `${payload.slide_type}:${payload.updated_at ?? "current"}:${normalized.id}`
-          );
+        if (!normalizedSlides) {
+          applyFallback();
+          return;
         }
+
+        const signature = JSON.stringify({
+          updatedAt: payload.updated_at ?? null,
+          slides: normalizedSlides,
+        });
+
+        if (liveSignatureRef.current === signature) {
+          return;
+        }
+
+        liveSignatureRef.current = signature;
+        setLiveSlides(normalizedSlides);
+        setIndex(0);
       } catch {
         applyFallback();
       }
     };
 
-    void fetchNextSlide();
+    void loadScreen();
     const interval = window.setInterval(() => {
-      void fetchNextSlide();
+      void loadScreen();
     }, POLL_INTERVAL_MS);
 
     return () => {
@@ -249,11 +254,11 @@ export default function ScreenPage() {
     };
   }, []);
 
-  const fallbackSlide = FALLBACK_SLIDES[index];
-  const currentSlide = liveSlide ?? toDisplaySlide(fallbackSlide);
-  const slideKey = liveSlide ? liveSlideKey ?? liveSlide.id : `fallback-${fallbackSlide.id}`;
+  const slideKey = `${currentSlide.id}-${index}`;
   const statusLabel = wakeLockActive || isFullscreen ? "Running" : "Starting";
-  const sourceLabel = liveSlide ? "Live" : `Slide ${index + 1}/${FALLBACK_SLIDES.length}`;
+  const sourceLabel = isLive
+    ? `Live ${index + 1}/${activeSlides.length}`
+    : `Fallback ${index + 1}/${FALLBACK_SLIDES.length}`;
   const detailLines = useMemo(
     () => currentSlide.lines.filter((line) => line.trim().length > 0),
     [currentSlide.lines]
@@ -261,17 +266,13 @@ export default function ScreenPage() {
 
   return (
     <main className="relative flex min-h-dvh w-full items-center justify-center overflow-hidden bg-black px-6 py-8 text-center text-white">
-      {BACKGROUND_VIDEO_SRC ? (
-        <video
-          autoPlay
-          muted
-          loop
-          playsInline
-          className="absolute inset-0 h-full w-full object-cover opacity-20"
-          src={BACKGROUND_VIDEO_SRC}
+      {currentSlide.image ? (
+        <div
+          className="absolute inset-0 bg-cover bg-center opacity-20"
+          style={{ backgroundImage: `url("${currentSlide.image}")` }}
         />
       ) : null}
-      <div className="absolute inset-0 bg-black/75" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),transparent_42%),linear-gradient(180deg,rgba(0,0,0,0.68),rgba(0,0,0,0.92))]" />
 
       <div className="absolute right-4 top-4 z-10 flex items-center gap-3 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white/80 backdrop-blur-sm sm:right-6 sm:top-6">
         <span>{sourceLabel}</span>
@@ -290,6 +291,12 @@ export default function ScreenPage() {
             className="flex w-full flex-col items-center justify-center gap-14 sm:gap-20"
           >
             <div className="flex min-h-[42dvh] w-full flex-col items-center justify-center gap-6">
+              {currentSlide.type ? (
+                <p className="rounded-full border border-white/12 bg-white/6 px-4 py-2 font-body text-xs uppercase tracking-[0.34em] text-white/55">
+                  {currentSlide.type}
+                </p>
+              ) : null}
+
               <motion.h1
                 initial={{ opacity: 0, scale: 0.975 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -337,24 +344,43 @@ export default function ScreenPage() {
   );
 }
 
-function normalizeBackendSlide(payload: ScreenApiResponse): DisplaySlide | null {
-  const title = payload.slide?.title?.trim();
-  const subtitle = payload.slide?.subtitle?.trim();
+function normalizeLiveSlides(payload: ScreenApiResponse): DisplaySlide[] | null {
+  if (payload.status !== "live" || !Array.isArray(payload.slides) || payload.slides.length === 0) {
+    return null;
+  }
 
-  if (!title || !subtitle) {
+  const slides = payload.slides
+    .map((slide, index) => normalizeLiveSlide(slide, index))
+    .filter((slide): slide is DisplaySlide => slide !== null);
+
+  return slides.length > 0 ? slides : null;
+}
+
+function normalizeLiveSlide(slide: ScreenApiSlide, index: number): DisplaySlide | null {
+  const headline = slide.headline?.trim();
+  const subheadline = slide.subheadline?.trim();
+
+  if (!headline || !subheadline) {
     return null;
   }
 
   return {
-    id: payload.slide?.id?.trim() || payload.updated_at || "backend-slide",
-    titleLines: splitTitleLines(title),
-    subtitle,
-    lines: Array.isArray(payload.slide?.lines)
-      ? payload.slide.lines
-          .map((line) => line.trim())
-          .filter((line) => line.length > 0)
-      : [],
+    id: slide.product_slug?.trim() || `${slide.type ?? "screen"}-${index + 1}`,
+    titleLines: splitTitleLines(headline),
+    subtitle: subheadline,
+    lines: slide.cta?.trim() ? [slide.cta.trim()] : [],
+    image: slide.image?.trim() || null,
+    durationMs: normalizeDurationMs(slide.duration),
+    type: slide.type?.trim() || null,
   };
+}
+
+function normalizeDurationMs(durationSeconds: number | null | undefined) {
+  if (typeof durationSeconds !== "number" || !Number.isFinite(durationSeconds)) {
+    return FALLBACK_SLIDE_DURATION_MS;
+  }
+
+  return Math.max(MIN_LIVE_DURATION_MS, Math.round(durationSeconds * 1000));
 }
 
 function splitTitleLines(title: string) {
@@ -363,18 +389,5 @@ function splitTitleLines(title: string) {
     .map((line) => line.trim())
     .filter((line) => line.length > 0);
 
-  if (explicitLines.length > 1) {
-    return explicitLines;
-  }
-
-  return [title];
-}
-
-function toDisplaySlide(slide: FallbackSlide): DisplaySlide {
-  return {
-    id: slide.id,
-    titleLines: slide.title,
-    subtitle: slide.subtitle,
-    lines: slide.lines,
-  };
+  return explicitLines.length > 0 ? explicitLines : [title];
 }
