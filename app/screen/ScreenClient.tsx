@@ -69,8 +69,7 @@ const FALLBACK_SLIDES: DisplaySlide[] = [
   },
 ];
 
-const AGENT_API_BASE_URL = process.env.NEXT_PUBLIC_AGENT_API_BASE_URL?.replace(/\/+$/, "") ?? "";
-const SCREEN_PLAYLIST_URL = AGENT_API_BASE_URL ? `${AGENT_API_BASE_URL}/webdev/screen` : null;
+const SCREEN_PLAYLIST_URL = "/api/screen";
 const FALLBACK_SLIDE_DURATION_MS = 7000;
 const POLL_INTERVAL_MS = 15000;
 const MIN_LIVE_DURATION_MS = 4000;
@@ -102,8 +101,7 @@ export default function ScreenClient() {
   useEffect(() => {
     let isMounted = true;
 
-    console.log("[screen] api_base_url", AGENT_API_BASE_URL || "(empty)");
-    console.log("[screen] fetch_target", SCREEN_PLAYLIST_URL || "(none)");
+    console.log("[screen] fetch_target", SCREEN_PLAYLIST_URL);
 
     const applyFallback = (reason: string) => {
       console.warn("[screen] using fallback", reason);
@@ -117,11 +115,6 @@ export default function ScreenClient() {
     };
 
     const loadScreen = async () => {
-      if (!SCREEN_PLAYLIST_URL) {
-        applyFallback("missing NEXT_PUBLIC_AGENT_API_BASE_URL");
-        return;
-      }
-
       try {
         const response = await fetch(SCREEN_PLAYLIST_URL, {
           cache: "no-store",
