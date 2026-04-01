@@ -8,13 +8,16 @@ import { Trophy, Flame, Crown, MapPin, Calendar, Beef } from "lucide-react";
  */
 const CHAMPION = {
   title: "RECORDISTAS ATUAIS",
-  names: [`Peter “Big Back” Reinheimer`, `Brayden “Big Back” Gotsky`],
-  city: "Philadelphia / New York",
+  names: [
+    `Marc “Not Blondie” Weib`,
+    `Andrea “Blondie” Teyssedre`,
+  ],
+  city: "Germany / Madagascar",
   date: "Novo recorde oficial",
-  record: 7,
-  photo: "/champions/wall-of-fame-duo.jpeg",
+  record: 8,
+  photo: "/champions/marc-andrea-wall-of-fame.jpg",
   quote:
-    "Duas lendas. Catorze carnes. Imbatível. Só resta uma pergunta: quem vai ser a próxima dupla?",
+    "Duas máquinas. Dezasseis carnes. Um novo topo no Wall of Fame. Agora o desafio ficou ainda mais sério.",
   subtitle: "Onde lendas do apetite nascem",
   note: "novo recorde oficial em dupla",
 };
@@ -23,6 +26,15 @@ const CHAMPION = {
  * ► HISTÓRICO DE CAMPEÕES
  */
 const PAST_CHAMPIONS = [
+  {
+    name: `Peter "Big Back" Reinheimer & Brayden "Big Back" Gotsky`,
+    city: "Philadelphia / New York",
+    date: "Recorde anterior",
+    record: 7,
+    photo: "/champions/wall-of-fame-duo.jpeg",
+    quote:
+      "Sete patties cada um. A dupla que dominou o Wall of Fame antes da chegada dos novos reis da chapa.",
+  },
   {
     name: `Adam "BIG BOY" Curry`,
     city: "USA / Ericeira",
