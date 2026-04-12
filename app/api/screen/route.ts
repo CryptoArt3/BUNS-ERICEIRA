@@ -4,16 +4,22 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const fetchCache = "force-no-store";
 
-const AGENT_API_BASE_URL =
+const DEFAULT_LOCAL_SCREEN_API_BASE_URL = "http://127.0.0.1:8000";
+
+const SCREEN_API_BASE_URL =
+  process.env.SCREEN_API_BASE_URL?.replace(/\/+$/, "") ||
   process.env.AGENT_API_BASE_URL?.replace(/\/+$/, "") ||
   process.env.NEXT_PUBLIC_AGENT_API_BASE_URL?.replace(/\/+$/, "") ||
+  (process.env.NODE_ENV !== "production" ? DEFAULT_LOCAL_SCREEN_API_BASE_URL : "") ||
   "";
 
-const UPSTREAM_URL = AGENT_API_BASE_URL ? `${AGENT_API_BASE_URL}/webdev/screen` : "";
+const UPSTREAM_URL = SCREEN_API_BASE_URL ? `${SCREEN_API_BASE_URL}/webdev/screen` : "";
 
 export async function GET() {
   if (!UPSTREAM_URL) {
-    console.error("[api/screen] Missing AGENT_API_BASE_URL and NEXT_PUBLIC_AGENT_API_BASE_URL");
+    console.error(
+      "[api/screen] Missing SCREEN_API_BASE_URL, AGENT_API_BASE_URL and NEXT_PUBLIC_AGENT_API_BASE_URL"
+    );
     return NextResponse.json(
       { ok: false, status: "error", error: "Missing upstream screen API base URL." },
       {

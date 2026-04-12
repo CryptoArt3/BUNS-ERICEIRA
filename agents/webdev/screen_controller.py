@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import time
 import traceback
 from dataclasses import dataclass
@@ -9,7 +10,14 @@ from typing import Any
 
 import requests
 
-SCREEN_PLAYLIST_URL = "http://192.168.1.119:8000/webdev/screen"
+DEFAULT_LOCAL_SCREEN_API_BASE_URL = "http://127.0.0.1:8000"
+SCREEN_API_BASE_URL = (
+    os.getenv("SCREEN_API_BASE_URL")
+    or os.getenv("AGENT_API_BASE_URL")
+    or os.getenv("NEXT_PUBLIC_AGENT_API_BASE_URL")
+    or (DEFAULT_LOCAL_SCREEN_API_BASE_URL if os.getenv("NODE_ENV") != "production" else "")
+).rstrip("/")
+SCREEN_PLAYLIST_URL = f"{SCREEN_API_BASE_URL}/webdev/screen" if SCREEN_API_BASE_URL else ""
 POLL_INTERVAL_SECONDS = 10
 START_MARKER = "  // SCREEN_CONTROLLER:START"
 END_MARKER = "  // SCREEN_CONTROLLER:END"
@@ -72,6 +80,11 @@ class ScreenController:
         return True
 
     def _load_json(self, url: str) -> Any:
+        if not url:
+            raise RuntimeError(
+                "Missing screen API base URL. Set SCREEN_API_BASE_URL or AGENT_API_BASE_URL."
+            )
+
         attempts = 2
         last_error: Exception | None = None
 

@@ -25,6 +25,8 @@ const landingPage = {
   ],
 };
 
+const voteStorageKey = (pollId: string) => `poll-voted:${pollId}`;
+
 function normalizeResults(results: PollResultsPayload | null | undefined) {
   return landingPage.pollOptions.map((option) => {
     const match = results?.options?.find((item) => item.option === option);
@@ -51,6 +53,21 @@ export default function BaconBunMenuPollPage() {
     "idle"
   );
   const [voteMessage, setVoteMessage] = useState("");
+  const [alreadyVoted, setAlreadyVoted] = useState(false);
+
+  useEffect(() => {
+    try {
+      const storedVote = window.localStorage.getItem(voteStorageKey(pollId));
+
+      if (storedVote) {
+        setAlreadyVoted(true);
+        setVoteStatus("submitted");
+        setVoteMessage("You already voted on this device.");
+      }
+    } catch {
+      // Ignore localStorage access errors and keep voting available.
+    }
+  }, [pollId]);
 
   useEffect(() => {
     let active = true;
@@ -86,7 +103,7 @@ export default function BaconBunMenuPollPage() {
   }, [pollId]);
 
   const submitVote = async () => {
-    if (!selectedOption || voteStatus === "submitting") {
+    if (!selectedOption || voteStatus === "submitting" || alreadyVoted) {
       return;
     }
 
@@ -116,6 +133,13 @@ export default function BaconBunMenuPollPage() {
       }
 
       setResults(payload.results ?? { total_votes: 0, options: [] });
+      try {
+        window.localStorage.setItem(voteStorageKey(pollId), selectedOption);
+      } catch {
+        // Ignore localStorage write errors after a successful vote.
+      }
+
+      setAlreadyVoted(true);
       setVoteStatus("submitted");
       setVoteMessage("Thanks for voting.");
     } catch (error) {
@@ -180,11 +204,12 @@ export default function BaconBunMenuPollPage() {
                   key={option}
                   type="button"
                   onClick={() => setSelectedOption(option)}
+                  disabled={alreadyVoted}
                   className={`w-full rounded-2xl border px-4 py-3 text-left text-base transition ${
                     selectedOption === option
                       ? "border-sky-300 bg-sky-500/15 text-white"
                       : "border-amber-300/20 bg-stone-950/30 text-amber-50/90 hover:border-sky-400/50 hover:bg-sky-500/10"
-                  }`}
+                  } ${alreadyVoted ? "cursor-not-allowed opacity-70" : ""}`}
                 >
                   {option}
                 </button>
@@ -195,10 +220,14 @@ export default function BaconBunMenuPollPage() {
               <button
                 type="button"
                 onClick={submitVote}
-                disabled={!selectedOption || voteStatus === "submitting"}
+                disabled={!selectedOption || voteStatus === "submitting" || alreadyVoted}
                 className="rounded-full bg-amber-400 px-5 py-3 text-sm font-semibold text-stone-950 transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {voteStatus === "submitting" ? "Submitting..." : "Submit vote"}
+                {alreadyVoted
+                  ? "Already voted"
+                  : voteStatus === "submitting"
+                    ? "Submitting..."
+                    : "Submit vote"}
               </button>
               {selectedOption ? (
                 <span className="text-sm text-amber-50/80">Selected: {selectedOption}</span>
