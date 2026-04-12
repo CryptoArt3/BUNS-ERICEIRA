@@ -35,6 +35,8 @@ type ScreenApiSlide = {
   duration?: number | null;
   qr_enabled?: boolean | null;
   qr_asset_path?: string | null;
+  linked_landing_slug?: string | null;
+  linked_landing_url?: string | null;
   total_votes?: number | null;
   poll_options?: string[] | null;
   poll_results_snapshot?: {
@@ -516,7 +518,7 @@ function normalizeLiveSlide(slide: ScreenApiSlide, index: number): DisplaySlide 
     image: slide.image?.trim() || null,
     durationMs: normalizeDurationMs(slide.duration),
     type: slide.type?.trim() || null,
-    qrAssetPath: slide.qr_enabled ? slide.qr_asset_path?.trim() || null : null,
+    qrAssetPath: resolveQrAssetPath(slide),
     pollOptions: resolvedPollOptions,
     totalVotes:
       slide.type === "poll_results"
@@ -548,4 +550,48 @@ function normalizeCount(value: number | null | undefined) {
   }
 
   return Math.max(0, Math.round(value));
+}
+
+function resolveQrAssetPath(slide: ScreenApiSlide) {
+  if (!slide.qr_enabled) {
+    return null;
+  }
+
+  const landingUrl = resolveLandingUrl(slide);
+
+  if (landingUrl) {
+    return `https://api.qrserver.com/v1/create-qr-code/?size=512x512&data=${encodeURIComponent(
+      landingUrl
+    )}`;
+  }
+
+  return slide.qr_asset_path?.trim() || null;
+}
+
+function resolveLandingUrl(slide: ScreenApiSlide) {
+  const rawUrl = slide.linked_landing_url?.trim();
+
+  if (rawUrl) {
+    if (/^https?:\/\//i.test(rawUrl)) {
+      return rawUrl;
+    }
+
+    return `${getPublicSiteOrigin()}${rawUrl.startsWith("/") ? rawUrl : `/${rawUrl}`}`;
+  }
+
+  const slug = slide.linked_landing_slug?.trim();
+
+  if (slug) {
+    return `${getPublicSiteOrigin()}/lp/${slug}`;
+  }
+
+  return null;
+}
+
+function getPublicSiteOrigin() {
+  if (typeof window !== "undefined") {
+    return window.location.origin;
+  }
+
+  return process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, "") || "https://buns-ericeira.pt";
 }

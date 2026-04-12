@@ -9,6 +9,8 @@ type PollResultRow = {
 };
 
 type PollResultsPayload = {
+  ok?: boolean;
+  error?: string;
   total_votes?: number | null;
   options?: PollResultRow[] | null;
 };
@@ -78,12 +80,10 @@ export default function BaconBunMenuPollPage() {
           cache: "no-store",
         });
         const payload = (await response.json().catch(() => ({}))) as {
+          ok?: boolean;
+          error?: string;
           results?: PollResultsPayload | null;
         };
-
-        if (!response.ok) {
-          throw new Error("Failed to load poll results.");
-        }
 
         if (active) {
           setResults(payload.results ?? { total_votes: 0, options: [] });
@@ -124,11 +124,12 @@ export default function BaconBunMenuPollPage() {
       });
 
       const payload = (await response.json().catch(() => ({}))) as {
+        ok?: boolean;
         error?: string;
         results?: PollResultsPayload | null;
       };
 
-      if (!response.ok) {
+      if (!response.ok || payload.ok === false) {
         throw new Error(payload.error || "Vote failed.");
       }
 
