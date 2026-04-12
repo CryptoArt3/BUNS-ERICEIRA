@@ -105,6 +105,7 @@ export default function ScreenClient() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [wakeLockActive, setWakeLockActive] = useState(false);
   const [liveSlides, setLiveSlides] = useState<DisplaySlide[] | null>(null);
+  const [qrImageError, setQrImageError] = useState(false);
   const liveSignatureRef = useRef<string | null>(null);
 
   const activeSlides = liveSlides && liveSlides.length > 0 ? liveSlides : FALLBACK_SLIDES;
@@ -115,6 +116,10 @@ export default function ScreenClient() {
   useEffect(() => {
     setIndex((current) => (current >= activeSlides.length ? 0 : current));
   }, [activeSlides.length]);
+
+  useEffect(() => {
+    setQrImageError(false);
+  }, [currentSlide.id, currentSlide.qrAssetPath]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -406,11 +411,12 @@ export default function ScreenClient() {
                     ) : null}
                   </div>
 
-                  {currentSlide.qrAssetPath ? (
+                  {currentSlide.qrAssetPath && !qrImageError ? (
                     <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-white/12 bg-black/20 px-4 py-4 md:w-[10rem]">
                       <img
                         src={currentSlide.qrAssetPath}
                         alt="QR code"
+                        onError={() => setQrImageError(true)}
                         className="h-28 w-28 rounded-2xl bg-white p-2 shadow-2xl md:h-32 md:w-32"
                       />
                       <p className="text-center font-body text-[0.78rem] uppercase tracking-[0.14em] text-white/58">
@@ -437,13 +443,14 @@ export default function ScreenClient() {
                 </motion.div>
               ) : null}
 
-              {currentSlide.qrAssetPath && !isPollResultsSlide ? (
+              {currentSlide.qrAssetPath && !isPollResultsSlide && !qrImageError ? (
                 <motion.img
                   initial={{ opacity: 0, scale: 0.96 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.9, delay: 0.2, ease: "easeOut" }}
                   src={currentSlide.qrAssetPath}
                   alt="QR code"
+                  onError={() => setQrImageError(true)}
                   className="h-36 w-36 rounded-2xl border border-white/12 bg-white p-2 shadow-2xl"
                 />
               ) : null}
@@ -456,7 +463,7 @@ export default function ScreenClient() {
 }
 
 function normalizeLiveSlides(payload: ScreenApiResponse): DisplaySlide[] | null {
-  if (payload.status !== "live" || !Array.isArray(payload.slides) || payload.slides.length === 0) {
+  if (!Array.isArray(payload.slides) || payload.slides.length === 0) {
     return null;
   }
 
@@ -589,9 +596,5 @@ function resolveLandingUrl(slide: ScreenApiSlide) {
 }
 
 function getPublicSiteOrigin() {
-  if (typeof window !== "undefined") {
-    return window.location.origin;
-  }
-
   return process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, "") || "https://buns-ericeira.pt";
 }
