@@ -25,26 +25,6 @@ const landingPage = {
   ],
 };
 
-function buildApiUrl(path: string) {
-  if (typeof window === "undefined") {
-    return path;
-  }
-
-  const { hostname, protocol, port } = window.location;
-  const isLocalHost =
-    hostname === "localhost" ||
-    hostname === "127.0.0.1" ||
-    hostname.startsWith("192.168.") ||
-    hostname.startsWith("10.") ||
-    hostname.startsWith("172.");
-
-  if (isLocalHost && port === "3000") {
-    return `${protocol}//${hostname}:8000${path}`;
-  }
-
-  return path;
-}
-
 function normalizeResults(results: PollResultsPayload | null | undefined) {
   return landingPage.pollOptions.map((option) => {
     const match = results?.options?.find((item) => item.option === option);
@@ -66,16 +46,20 @@ function normalizeResults(results: PollResultsPayload | null | undefined) {
 export default function BaconBunMenuPollPage() {
   const pollId = useMemo(() => landingPage.slug, []);
   const [results, setResults] = useState<PollResultsPayload | null>(null);
+  const [selectedOption, setSelectedOption] = useState("");
+  const [voteStatus, setVoteStatus] = useState<"idle" | "submitting" | "submitted" | "error">(
+    "idle"
+  );
+  const [voteMessage, setVoteMessage] = useState("");
 
   useEffect(() => {
     let active = true;
 
     const loadResults = async () => {
       try {
-        const response = await fetch(
-          `${buildApiUrl("/webdev/poll/results")}?poll_id=${encodeURIComponent(pollId)}`,
-          { cache: "no-store" }
-        );
+        const response = await fetch(`/api/poll/results?poll_id=${encodeURIComponent(pollId)}`, {
+          cache: "no-store",
+        });
         const payload = (await response.json().catch(() => ({}))) as {
           results?: PollResultsPayload | null;
         };
@@ -100,6 +84,45 @@ export default function BaconBunMenuPollPage() {
       active = false;
     };
   }, [pollId]);
+
+  const submitVote = async () => {
+    if (!selectedOption || voteStatus === "submitting") {
+      return;
+    }
+
+    setVoteStatus("submitting");
+    setVoteMessage("");
+
+    try {
+      const response = await fetch("/api/poll/vote", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          poll_id: pollId,
+          option: selectedOption,
+          poll_options: landingPage.pollOptions,
+        }),
+      });
+
+      const payload = (await response.json().catch(() => ({}))) as {
+        error?: string;
+        results?: PollResultsPayload | null;
+      };
+
+      if (!response.ok) {
+        throw new Error(payload.error || "Vote failed.");
+      }
+
+      setResults(payload.results ?? { total_votes: 0, options: [] });
+      setVoteStatus("submitted");
+      setVoteMessage("Thanks for voting.");
+    } catch (error) {
+      setVoteStatus("error");
+      setVoteMessage(error instanceof Error ? error.message : "Vote failed.");
+    }
+  };
 
   const rows = normalizeResults(results);
   const totalVotes =
@@ -153,14 +176,46 @@ export default function BaconBunMenuPollPage() {
             <p className="text-sm uppercase tracking-[0.24em] text-amber-300">Options</p>
             <div className="mt-4 space-y-3">
               {landingPage.pollOptions.map((option) => (
-                <div
+                <button
                   key={option}
-                  className="rounded-2xl border border-amber-300/20 bg-stone-950/30 px-4 py-3 text-base text-amber-50/90"
+                  type="button"
+                  onClick={() => setSelectedOption(option)}
+                  className={`w-full rounded-2xl border px-4 py-3 text-left text-base transition ${
+                    selectedOption === option
+                      ? "border-sky-300 bg-sky-500/15 text-white"
+                      : "border-amber-300/20 bg-stone-950/30 text-amber-50/90 hover:border-sky-400/50 hover:bg-sky-500/10"
+                  }`}
                 >
                   {option}
-                </div>
+                </button>
               ))}
             </div>
+
+            <div className="mt-6 flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={submitVote}
+                disabled={!selectedOption || voteStatus === "submitting"}
+                className="rounded-full bg-amber-400 px-5 py-3 text-sm font-semibold text-stone-950 transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {voteStatus === "submitting" ? "Submitting..." : "Submit vote"}
+              </button>
+              {selectedOption ? (
+                <span className="text-sm text-amber-50/80">Selected: {selectedOption}</span>
+              ) : null}
+            </div>
+
+            {voteMessage ? (
+              <div
+                className={`mt-4 rounded-2xl border px-4 py-3 text-sm ${
+                  voteStatus === "error"
+                    ? "border-rose-400/20 bg-rose-500/10 text-rose-100"
+                    : "border-emerald-400/20 bg-emerald-500/10 text-emerald-100"
+                }`}
+              >
+                {voteMessage}
+              </div>
+            ) : null}
           </aside>
         </div>
       </section>
