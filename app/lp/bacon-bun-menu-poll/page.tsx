@@ -158,35 +158,37 @@ export default function BaconBunMenuPollPage() {
       : 0;
 
   return (
-    <main className="min-h-screen bg-stone-950 text-stone-50">
-      <section className="mx-auto flex min-h-screen max-w-5xl flex-col justify-center gap-10 px-6 py-16 sm:px-10">
+    <main className="min-h-screen bg-[#050404] text-stone-50">
+      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_top,rgba(255,209,102,0.24),transparent_28%),radial-gradient(circle_at_bottom,rgba(0,240,255,0.10),transparent_32%),radial-gradient(ellipse_at_78%_16%,rgba(255,80,0,0.07),transparent_42%),linear-gradient(180deg,rgba(5,3,3,0.9),rgba(3,2,2,0.99))]" />
+      <div className="pointer-events-none fixed inset-0 opacity-[0.10] [background-image:linear-gradient(rgba(255,209,102,0.28)_1px,transparent_1px),linear-gradient(90deg,rgba(255,209,102,0.18)_1px,transparent_1px)] [background-size:22px_22px]" />
+      <section className="relative mx-auto flex min-h-screen max-w-5xl flex-col justify-center gap-10 px-6 py-16 sm:px-10">
         <div className="space-y-4">
-          <p className="text-sm uppercase tracking-[0.28em] text-amber-400">Live Poll</p>
-          <h1 className="max-w-4xl text-5xl font-semibold tracking-tight sm:text-6xl">
+          <p className="inline-flex rounded-sm border border-[#00f0ff]/55 bg-[#00f0ff]/10 px-4 py-1.5 text-[0.68rem] font-black uppercase tracking-[0.42em] text-[#00f0ff] shadow-[0_0_18px_rgba(0,240,255,0.22),0_8px_24px_rgba(0,0,0,0.5)]">Live Poll</p>
+          <h1 className="max-w-4xl text-5xl font-black uppercase tracking-[0.03em] text-[#ffd166] [text-shadow:0_0_55px_rgba(255,209,102,0.55),0_10px_30px_rgba(0,0,0,0.65)] sm:text-6xl">
             {landingPage.headline}
           </h1>
-          <p className="max-w-3xl text-xl text-stone-300 sm:text-2xl">
+          <p className="max-w-3xl text-lg uppercase tracking-[0.1em] text-[#b8ad94] sm:text-xl">
             {landingPage.subheadline}
           </p>
         </div>
 
         <div className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr]">
-          <div className="rounded-3xl border border-sky-500/30 bg-sky-500/10 p-6">
-            <p className="text-sm uppercase tracking-[0.22em] text-sky-300">Poll Question</p>
-            <p className="mt-3 text-2xl text-white">{landingPage.pollQuestion}</p>
+          <div className="rounded-[1.5rem] border-2 border-[#ffd166]/32 bg-[linear-gradient(180deg,rgba(8,6,4,0.96),rgba(3,2,1,0.99))] p-6 shadow-[0_0_0_1px_rgba(255,209,102,0.05),0_30px_72px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,209,102,0.10)] backdrop-blur-md">
+            <p className="text-[0.65rem] font-black uppercase tracking-[0.42em] text-[#ffd166]">Poll Question</p>
+            <p className="mt-3 text-2xl font-black uppercase tracking-[0.04em] text-white sm:text-[2rem]">{landingPage.pollQuestion}</p>
 
             <div className="mt-6 space-y-4">
               {rows.map((row) => (
                 <div key={row.option} className="space-y-2">
-                  <div className="flex items-center justify-between gap-3 text-sm text-white sm:text-base">
-                    <span>{row.option}</span>
-                    <span className="shrink-0">
+                  <div className="flex items-center justify-between gap-3 text-sm text-[#fff6db] sm:text-base">
+                    <span className="font-medium">{row.option}</span>
+                    <span className="shrink-0 rounded-sm border border-[#00f0ff]/42 bg-[#00f0ff]/10 px-3 py-1 font-bold text-[#00f0ff]">
                       {row.votes} votes · {row.percent}%
                     </span>
                   </div>
-                  <div className="h-3 overflow-hidden rounded-full bg-stone-900">
+                  <div className="h-2.5 overflow-hidden rounded-sm bg-black/80 ring-1 ring-white/6">
                     <div
-                      className="h-full rounded-full bg-sky-400 transition-all"
+                      className="h-full rounded-sm bg-gradient-to-r from-[#ff6400] via-[#ffd166] to-[#00f0ff] transition-all"
                       style={{ width: `${Math.min(Math.max(row.percent, 0), 100)}%` }}
                     />
                   </div>
@@ -194,13 +196,13 @@ export default function BaconBunMenuPollPage() {
               ))}
             </div>
 
-            <p className="mt-6 text-sm uppercase tracking-[0.18em] text-sky-100/70">
+            <p className="mt-6 text-[0.65rem] font-black uppercase tracking-[0.35em] text-[#ffd166]">
               Total votes: {totalVotes}
             </p>
           </div>
 
-          <aside className="rounded-3xl border border-amber-500/30 bg-amber-500/10 p-6">
-            <p className="text-sm uppercase tracking-[0.24em] text-amber-300">Options</p>
+          <aside className="rounded-[1.5rem] border-2 border-[#ffd166]/38 bg-[linear-gradient(180deg,rgba(12,8,4,0.96),rgba(5,3,2,0.99))] p-6 shadow-[0_0_0_1px_rgba(255,209,102,0.07),0_28px_70px_rgba(0,0,0,0.72),inset_0_1px_0_rgba(255,209,102,0.13)] backdrop-blur-md">
+            <p className="text-[0.65rem] font-black uppercase tracking-[0.42em] text-[#ffd166]">Options</p>
             <div className="mt-4 space-y-3">
               {landingPage.pollOptions.map((option) => (
                 <button
@@ -208,11 +210,11 @@ export default function BaconBunMenuPollPage() {
                   type="button"
                   onClick={() => setSelectedOption(option)}
                   disabled={alreadyVoted}
-                  className={`w-full rounded-2xl border px-4 py-3 text-left text-base transition ${
+                  className={`w-full rounded-xl border-2 px-4 py-3.5 text-left text-sm font-semibold uppercase tracking-[0.08em] transition ${
                     selectedOption === option
-                      ? "border-sky-300 bg-sky-500/15 text-white"
-                      : "border-amber-300/20 bg-stone-950/30 text-amber-50/90 hover:border-sky-400/50 hover:bg-sky-500/10"
-                  } ${alreadyVoted ? "cursor-not-allowed opacity-70" : ""}`}
+                      ? "border-[#ffd166] bg-[#ffd166]/14 text-[#ffd166] shadow-[0_0_18px_rgba(255,209,102,0.18),0_10px_24px_rgba(0,0,0,0.45)]"
+                      : "border-white/10 bg-black/60 text-[#c8bfa0] hover:border-[#ffd166]/55 hover:bg-[#ffd166]/8 hover:text-white"
+                  } ${alreadyVoted ? "cursor-not-allowed opacity-55" : ""}`}
                 >
                   {option}
                 </button>
@@ -224,7 +226,7 @@ export default function BaconBunMenuPollPage() {
                 type="button"
                 onClick={submitVote}
                 disabled={!selectedOption || voteStatus === "submitting" || alreadyVoted}
-                className="rounded-full bg-amber-400 px-5 py-3 text-sm font-semibold text-stone-950 transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-sm border-2 border-[#ffd166] bg-[#ffd166] px-7 py-3.5 text-sm font-black uppercase tracking-[0.2em] text-[#0c0900] shadow-[0_0_28px_rgba(255,209,102,0.38),0_12px_28px_rgba(0,0,0,0.5)] transition hover:bg-[#ffe580] hover:shadow-[0_0_40px_rgba(255,209,102,0.55)] disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/10 disabled:text-white/55 disabled:opacity-100 disabled:shadow-none"
               >
                 {alreadyVoted
                   ? "Already voted"
@@ -233,16 +235,16 @@ export default function BaconBunMenuPollPage() {
                     : "Submit vote"}
               </button>
               {selectedOption ? (
-                <span className="text-sm text-amber-50/80">Selected: {selectedOption}</span>
+                <span className="text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-[#ffd166]">Selected: {selectedOption}</span>
               ) : null}
             </div>
 
             {voteMessage ? (
               <div
-                className={`mt-4 rounded-2xl border px-4 py-3 text-sm ${
+                className={`mt-4 rounded-xl border-2 px-4 py-3 text-[0.7rem] font-bold uppercase tracking-[0.15em] ${
                   voteStatus === "error"
-                    ? "border-rose-400/20 bg-rose-500/10 text-rose-100"
-                    : "border-emerald-400/20 bg-emerald-500/10 text-emerald-100"
+                    ? "border-rose-500/40 bg-rose-900/30 text-rose-300"
+                    : "border-[#ffd166]/35 bg-[#ffd166]/8 text-[#ffd166]"
                 }`}
               >
                 {voteMessage}

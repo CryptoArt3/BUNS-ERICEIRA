@@ -305,18 +305,20 @@ export default function ScreenClient() {
   const isPollResultsSlide = currentSlide.type === "poll_results";
 
   return (
-    <main className="relative flex min-h-dvh w-full items-center justify-center overflow-hidden bg-black px-6 py-8 text-center text-white">
+    <main className="relative flex min-h-dvh w-full items-center justify-center overflow-hidden bg-[#050404] px-6 py-8 text-center text-white">
       {currentSlide.image ? (
         <div
           className="absolute inset-0 bg-cover bg-center opacity-20"
           style={{ backgroundImage: `url("${currentSlide.image}")` }}
         />
       ) : null}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),transparent_42%),linear-gradient(180deg,rgba(0,0,0,0.68),rgba(0,0,0,0.92))]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,209,102,0.26),transparent_30%),radial-gradient(circle_at_bottom,rgba(0,240,255,0.11),transparent_32%),radial-gradient(ellipse_at_80%_18%,rgba(255,80,0,0.08),transparent_40%),linear-gradient(180deg,rgba(6,4,3,0.88),rgba(2,2,1,0.99))]" />
+      <div className="pointer-events-none absolute inset-0 opacity-[0.12] [background-image:linear-gradient(rgba(255,209,102,0.32)_1px,transparent_1px),linear-gradient(90deg,rgba(255,209,102,0.22)_1px,transparent_1px)] [background-size:22px_22px]" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-[#ffd166]/20 to-transparent" />
 
-      <div className="absolute right-4 top-4 z-10 flex items-center gap-3 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white/80 backdrop-blur-sm sm:right-6 sm:top-6">
+      <div className="absolute right-4 top-4 z-10 flex items-center gap-3 rounded-sm border border-[#ffd166]/55 bg-black/75 px-4 py-1.5 text-[0.65rem] font-black uppercase tracking-[0.24em] text-[#ffd166] shadow-[0_0_18px_rgba(255,209,102,0.18),0_8px_22px_rgba(0,0,0,0.6)] backdrop-blur-md sm:right-6 sm:top-6">
         <span>{sourceLabel}</span>
-        <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(74,222,128,0.9)]" />
+        <span className="h-1.5 w-1.5 rounded-full bg-[#ffd166] shadow-[0_0_10px_rgba(255,209,102,1)]" />
         <span>{statusLabel}</span>
       </div>
 
@@ -342,7 +344,7 @@ export default function ScreenClient() {
               }
             >
               {currentSlide.type ? (
-                <p className="rounded-full border border-white/12 bg-white/6 px-4 py-2 font-body text-xs uppercase tracking-[0.34em] text-white/55">
+                <p className="rounded-sm border border-[#00f0ff]/45 bg-[#00f0ff]/10 px-4 py-1.5 font-body text-[0.65rem] font-black uppercase tracking-[0.4em] text-[#00f0ff] shadow-[0_0_18px_rgba(0,240,255,0.22),0_8px_20px_rgba(0,0,0,0.45)]">
                   {currentSlide.type}
                 </p>
               ) : null}
@@ -353,8 +355,8 @@ export default function ScreenClient() {
                 transition={{ duration: 1.1, ease: "easeOut" }}
                 className={
                   isPollResultsSlide
-                    ? "flex flex-col items-center gap-2 font-display text-[clamp(2.4rem,7vw,4.25rem)] font-bold uppercase leading-[0.94] tracking-[0.05em] text-center"
-                    : "flex flex-col items-center gap-2 font-display text-[clamp(5.25rem,15vw,8.75rem)] font-bold uppercase leading-[0.88] tracking-[0.06em] 2xl:text-[10rem]"
+                    ? "flex flex-col items-center gap-2 font-display text-[clamp(2.4rem,7vw,4.25rem)] font-black uppercase leading-[0.9] tracking-[0.06em] text-center text-[#ffd166] [text-shadow:0_0_45px_rgba(255,209,102,0.55),0_8px_32px_rgba(0,0,0,0.7)]"
+                    : "flex flex-col items-center gap-2 font-display text-[clamp(5.25rem,15vw,8.75rem)] font-black uppercase leading-[0.88] tracking-[0.06em] text-[#ffd166] [text-shadow:0_0_65px_rgba(255,209,102,0.6),0_10px_40px_rgba(0,0,0,0.7)] 2xl:text-[10rem]"
                 }
               >
                 {currentSlide.titleLines.map((line) => (
@@ -376,8 +378,8 @@ export default function ScreenClient() {
                 transition={{ duration: 1.2, delay: 0.08, ease: "easeOut" }}
                 className={
                   isPollResultsSlide
-                    ? "max-w-[34rem] font-body text-[clamp(1rem,2.2vw,1.35rem)] uppercase leading-[1.2] tracking-[0.16em] text-white/72"
-                    : "max-w-[28rem] font-body text-[clamp(1.6rem,4.6vw,3rem)] uppercase leading-[1.15] tracking-[0.28em] text-white/72 2xl:text-[3.25rem]"
+                    ? "max-w-[34rem] font-body text-[clamp(1rem,2.2vw,1.35rem)] font-semibold uppercase leading-[1.2] tracking-[0.22em] text-[#00f0ff]"
+                    : "max-w-[28rem] font-body text-[clamp(1.6rem,4.6vw,3rem)] uppercase leading-[1.15] tracking-[0.28em] text-[#c8bfa0] 2xl:text-[3.25rem]"
                 }
               >
                 {currentSlide.subtitle}
@@ -388,38 +390,38 @@ export default function ScreenClient() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.9, delay: 0.15, ease: "easeOut" }}
-                  className="relative z-10 grid w-full max-w-[38rem] gap-4 rounded-[2rem] border border-white/12 bg-white/6 p-4 backdrop-blur-sm md:grid-cols-[minmax(0,1fr)_auto] md:items-start"
+                  className="relative z-10 grid w-full max-w-[38rem] gap-4 rounded-[1.25rem] border-2 border-[#ffd166]/38 bg-[linear-gradient(180deg,rgba(8,6,4,0.95),rgba(3,2,1,0.99))] p-4 shadow-[0_0_0_1px_rgba(255,209,102,0.06),0_32px_75px_rgba(0,0,0,0.75),inset_0_1px_0_rgba(255,209,102,0.12)] backdrop-blur-md md:grid-cols-[minmax(0,1fr)_auto] md:items-start"
                 >
                   <div className="flex min-w-0 flex-col gap-3">
                     {currentSlide.pollOptions.map((result) => (
                       <div
                         key={result.option}
-                        className="flex items-center justify-between gap-4 rounded-2xl border border-white/12 bg-black/20 px-4 py-3"
+                        className="flex items-center justify-between gap-4 rounded-lg border border-white/8 bg-black/60 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,209,102,0.06)]"
                       >
-                        <span className="font-body text-[clamp(0.95rem,2vw,1.2rem)] uppercase tracking-[0.14em] text-white/78">
+                        <span className="font-body text-[clamp(0.95rem,2vw,1.2rem)] font-semibold uppercase tracking-[0.14em] text-white">
                           {result.option}
                         </span>
-                        <span className="shrink-0 font-body text-[clamp(0.85rem,1.7vw,1rem)] uppercase tracking-[0.12em] text-white/58">
+                        <span className="shrink-0 rounded-sm border border-[#00f0ff]/40 bg-[#00f0ff]/10 px-3 py-1 font-body text-[clamp(0.85rem,1.7vw,1rem)] font-bold uppercase tracking-[0.12em] text-[#00f0ff]">
                           {result.votes} votes • {result.percent}%
                         </span>
                       </div>
                     ))}
                     {typeof currentSlide.totalVotes === "number" ? (
-                      <p className="pt-1 text-center font-body text-[clamp(0.95rem,1.9vw,1.15rem)] uppercase tracking-[0.18em] text-white/58">
+                      <p className="pt-2 text-center font-body text-[clamp(0.95rem,1.9vw,1.15rem)] font-black uppercase tracking-[0.3em] text-[#ffd166]">
                         Total votes: {currentSlide.totalVotes}
                       </p>
                     ) : null}
                   </div>
 
                   {currentSlide.qrAssetPath && !qrImageError ? (
-                    <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-white/12 bg-black/20 px-4 py-4 md:w-[10rem]">
+                    <div className="flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-[#ffd166]/50 bg-[linear-gradient(180deg,rgba(255,209,102,0.14),rgba(0,0,0,0.65))] px-4 py-4 shadow-[0_0_0_1px_rgba(255,209,102,0.08),0_20px_50px_rgba(0,0,0,0.65)] md:w-[10rem]">
                       <img
                         src={currentSlide.qrAssetPath}
                         alt="QR code"
                         onError={() => setQrImageError(true)}
-                        className="h-28 w-28 rounded-2xl bg-white p-2 shadow-2xl md:h-32 md:w-32"
+                        className="h-28 w-28 rounded-lg border-2 border-[#ffd166]/50 bg-white p-2 shadow-[0_0_22px_rgba(255,209,102,0.22),0_12px_32px_rgba(0,0,0,0.5)] md:h-32 md:w-32"
                       />
-                      <p className="text-center font-body text-[0.78rem] uppercase tracking-[0.14em] text-white/58">
+                      <p className="text-center font-body text-[0.7rem] font-black uppercase tracking-[0.24em] text-[#ffd166]">
                         Scan to vote
                       </p>
                     </div>
@@ -430,12 +432,12 @@ export default function ScreenClient() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.9, delay: 0.15, ease: "easeOut" }}
-                  className="flex max-w-[34rem] flex-col items-center gap-3"
+                  className="flex max-w-[34rem] flex-col items-center gap-3 rounded-xl border border-[#ffd166]/28 bg-black/55 px-6 py-5 shadow-[0_0_0_1px_rgba(0,0,0,0.5),0_18px_45px_rgba(0,0,0,0.65)]"
                 >
                   {detailLines.map((line) => (
                     <p
                       key={line}
-                      className="font-body text-[clamp(1rem,2.1vw,1.35rem)] uppercase tracking-[0.22em] text-white/58"
+                      className="font-body text-[clamp(1rem,2.1vw,1.35rem)] font-semibold uppercase tracking-[0.24em] text-white"
                     >
                       {line}
                     </p>
@@ -451,7 +453,7 @@ export default function ScreenClient() {
                   src={currentSlide.qrAssetPath}
                   alt="QR code"
                   onError={() => setQrImageError(true)}
-                  className="h-36 w-36 rounded-2xl border border-white/12 bg-white p-2 shadow-2xl"
+                  className="h-36 w-36 rounded-xl border-2 border-[#ffd166]/55 bg-white p-2 shadow-[0_0_28px_rgba(255,209,102,0.25),0_18px_50px_rgba(0,0,0,0.6)]"
                 />
               ) : null}
             </div>
@@ -471,7 +473,13 @@ function normalizeLiveSlides(payload: ScreenApiResponse): DisplaySlide[] | null 
     .map((slide, index) => normalizeLiveSlide(slide, index))
     .filter((slide): slide is DisplaySlide => slide !== null);
 
-  return slides.length > 0 ? slides : null;
+  if (slides.length === 0) {
+    return null;
+  }
+
+  const pollResultSlides = slides.filter((slide) => slide.type === "poll_results");
+
+  return pollResultSlides.length > 0 ? pollResultSlides : slides;
 }
 
 function normalizeLiveSlide(slide: ScreenApiSlide, index: number): DisplaySlide | null {
@@ -560,10 +568,6 @@ function normalizeCount(value: number | null | undefined) {
 }
 
 function resolveQrAssetPath(slide: ScreenApiSlide) {
-  if (!slide.qr_enabled) {
-    return null;
-  }
-
   const landingUrl = resolveLandingUrl(slide);
 
   if (landingUrl) {
@@ -572,7 +576,7 @@ function resolveQrAssetPath(slide: ScreenApiSlide) {
     )}`;
   }
 
-  return slide.qr_asset_path?.trim() || null;
+  return slide.qr_enabled ? slide.qr_asset_path?.trim() || null : null;
 }
 
 function resolveLandingUrl(slide: ScreenApiSlide) {
