@@ -201,32 +201,67 @@ export default function BaconBunMenuPollPage() {
             </p>
           </div>
 
-          <aside className="rounded-[1.5rem] border-2 border-[#ffd166]/38 bg-[linear-gradient(180deg,rgba(12,8,4,0.96),rgba(5,3,2,0.99))] p-6 shadow-[0_0_0_1px_rgba(255,209,102,0.07),0_28px_70px_rgba(0,0,0,0.72),inset_0_1px_0_rgba(255,209,102,0.13)] backdrop-blur-md">
-            <p className="text-[0.65rem] font-black uppercase tracking-[0.42em] text-[#ffd166]">Options</p>
-            <div className="mt-4 space-y-3">
-              {landingPage.pollOptions.map((option) => (
+          <aside className="relative overflow-hidden rounded-[1.5rem] border-2 border-[#ffd166]/48 bg-[linear-gradient(160deg,rgba(16,10,4,0.97),rgba(5,3,2,0.99))] p-6 shadow-[0_0_0_1px_rgba(255,209,102,0.10),0_0_55px_rgba(255,209,102,0.08),0_36px_80px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,209,102,0.22)] backdrop-blur-md">
+            {/* top accent bar */}
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-transparent via-[#ffd166] to-transparent opacity-80" />
+
+            <div className="flex items-center gap-2.5">
+              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#ffd166] shadow-[0_0_8px_rgba(255,209,102,1)]" />
+              <p className="text-[0.65rem] font-black uppercase tracking-[0.42em] text-[#ffd166]">Options</p>
+            </div>
+
+            <div className="mt-4 space-y-2.5">
+              {landingPage.pollOptions.map((option, idx) => (
                 <button
                   key={option}
                   type="button"
                   onClick={() => setSelectedOption(option)}
                   disabled={alreadyVoted}
-                  className={`w-full rounded-xl border-2 px-4 py-3.5 text-left text-sm font-semibold uppercase tracking-[0.08em] transition ${
+                  className={`group relative w-full overflow-hidden rounded-xl border-2 px-4 py-4 text-left transition-all duration-150 ${
                     selectedOption === option
-                      ? "border-[#ffd166] bg-[#ffd166]/14 text-[#ffd166] shadow-[0_0_18px_rgba(255,209,102,0.18),0_10px_24px_rgba(0,0,0,0.45)]"
-                      : "border-white/10 bg-black/60 text-[#c8bfa0] hover:border-[#ffd166]/55 hover:bg-[#ffd166]/8 hover:text-white"
-                  } ${alreadyVoted ? "cursor-not-allowed opacity-55" : ""}`}
+                      ? "border-[#ffd166] bg-[linear-gradient(135deg,rgba(255,209,102,0.16),rgba(255,180,40,0.05))] text-[#ffd166] shadow-[0_0_0_1px_rgba(255,209,102,0.10),0_0_26px_rgba(255,209,102,0.22),0_8px_24px_rgba(0,0,0,0.55)]"
+                      : "border-white/10 bg-black/55 text-[#c8bfa0] hover:border-[#ffd166]/45 hover:bg-[rgba(255,209,102,0.05)] hover:text-white"
+                  } ${alreadyVoted ? "cursor-not-allowed opacity-50" : ""}`}
                 >
-                  {option}
+                  {selectedOption === option ? (
+                    <span className="pointer-events-none absolute inset-y-0 left-0 w-[3px] rounded-l-xl bg-gradient-to-b from-[#ffd166] to-[#ff9900] shadow-[0_0_10px_rgba(255,209,102,0.75)]" />
+                  ) : null}
+                  <span className="flex items-center gap-3">
+                    <span className={`shrink-0 rounded-sm border px-1.5 py-0.5 font-mono text-[0.58rem] font-black leading-none tracking-wider transition-all ${
+                      selectedOption === option
+                        ? "border-[#ffd166]/55 bg-[#ffd166]/12 text-[#ffd166]"
+                        : "border-white/12 bg-white/4 text-white/35 group-hover:border-[#ffd166]/30 group-hover:text-[#ffd166]/55"
+                    }`}>
+                      {String(idx + 1).padStart(2, "0")}
+                    </span>
+                    <span className="text-sm font-bold uppercase tracking-[0.1em]">{option}</span>
+                    {selectedOption === option ? (
+                      <span className="ml-auto shrink-0 text-[0.7rem] text-[#ffd166]">◆</span>
+                    ) : null}
+                  </span>
                 </button>
               ))}
             </div>
 
-            <div className="mt-6 flex flex-wrap items-center gap-3">
+            <div className="mt-6 space-y-3">
+              {selectedOption && !alreadyVoted ? (
+                <div className="flex items-center gap-2.5 rounded-lg border border-[#ffd166]/28 bg-[#ffd166]/6 px-3.5 py-2.5">
+                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#ffd166] shadow-[0_0_7px_rgba(255,209,102,0.9)]" />
+                  <span className="text-[0.68rem] font-black uppercase tracking-[0.22em] text-[#ffd166]">{selectedOption}</span>
+                </div>
+              ) : null}
+
               <button
                 type="button"
                 onClick={submitVote}
                 disabled={!selectedOption || voteStatus === "submitting" || alreadyVoted}
-                className="rounded-sm border-2 border-[#ffd166] bg-[#ffd166] px-7 py-3.5 text-sm font-black uppercase tracking-[0.2em] text-[#0c0900] shadow-[0_0_28px_rgba(255,209,102,0.38),0_12px_28px_rgba(0,0,0,0.5)] transition hover:bg-[#ffe580] hover:shadow-[0_0_40px_rgba(255,209,102,0.55)] disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/10 disabled:text-white/55 disabled:opacity-100 disabled:shadow-none"
+                className={`w-full rounded-xl border-2 py-4 text-sm font-black uppercase tracking-[0.22em] transition-all duration-200 ${
+                  alreadyVoted
+                    ? "cursor-not-allowed border-[#00f0ff]/45 bg-[#00f0ff]/8 text-[#00f0ff] shadow-[0_0_20px_rgba(0,240,255,0.12)]"
+                    : !selectedOption || voteStatus === "submitting"
+                      ? "cursor-not-allowed border-white/10 bg-white/5 text-white/28"
+                      : "border-[#ffd166] bg-[#ffd166] text-[#0c0900] shadow-[0_0_30px_rgba(255,209,102,0.42),0_12px_28px_rgba(0,0,0,0.55)] hover:bg-[#ffe580] hover:shadow-[0_0_45px_rgba(255,209,102,0.62)]"
+                }`}
               >
                 {alreadyVoted
                   ? "Already voted"
@@ -234,9 +269,6 @@ export default function BaconBunMenuPollPage() {
                     ? "Submitting..."
                     : "Submit vote"}
               </button>
-              {selectedOption ? (
-                <span className="text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-[#ffd166]">Selected: {selectedOption}</span>
-              ) : null}
             </div>
 
             {voteMessage ? (
