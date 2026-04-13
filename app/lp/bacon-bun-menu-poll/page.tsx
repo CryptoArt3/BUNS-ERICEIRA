@@ -16,14 +16,16 @@ type PollResultsPayload = {
 };
 
 const landingPage = {
-  slug: "bacon-bun-menu-poll",
-  headline: "Vote for the next Bacon Bun Menu",
-  subheadline: "Scan from the screen and help choose the winner.",
-  pollQuestion: "Which version of Bacon Bun Menu should launch next?",
+  slug: "best-burger",
+  headline: "Best Burger?",
+  subheadline: "Vote and crown today's winner.",
+  pollQuestion: "Best Burger?",
   pollOptions: [
-    "Bacon Bun Menu Classic",
-    "Bacon Bun Menu Deluxe",
-    "Bacon Bun Menu Takeaway Combo",
+    "Classic Bun",
+    "Bacon Bun",
+    "Epic Bun",
+    "Veggie Bun",
+    "Chicken Bun",
   ],
 };
 
