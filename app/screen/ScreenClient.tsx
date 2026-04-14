@@ -318,11 +318,14 @@ export default function ScreenClient() {
     ? "PUT YOUR COUNTRY ON THE BUNS LEADERBOARD"
     : currentSlide.subtitle;
   const worldRankingResults = useMemo(
-    () =>
-      (currentSlide.pollOptions ?? [])
+    () => {
+      const rankedOptions = (currentSlide.pollOptions ?? [])
         .slice()
         .sort((left, right) => right.votes - left.votes || right.percent - left.percent)
-        .slice(0, 3),
+        .slice(0, 3);
+
+      return rankedOptions;
+    },
     [currentSlide.pollOptions]
   );
 
@@ -436,6 +439,15 @@ export default function ScreenClient() {
                       ) : null}
                     </div>
 
+                    <div className="rounded-xl border border-[#ffd166]/16 bg-white/[0.03] px-4 py-2 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+                      <p className="font-body text-[0.7rem] font-black uppercase tracking-[0.24em] text-[#ffd166]">
+                        Live battle
+                      </p>
+                      <p className="mt-1 font-body text-[0.82rem] font-medium uppercase tracking-[0.1em] text-white/72">
+                        Every scan can move the ranking in real time.
+                      </p>
+                    </div>
+
                     {worldRankingResults.map((result, resultIndex) => {
                       const isLeader = resultIndex === 0;
 
@@ -444,7 +456,7 @@ export default function ScreenClient() {
                           key={result.option}
                           className={
                             isLeader
-                              ? "grid grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-3 rounded-xl border border-[#ffd166]/45 bg-[linear-gradient(90deg,rgba(255,209,102,0.18),rgba(0,0,0,0.72))] px-4 py-3.5 shadow-[0_0_26px_rgba(255,209,102,0.14),inset_0_1px_0_rgba(255,209,102,0.15)]"
+                              ? "grid grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-3 rounded-xl border border-[#ffd166]/45 bg-[linear-gradient(90deg,rgba(255,209,102,0.18),rgba(0,0,0,0.72))] px-4 py-3.5 shadow-[0_0_32px_rgba(255,209,102,0.2),0_0_70px_rgba(255,209,102,0.08),inset_0_1px_0_rgba(255,209,102,0.15)]"
                               : "grid grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-3 rounded-xl border border-white/8 bg-black/60 px-4 py-3"
                           }
                         >
