@@ -21,6 +21,10 @@ export const Header = () => {
   const router = useRouter()
   const { cart } = useCart()
 
+  if (path.startsWith('/screen')) {
+    return null
+  }
+
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
 

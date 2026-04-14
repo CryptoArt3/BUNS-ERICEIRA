@@ -330,7 +330,7 @@ export default function ScreenClient() {
   );
 
   return (
-    <main className="relative flex min-h-dvh w-full items-center justify-center overflow-hidden bg-[#050404] px-6 py-8 text-center text-white">
+    <main className="relative flex min-h-dvh w-full items-center justify-center overflow-hidden bg-[#050404] px-5 py-4 text-center text-white sm:px-6">
       {currentSlide.image ? (
         <div
           className="absolute inset-0 bg-cover bg-center opacity-20"
@@ -347,7 +347,7 @@ export default function ScreenClient() {
         <span>{statusLabel}</span>
       </div>
 
-      <section className="relative z-10 mx-auto flex min-h-dvh w-full max-w-[42rem] items-center justify-center px-7 py-24 sm:px-10 sm:py-28">
+      <section className="relative z-10 mx-auto flex min-h-dvh w-full max-w-[42rem] items-center justify-center px-6 py-16 sm:px-10 sm:py-18">
         <AnimatePresence mode="wait">
           <motion.div
             key={slideKey}

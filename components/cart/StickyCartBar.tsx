@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useMemo } from 'react'
+import { usePathname } from 'next/navigation'
 import { useCart } from '@/components/cart/CartContext'
 
 function currency(x: number) {
@@ -9,10 +10,13 @@ function currency(x: number) {
 }
 
 export default function StickyCartBar() {
+  const path = usePathname()
   const { cart } = useCart()
   const items = cart?.items ?? []
   const count = useMemo(() => items.reduce((n, it) => n + it.qty, 0), [items])
   const subtotal = useMemo(() => items.reduce((acc, it) => acc + it.price * it.qty, 0), [items])
+
+  if (path.startsWith('/screen')) return null
 
   // só mostra em mobile e quando há itens
   if (count === 0) return null

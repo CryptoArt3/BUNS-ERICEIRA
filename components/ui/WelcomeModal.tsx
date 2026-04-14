@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { AnimatePresence, motion } from 'framer-motion'
 
 const STORAGE_KEY = 'buns_welcome_seen_at'
@@ -23,6 +23,7 @@ function shouldOpen(): boolean {
 export default function WelcomeModal() {
   const [open, setOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const path = usePathname()
   const router = useRouter()
 
   useEffect(() => {
@@ -53,7 +54,7 @@ export default function WelcomeModal() {
     return () => window.removeEventListener('keydown', onKey)
   }, [open, close])
 
-  if (!mounted) return null
+  if (!mounted || path.startsWith('/screen')) return null
 
   return (
     <AnimatePresence>
