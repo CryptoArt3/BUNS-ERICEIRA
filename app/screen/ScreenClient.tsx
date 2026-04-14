@@ -426,10 +426,10 @@ export default function ScreenClient() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.9, delay: 0.15, ease: "easeOut" }}
-                  className="relative z-10 grid w-full max-w-[39rem] gap-4 rounded-[1.35rem] border-2 border-[#ffc42e]/58 bg-[linear-gradient(180deg,rgba(7,5,2,0.99),rgba(1,1,1,1))] p-4 shadow-[0_0_0_1px_rgba(255,196,46,0.1),0_36px_82px_rgba(0,0,0,0.84),inset_0_1px_0_rgba(255,196,46,0.18)] backdrop-blur-md md:grid-cols-[minmax(0,1fr)_11.5rem] md:items-stretch"
+                  className="relative z-10 grid w-full max-w-[39rem] grid-cols-[minmax(0,1fr)_10.5rem] items-stretch gap-3 rounded-[1.35rem] border-2 border-[#ffc42e]/58 bg-[linear-gradient(180deg,rgba(7,5,2,0.99),rgba(1,1,1,1))] p-3 shadow-[0_0_0_1px_rgba(255,196,46,0.1),0_36px_82px_rgba(0,0,0,0.84),inset_0_1px_0_rgba(255,196,46,0.18)] backdrop-blur-md sm:grid-cols-[minmax(0,1fr)_11.25rem] sm:gap-4 sm:p-4"
                 >
                   <div className="flex min-w-0 flex-col gap-3 overflow-hidden">
-                    <div className="flex items-center justify-between gap-3 rounded-xl border border-[#29f7ff]/34 bg-[#29f7ff]/14 px-4 py-3">
+                    <div className="flex items-center justify-between gap-2 rounded-xl border border-[#29f7ff]/34 bg-[#29f7ff]/14 px-3 py-2.5 sm:gap-3 sm:px-4 sm:py-3">
                       <div className="text-left">
                         <p className="font-body text-[0.75rem] font-black uppercase tracking-[0.32em] text-[#29f7ff]">
                           Live Ranking
@@ -439,7 +439,7 @@ export default function ScreenClient() {
                         </p>
                       </div>
                       {typeof currentSlide.totalVotes === "number" ? (
-                        <div className="rounded-full border border-[#ffc42e]/50 bg-[#ffc42e]/16 px-3 py-1.5 text-center">
+                        <div className="rounded-full border border-[#ffc42e]/50 bg-[#ffc42e]/16 px-2.5 py-1.5 text-center sm:px-3">
                           <p className="font-body text-[0.68rem] font-black uppercase tracking-[0.22em] text-[#ffc42e]">
                             Total votes
                           </p>
@@ -450,7 +450,7 @@ export default function ScreenClient() {
                       ) : null}
                     </div>
 
-                    <div className="rounded-xl border border-[#ffc42e]/22 bg-white/[0.06] px-4 py-2.5 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+                    <div className="rounded-xl border border-[#ffc42e]/22 bg-white/[0.06] px-3 py-2.5 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] sm:px-4">
                       <p className="font-body text-[0.78rem] font-black uppercase tracking-[0.24em] text-[#ffc42e]">
                         Live battle
                       </p>
@@ -459,7 +459,7 @@ export default function ScreenClient() {
                       </p>
                     </div>
 
-                    <div className="flex flex-col gap-3">
+                    <div className="flex flex-col gap-2.5 sm:gap-3">
                     {worldRankingResults.slice(0, 3).map((result, resultIndex) => {
                       const isLeader = resultIndex === 0;
 
@@ -468,30 +468,30 @@ export default function ScreenClient() {
                           key={result.option}
                           className={
                             isLeader
-                              ? "grid grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-3 rounded-xl border border-[#ffc42e]/58 bg-[linear-gradient(90deg,rgba(255,196,46,0.28),rgba(0,0,0,0.82))] px-4 py-4 shadow-[0_0_38px_rgba(255,196,46,0.28),0_0_78px_rgba(255,196,46,0.12),inset_0_1px_0_rgba(255,196,46,0.2)]"
-                              : "grid grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-3 rounded-xl border border-white/12 bg-black/78 px-4 py-3.5"
+                              ? "grid grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-2.5 rounded-xl border border-[#ffc42e]/58 bg-[linear-gradient(90deg,rgba(255,196,46,0.28),rgba(0,0,0,0.82))] px-3 py-3.5 shadow-[0_0_38px_rgba(255,196,46,0.28),0_0_78px_rgba(255,196,46,0.12),inset_0_1px_0_rgba(255,196,46,0.2)] sm:gap-3 sm:px-4 sm:py-4"
+                              : "grid grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-2.5 rounded-xl border border-white/12 bg-black/78 px-3 py-3 sm:gap-3 sm:px-4 sm:py-3.5"
                           }
                         >
-                          <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/18 bg-white/10 font-display text-[1rem] font-black text-[#ffc42e]">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-full border border-white/18 bg-white/10 font-display text-[0.92rem] font-black text-[#ffc42e] sm:h-10 sm:w-10 sm:text-[1rem]">
                             #{resultIndex + 1}
                           </div>
-                          <div className="text-[2rem] leading-none">{getCountryFlag(result.option)}</div>
+                          <div className="text-[1.65rem] leading-none sm:text-[2rem]">{getCountryFlag(result.option)}</div>
                           <div className="min-w-0 text-left">
                             {isLeader ? (
-                              <p className="mb-1 font-body text-[0.66rem] font-black uppercase tracking-[0.28em] text-[#ffc42e]">
+                              <p className="mb-1 font-body text-[0.58rem] font-black uppercase tracking-[0.24em] text-[#ffc42e] sm:text-[0.66rem] sm:tracking-[0.28em]">
                                 Leading
                               </p>
                             ) : null}
                             <p
                               className={
                                 isLeader
-                                  ? "truncate font-body text-[1.08rem] font-black uppercase tracking-[0.14em] text-white"
-                                  : "truncate font-body text-[1rem] font-black uppercase tracking-[0.12em] text-white"
+                                  ? "truncate font-body text-[0.92rem] font-black uppercase tracking-[0.1em] text-white sm:text-[1.08rem] sm:tracking-[0.14em]"
+                                  : "truncate font-body text-[0.88rem] font-black uppercase tracking-[0.08em] text-white sm:text-[1rem] sm:tracking-[0.12em]"
                               }
                             >
                               {result.option}
                             </p>
-                            <div className="mt-2 h-3 overflow-hidden rounded-full bg-white/14">
+                            <div className="mt-1.5 h-2.5 overflow-hidden rounded-full bg-white/14 sm:mt-2 sm:h-3">
                               <div
                                 className={
                                   isLeader
@@ -502,11 +502,11 @@ export default function ScreenClient() {
                               />
                             </div>
                           </div>
-                          <div className="rounded-lg border border-[#29f7ff]/42 bg-[#29f7ff]/16 px-3 py-1.5 text-right">
-                            <p className="font-body text-[0.68rem] font-black uppercase tracking-[0.2em] text-[#29f7ff]">
+                          <div className="rounded-lg border border-[#29f7ff]/42 bg-[#29f7ff]/16 px-2.5 py-1.5 text-right sm:px-3">
+                            <p className="font-body text-[0.58rem] font-black uppercase tracking-[0.14em] text-[#29f7ff] sm:text-[0.68rem] sm:tracking-[0.2em]">
                               {result.votes} votes
                             </p>
-                            <p className="font-display text-[1.15rem] font-black text-white">
+                            <p className="font-display text-[1rem] font-black text-white sm:text-[1.15rem]">
                               {result.percent}%
                             </p>
                           </div>
@@ -517,15 +517,15 @@ export default function ScreenClient() {
                   </div>
 
                   {currentSlide.qrAssetPath && !qrImageError ? (
-                    <div className="flex flex-col items-center justify-center gap-4 rounded-xl border-2 border-[#ffc42e]/72 bg-[linear-gradient(180deg,rgba(255,196,46,0.2),rgba(0,0,0,0.72))] px-4 py-4 shadow-[0_0_0_1px_rgba(255,196,46,0.14),0_24px_54px_rgba(0,0,0,0.72)] md:min-h-full md:w-[11.5rem] md:self-stretch">
+                    <div className="flex min-h-full w-[10.5rem] flex-col items-center justify-center gap-4 self-stretch rounded-xl border-2 border-[#ffc42e]/72 bg-[linear-gradient(180deg,rgba(255,196,46,0.2),rgba(0,0,0,0.72))] px-3 py-4 shadow-[0_0_0_1px_rgba(255,196,46,0.14),0_24px_54px_rgba(0,0,0,0.72)] sm:w-[11.25rem] sm:px-4">
                       <img
                         src={currentSlide.qrAssetPath}
                         alt="QR code"
                         onError={() => setQrImageError(true)}
-                        className="h-32 w-32 rounded-lg border-[3px] border-[#ffc42e]/80 bg-white p-2 shadow-[0_0_28px_rgba(255,196,46,0.3),0_14px_34px_rgba(0,0,0,0.56)] md:h-36 md:w-36"
+                        className="h-28 w-28 rounded-lg border-[3px] border-[#ffc42e]/80 bg-white p-2 shadow-[0_0_28px_rgba(255,196,46,0.3),0_14px_34px_rgba(0,0,0,0.56)] sm:h-32 sm:w-32"
                       />
                       <div className="space-y-1 text-center">
-                        <p className="font-body text-[0.76rem] font-black uppercase tracking-[0.24em] text-[#ffc42e]">
+                        <p className="font-body text-[0.68rem] font-black uppercase tracking-[0.16em] text-[#ffc42e] sm:text-[0.76rem] sm:tracking-[0.24em]">
                           Scan to represent your country
                         </p>
                       </div>
