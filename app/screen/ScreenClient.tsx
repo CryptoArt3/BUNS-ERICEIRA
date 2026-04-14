@@ -14,6 +14,8 @@ type DisplaySlide = {
   qrAssetPath?: string | null;
   pollOptions?: PollOption[];
   totalVotes?: number | null;
+  pollId?: string | null;
+  campaignId?: string | null;
 };
 
 type PollOption = {
@@ -24,6 +26,8 @@ type PollOption = {
 
 type ScreenApiSlide = {
   type?: string | null;
+  campaign_id?: string | null;
+  poll_id?: string | null;
   product_slug?: string | null;
   headline?: string | null;
   subheadline?: string | null;
@@ -303,6 +307,18 @@ export default function ScreenClient() {
     [currentSlide.lines]
   );
   const isPollResultsSlide = currentSlide.type === "poll_results";
+  const isWorldRankingSlide =
+    isPollResultsSlide &&
+    (currentSlide.pollId === "buns-world-ranking" ||
+      currentSlide.campaignId === "buns-world-ranking");
+  const worldRankingResults = useMemo(
+    () =>
+      (currentSlide.pollOptions ?? [])
+        .slice()
+        .sort((left, right) => right.votes - left.votes || right.percent - left.percent)
+        .slice(0, 5),
+    [currentSlide.pollOptions]
+  );
 
   return (
     <main className="relative flex min-h-dvh w-full items-center justify-center overflow-hidden bg-[#050404] px-6 py-8 text-center text-white">
@@ -385,7 +401,105 @@ export default function ScreenClient() {
                 {currentSlide.subtitle}
               </motion.p>
 
-              {isPollResultsSlide && currentSlide.pollOptions?.length ? (
+              {isWorldRankingSlide && worldRankingResults.length ? (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.9, delay: 0.15, ease: "easeOut" }}
+                  className="relative z-10 grid w-full max-w-[38rem] gap-4 rounded-[1.35rem] border-2 border-[#ffd166]/40 bg-[linear-gradient(180deg,rgba(8,6,4,0.97),rgba(3,2,1,1))] p-4 shadow-[0_0_0_1px_rgba(255,209,102,0.06),0_32px_75px_rgba(0,0,0,0.75),inset_0_1px_0_rgba(255,209,102,0.12)] backdrop-blur-md md:grid-cols-[minmax(0,1fr)_auto] md:items-start"
+                >
+                  <div className="flex min-w-0 flex-col gap-3">
+                    <div className="flex items-center justify-between gap-3 rounded-xl border border-[#00f0ff]/20 bg-[#00f0ff]/8 px-4 py-2.5">
+                      <div className="text-left">
+                        <p className="font-body text-[0.68rem] font-black uppercase tracking-[0.32em] text-[#00f0ff]">
+                          Season Live
+                        </p>
+                        <p className="font-body text-[0.9rem] font-semibold uppercase tracking-[0.14em] text-white/90">
+                          Global leaderboard
+                        </p>
+                      </div>
+                      {typeof currentSlide.totalVotes === "number" ? (
+                        <div className="rounded-full border border-[#ffd166]/35 bg-[#ffd166]/10 px-3 py-1 text-center">
+                          <p className="font-body text-[0.65rem] font-black uppercase tracking-[0.22em] text-[#ffd166]">
+                            Total votes
+                          </p>
+                          <p className="font-display text-[1.25rem] font-black text-white">
+                            {currentSlide.totalVotes}
+                          </p>
+                        </div>
+                      ) : null}
+                    </div>
+
+                    {worldRankingResults.map((result, resultIndex) => {
+                      const isLeader = resultIndex === 0;
+
+                      return (
+                        <div
+                          key={result.option}
+                          className={
+                            isLeader
+                              ? "grid grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-3 rounded-xl border border-[#ffd166]/45 bg-[linear-gradient(90deg,rgba(255,209,102,0.18),rgba(0,0,0,0.72))] px-4 py-3.5 shadow-[0_0_26px_rgba(255,209,102,0.14),inset_0_1px_0_rgba(255,209,102,0.15)]"
+                              : "grid grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-3 rounded-xl border border-white/8 bg-black/60 px-4 py-3"
+                          }
+                        >
+                          <div className="flex h-9 w-9 items-center justify-center rounded-full border border-white/12 bg-white/6 font-display text-[0.95rem] font-black text-[#ffd166]">
+                            #{resultIndex + 1}
+                          </div>
+                          <div className="text-[1.7rem] leading-none">{getCountryFlag(result.option)}</div>
+                          <div className="min-w-0 text-left">
+                            <p
+                              className={
+                                isLeader
+                                  ? "truncate font-body text-[1rem] font-black uppercase tracking-[0.14em] text-white"
+                                  : "truncate font-body text-[0.95rem] font-bold uppercase tracking-[0.12em] text-white"
+                              }
+                            >
+                              {result.option}
+                            </p>
+                            <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-white/10">
+                              <div
+                                className={
+                                  isLeader
+                                    ? "h-full rounded-full bg-[linear-gradient(90deg,#ffd166,#ffb703)]"
+                                    : "h-full rounded-full bg-[linear-gradient(90deg,#00f0ff,#009dff)]"
+                                }
+                                style={{ width: `${Math.max(result.percent, result.votes > 0 ? 8 : 0)}%` }}
+                              />
+                            </div>
+                          </div>
+                          <div className="rounded-lg border border-[#00f0ff]/30 bg-[#00f0ff]/10 px-3 py-1.5 text-right">
+                            <p className="font-body text-[0.63rem] font-black uppercase tracking-[0.2em] text-[#00f0ff]">
+                              {result.votes} votes
+                            </p>
+                            <p className="font-display text-[1.05rem] font-black text-white">
+                              {result.percent}%
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {currentSlide.qrAssetPath && !qrImageError ? (
+                    <div className="flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-[#ffd166]/50 bg-[linear-gradient(180deg,rgba(255,209,102,0.14),rgba(0,0,0,0.65))] px-4 py-4 shadow-[0_0_0_1px_rgba(255,209,102,0.08),0_20px_50px_rgba(0,0,0,0.65)] md:w-[10rem]">
+                      <img
+                        src={currentSlide.qrAssetPath}
+                        alt="QR code"
+                        onError={() => setQrImageError(true)}
+                        className="h-28 w-28 rounded-lg border-2 border-[#ffd166]/50 bg-white p-2 shadow-[0_0_22px_rgba(255,209,102,0.22),0_12px_32px_rgba(0,0,0,0.5)] md:h-32 md:w-32"
+                      />
+                      <div className="space-y-1 text-center">
+                        <p className="font-body text-[0.7rem] font-black uppercase tracking-[0.24em] text-[#ffd166]">
+                          Scan to vote
+                        </p>
+                        <p className="font-body text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-white/75">
+                          Represent your country
+                        </p>
+                      </div>
+                    </div>
+                  ) : null}
+                </motion.div>
+              ) : isPollResultsSlide && currentSlide.pollOptions?.length ? (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -535,6 +649,8 @@ function normalizeLiveSlide(slide: ScreenApiSlide, index: number): DisplaySlide 
     type: slide.type?.trim() || null,
     qrAssetPath: resolveQrAssetPath(slide),
     pollOptions: resolvedPollOptions,
+    pollId: slide.poll_id?.trim() || null,
+    campaignId: slide.campaign_id?.trim() || null,
     totalVotes:
       slide.type === "poll_results"
         ? normalizeCount(slide.total_votes ?? slide.poll_results_snapshot?.total_votes)
@@ -601,4 +717,39 @@ function resolveLandingUrl(slide: ScreenApiSlide) {
 
 function getPublicSiteOrigin() {
   return process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, "") || "https://buns-ericeira.pt";
+}
+
+function getCountryFlag(country: string) {
+  switch (country.trim().toLowerCase()) {
+    case "portugal":
+      return "🇵🇹";
+    case "germany":
+      return "🇩🇪";
+    case "france":
+      return "🇫🇷";
+    case "united kingdom":
+      return "🇬🇧";
+    case "netherlands":
+      return "🇳🇱";
+    case "spain":
+      return "🇪🇸";
+    case "italy":
+      return "🇮🇹";
+    case "united states":
+      return "🇺🇸";
+    case "brazil":
+      return "🇧🇷";
+    case "ireland":
+      return "🇮🇪";
+    case "belgium":
+      return "🇧🇪";
+    case "sweden":
+      return "🇸🇪";
+    case "denmark":
+      return "🇩🇰";
+    case "australia":
+      return "🇦🇺";
+    default:
+      return "🌍";
+  }
 }
