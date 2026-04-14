@@ -102,8 +102,9 @@ const FALLBACK_SLIDES: DisplaySlide[] = [
 
 const SCREEN_PLAYLIST_URL = "/api/screen";
 const FALLBACK_SLIDE_DURATION_MS = 7000;
-const POLL_INTERVAL_MS = 15000;
+const POLL_INTERVAL_MS = 8000;
 const MIN_LIVE_DURATION_MS = 4000;
+const LIVE_UPDATE_BADGE_DURATION_MS = 2600;
 
 export default function ScreenClient() {
   const [index, setIndex] = useState(0);
@@ -111,7 +112,12 @@ export default function ScreenClient() {
   const [wakeLockActive, setWakeLockActive] = useState(false);
   const [liveSlides, setLiveSlides] = useState<DisplaySlide[] | null>(null);
   const [qrImageError, setQrImageError] = useState(false);
+  const [isLiveUpdating, setIsLiveUpdating] = useState(false);
+  const [updatedLeaderOption, setUpdatedLeaderOption] = useState<string | null>(null);
   const liveSignatureRef = useRef<string | null>(null);
+  const liveSlidesRef = useRef<DisplaySlide[] | null>(null);
+  const indexRef = useRef(0);
+  const liveUpdateTimeoutRef = useRef<number | null>(null);
 
   const activeSlides = liveSlides && liveSlides.length > 0 ? liveSlides : FALLBACK_SLIDES;
   const isLive = Boolean(liveSlides && liveSlides.length > 0);
@@ -121,6 +127,14 @@ export default function ScreenClient() {
   useEffect(() => {
     setIndex((current) => (current >= activeSlides.length ? 0 : current));
   }, [activeSlides.length]);
+
+  useEffect(() => {
+    liveSlidesRef.current = liveSlides;
+  }, [liveSlides]);
+
+  useEffect(() => {
+    indexRef.current = index;
+  }, [index]);
 
   useEffect(() => {
     setQrImageError(false);
@@ -180,20 +194,43 @@ export default function ScreenClient() {
           return;
         }
 
-        const signature = JSON.stringify({
-          updatedAt: payload.updated_at ?? null,
-          slides: normalizedSlides,
-        });
+        const signature = JSON.stringify(normalizedSlides);
 
         if (liveSignatureRef.current === signature) {
           console.log("[screen] payload unchanged");
           return;
         }
 
+        const previousVisibleSlide = getVisiblePollResultsSlide(
+          liveSlidesRef.current,
+          indexRef.current
+        );
+        const nextVisibleSlide = getMatchingVisiblePollResultsSlide(
+          normalizedSlides,
+          previousVisibleSlide,
+          indexRef.current
+        );
+        const changeSummary = summarizePollResultsChange(previousVisibleSlide, nextVisibleSlide);
+
         console.log("[screen] applying live slides", normalizedSlides.length);
         liveSignatureRef.current = signature;
         setLiveSlides(normalizedSlides);
         setIndex(0);
+
+        if (changeSummary.changed) {
+          if (liveUpdateTimeoutRef.current) {
+            window.clearTimeout(liveUpdateTimeoutRef.current);
+          }
+
+          setIsLiveUpdating(true);
+          setUpdatedLeaderOption(changeSummary.leaderOption);
+
+          liveUpdateTimeoutRef.current = window.setTimeout(() => {
+            setIsLiveUpdating(false);
+            setUpdatedLeaderOption(null);
+            liveUpdateTimeoutRef.current = null;
+          }, LIVE_UPDATE_BADGE_DURATION_MS);
+        }
       } catch (error) {
         console.error("[screen] fetch_error", error);
         applyFallback("fetch_exception");
@@ -208,6 +245,9 @@ export default function ScreenClient() {
     return () => {
       isMounted = false;
       window.clearInterval(interval);
+      if (liveUpdateTimeoutRef.current) {
+        window.clearTimeout(liveUpdateTimeoutRef.current);
+      }
     };
   }, []);
 
@@ -424,10 +464,29 @@ export default function ScreenClient() {
               {isWorldRankingSlide && worldRankingResults.length ? (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
+                  animate={{
+                    opacity: 1,
+                    y: 0,
+                    boxShadow: isLiveUpdating
+                      ? "0 0 0 1px rgba(255,196,46,0.18), 0 0 42px rgba(41,247,255,0.14), 0 36px 82px rgba(0,0,0,0.84)"
+                      : "0 0 0 1px rgba(255,196,46,0.1), 0 36px 82px rgba(0,0,0,0.84)",
+                  }}
                   transition={{ duration: 0.9, delay: 0.15, ease: "easeOut" }}
                   className="relative z-10 grid w-full max-w-[39rem] grid-cols-[minmax(0,1fr)_10.5rem] items-stretch gap-3 rounded-[1.35rem] border-2 border-[#ffc42e]/58 bg-[linear-gradient(180deg,rgba(7,5,2,0.99),rgba(1,1,1,1))] p-3 shadow-[0_0_0_1px_rgba(255,196,46,0.1),0_36px_82px_rgba(0,0,0,0.84),inset_0_1px_0_rgba(255,196,46,0.18)] backdrop-blur-md sm:grid-cols-[minmax(0,1fr)_11.25rem] sm:gap-4 sm:p-4"
                 >
+                  <AnimatePresence>
+                    {isLiveUpdating ? (
+                      <motion.div
+                        initial={{ opacity: 0, y: -6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -4 }}
+                        transition={{ duration: 0.35, ease: "easeOut" }}
+                        className="pointer-events-none absolute left-4 top-4 z-20 rounded-full border border-[#29f7ff]/45 bg-black/82 px-3 py-1 font-body text-[0.62rem] font-black uppercase tracking-[0.24em] text-[#29f7ff]"
+                      >
+                        Live update
+                      </motion.div>
+                    ) : null}
+                  </AnimatePresence>
                   <div className="flex min-w-0 flex-col gap-3 overflow-hidden">
                     <div className="flex items-center justify-between gap-2 rounded-xl border border-[#29f7ff]/34 bg-[#29f7ff]/14 px-3 py-2.5 sm:gap-3 sm:px-4 sm:py-3">
                       <div className="text-left">
@@ -464,8 +523,27 @@ export default function ScreenClient() {
                       const isLeader = resultIndex === 0;
 
                       return (
-                        <div
+                        <motion.div
                           key={result.option}
+                          initial={false}
+                          animate={
+                            isLeader && updatedLeaderOption === result.option
+                              ? {
+                                  scale: [1, 1.018, 1],
+                                  boxShadow: [
+                                    "0 0 38px rgba(255,196,46,0.28), 0 0 78px rgba(255,196,46,0.12), inset 0 1px 0 rgba(255,196,46,0.2)",
+                                    "0 0 48px rgba(41,247,255,0.2), 0 0 84px rgba(255,196,46,0.18), inset 0 1px 0 rgba(255,196,46,0.24)",
+                                    "0 0 38px rgba(255,196,46,0.28), 0 0 78px rgba(255,196,46,0.12), inset 0 1px 0 rgba(255,196,46,0.2)",
+                                  ],
+                                }
+                              : {
+                                  scale: 1,
+                                  boxShadow: isLeader
+                                    ? "0 0 38px rgba(255,196,46,0.28), 0 0 78px rgba(255,196,46,0.12), inset 0 1px 0 rgba(255,196,46,0.2)"
+                                    : "none",
+                                }
+                          }
+                          transition={{ duration: 0.85, ease: "easeOut" }}
                           className={
                             isLeader
                               ? "grid grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-2.5 rounded-xl border border-[#ffc42e]/58 bg-[linear-gradient(90deg,rgba(255,196,46,0.28),rgba(0,0,0,0.82))] px-3 py-3.5 shadow-[0_0_38px_rgba(255,196,46,0.28),0_0_78px_rgba(255,196,46,0.12),inset_0_1px_0_rgba(255,196,46,0.2)] sm:gap-3 sm:px-4 sm:py-4"
@@ -495,8 +573,8 @@ export default function ScreenClient() {
                               <div
                                 className={
                                   isLeader
-                                    ? "h-full rounded-full bg-[linear-gradient(90deg,#ffc42e,#ff9800)]"
-                                    : "h-full rounded-full bg-[linear-gradient(90deg,#29f7ff,#00aefe)]"
+                                    ? "h-full rounded-full bg-[linear-gradient(90deg,#ffc42e,#ff9800)] transition-[width] duration-700 ease-out"
+                                    : "h-full rounded-full bg-[linear-gradient(90deg,#29f7ff,#00aefe)] transition-[width] duration-700 ease-out"
                                 }
                                 style={{ width: `${Math.max(result.percent, result.votes > 0 ? 8 : 0)}%` }}
                               />
@@ -510,7 +588,7 @@ export default function ScreenClient() {
                               {result.percent}%
                             </p>
                           </div>
-                        </div>
+                        </motion.div>
                       );
                     })}
                     </div>
@@ -535,7 +613,13 @@ export default function ScreenClient() {
               ) : isPollResultsSlide && currentSlide.pollOptions?.length ? (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
+                  animate={{
+                    opacity: 1,
+                    y: 0,
+                    boxShadow: isLiveUpdating
+                      ? "0 0 0 1px rgba(255,196,46,0.12), 0 0 32px rgba(41,247,255,0.12), 0 36px 82px rgba(0,0,0,0.82)"
+                      : "0 0 0 1px rgba(255,196,46,0.08), 0 36px 82px rgba(0,0,0,0.82)",
+                  }}
                   transition={{ duration: 0.9, delay: 0.15, ease: "easeOut" }}
                   className="relative z-10 grid w-full max-w-[39rem] gap-4 rounded-[1.25rem] border-2 border-[#ffc42e]/54 bg-[linear-gradient(180deg,rgba(7,5,2,0.99),rgba(1,1,1,1))] p-4 shadow-[0_0_0_1px_rgba(255,196,46,0.08),0_36px_82px_rgba(0,0,0,0.82),inset_0_1px_0_rgba(255,196,46,0.14)] backdrop-blur-md md:grid-cols-[minmax(0,1fr)_auto] md:items-start"
                 >
@@ -756,6 +840,64 @@ function resolveLandingUrl(slide: ScreenApiSlide) {
 
 function getPublicSiteOrigin() {
   return process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, "") || "https://buns-ericeira.pt";
+}
+
+function getVisiblePollResultsSlide(
+  slides: DisplaySlide[] | null,
+  currentIndex: number
+): DisplaySlide | null {
+  if (!slides || slides.length === 0) {
+    return null;
+  }
+
+  const candidate = slides[currentIndex] ?? slides[0];
+
+  return candidate?.type === "poll_results" ? candidate : null;
+}
+
+function getMatchingVisiblePollResultsSlide(
+  slides: DisplaySlide[],
+  previousVisibleSlide: DisplaySlide | null,
+  currentIndex: number
+) {
+  if (previousVisibleSlide) {
+    const matchedSlide = slides.find((slide) => slide.id === previousVisibleSlide.id);
+
+    if (matchedSlide?.type === "poll_results") {
+      return matchedSlide;
+    }
+  }
+
+  return getVisiblePollResultsSlide(slides, currentIndex);
+}
+
+function summarizePollResultsChange(
+  previousSlide: DisplaySlide | null,
+  nextSlide: DisplaySlide | null
+) {
+  if (!previousSlide || !nextSlide) {
+    return { changed: false, leaderOption: null as string | null };
+  }
+
+  const previousRanking = (previousSlide.pollOptions ?? []).map((option) => ({
+    option: option.option,
+    votes: option.votes,
+    percent: option.percent,
+  }));
+  const nextRanking = (nextSlide.pollOptions ?? []).map((option) => ({
+    option: option.option,
+    votes: option.votes,
+    percent: option.percent,
+  }));
+
+  const changed =
+    previousSlide.totalVotes !== nextSlide.totalVotes ||
+    JSON.stringify(previousRanking) !== JSON.stringify(nextRanking);
+
+  return {
+    changed,
+    leaderOption: changed ? nextRanking[0]?.option ?? null : null,
+  };
 }
 
 function getCountryFlag(country: string) {
