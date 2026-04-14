@@ -13,6 +13,7 @@ type DisplaySlide = {
   type: string | null;
   qrAssetPath?: string | null;
   pollOptions?: PollOption[];
+  allPollOptions?: string[];
   totalVotes?: number | null;
   pollId?: string | null;
   campaignId?: string | null;
@@ -324,9 +325,19 @@ export default function ScreenClient() {
         .sort((left, right) => right.votes - left.votes || right.percent - left.percent)
         .slice(0, 3);
 
-      return rankedOptions;
+      if (rankedOptions.length >= 3) {
+        return rankedOptions;
+      }
+
+      const seenOptions = new Set(rankedOptions.map((option) => option.option));
+      const fallbackOptions = (currentSlide.allPollOptions ?? [])
+        .filter((option) => !seenOptions.has(option))
+        .slice(0, Math.max(0, 3 - rankedOptions.length))
+        .map((option) => ({ option, votes: 0, percent: 0 }));
+
+      return [...rankedOptions, ...fallbackOptions];
     },
-    [currentSlide.pollOptions]
+    [currentSlide.allPollOptions, currentSlide.pollOptions]
   );
 
   return (
@@ -421,7 +432,7 @@ export default function ScreenClient() {
                     <div className="flex items-center justify-between gap-3 rounded-xl border border-[#29f7ff]/34 bg-[#29f7ff]/14 px-4 py-3">
                       <div className="text-left">
                         <p className="font-body text-[0.75rem] font-black uppercase tracking-[0.32em] text-[#29f7ff]">
-                          Season Live
+                          Live Ranking
                         </p>
                         <p className="font-body text-[0.98rem] font-black uppercase tracking-[0.14em] text-white">
                           Global leaderboard
@@ -669,6 +680,12 @@ function normalizeLiveSlide(slide: ScreenApiSlide, index: number): DisplaySlide 
     type: slide.type?.trim() || null,
     qrAssetPath: resolveQrAssetPath(slide),
     pollOptions: resolvedPollOptions,
+    allPollOptions:
+      slide.type === "poll_results"
+        ? (slide.poll_options ?? [])
+            .map((option) => option?.trim())
+            .filter((option): option is string => Boolean(option))
+        : undefined,
     pollId: slide.poll_id?.trim() || null,
     campaignId: slide.campaign_id?.trim() || null,
     totalVotes:
