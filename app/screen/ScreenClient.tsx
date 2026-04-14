@@ -311,12 +311,18 @@ export default function ScreenClient() {
     isPollResultsSlide &&
     (currentSlide.pollId === "buns-world-ranking" ||
       currentSlide.campaignId === "buns-world-ranking");
+  const displayTitleLines = isWorldRankingSlide
+    ? ["WHERE ARE YOU", "FROM?"]
+    : currentSlide.titleLines;
+  const displaySubtitle = isWorldRankingSlide
+    ? "PUT YOUR COUNTRY ON THE BUNS LEADERBOARD"
+    : currentSlide.subtitle;
   const worldRankingResults = useMemo(
     () =>
       (currentSlide.pollOptions ?? [])
         .slice()
         .sort((left, right) => right.votes - left.votes || right.percent - left.percent)
-        .slice(0, 5),
+        .slice(0, 3),
     [currentSlide.pollOptions]
   );
 
@@ -375,7 +381,7 @@ export default function ScreenClient() {
                     : "flex flex-col items-center gap-2 font-display text-[clamp(5.25rem,15vw,8.75rem)] font-black uppercase leading-[0.88] tracking-[0.06em] text-[#ffd166] [text-shadow:0_0_65px_rgba(255,209,102,0.6),0_10px_40px_rgba(0,0,0,0.7)] 2xl:text-[10rem]"
                 }
               >
-                {currentSlide.titleLines.map((line) => (
+                {displayTitleLines.map((line) => (
                   <span key={line}>{line}</span>
                 ))}
               </motion.h1>
@@ -398,7 +404,7 @@ export default function ScreenClient() {
                     : "max-w-[28rem] font-body text-[clamp(1.6rem,4.6vw,3rem)] uppercase leading-[1.15] tracking-[0.28em] text-[#c8bfa0] 2xl:text-[3.25rem]"
                 }
               >
-                {currentSlide.subtitle}
+                {displaySubtitle}
               </motion.p>
 
               {isWorldRankingSlide && worldRankingResults.length ? (
@@ -447,6 +453,11 @@ export default function ScreenClient() {
                           </div>
                           <div className="text-[1.7rem] leading-none">{getCountryFlag(result.option)}</div>
                           <div className="min-w-0 text-left">
+                            {isLeader ? (
+                              <p className="mb-1 font-body text-[0.6rem] font-black uppercase tracking-[0.28em] text-[#ffd166]">
+                                Leading
+                              </p>
+                            ) : null}
                             <p
                               className={
                                 isLeader
@@ -490,10 +501,7 @@ export default function ScreenClient() {
                       />
                       <div className="space-y-1 text-center">
                         <p className="font-body text-[0.7rem] font-black uppercase tracking-[0.24em] text-[#ffd166]">
-                          Scan to vote
-                        </p>
-                        <p className="font-body text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-white/75">
-                          Represent your country
+                          Scan to represent your country
                         </p>
                       </div>
                     </div>
