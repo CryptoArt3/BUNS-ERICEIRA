@@ -426,9 +426,9 @@ export default function ScreenClient() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.9, delay: 0.15, ease: "easeOut" }}
-                  className="relative z-10 grid w-full max-w-[39rem] gap-4 rounded-[1.35rem] border-2 border-[#ffc42e]/58 bg-[linear-gradient(180deg,rgba(7,5,2,0.99),rgba(1,1,1,1))] p-4 shadow-[0_0_0_1px_rgba(255,196,46,0.1),0_36px_82px_rgba(0,0,0,0.84),inset_0_1px_0_rgba(255,196,46,0.18)] backdrop-blur-md md:grid-cols-[minmax(0,1fr)_auto] md:items-start"
+                  className="relative z-10 grid w-full max-w-[39rem] gap-4 rounded-[1.35rem] border-2 border-[#ffc42e]/58 bg-[linear-gradient(180deg,rgba(7,5,2,0.99),rgba(1,1,1,1))] p-4 shadow-[0_0_0_1px_rgba(255,196,46,0.1),0_36px_82px_rgba(0,0,0,0.84),inset_0_1px_0_rgba(255,196,46,0.18)] backdrop-blur-md md:grid-cols-[minmax(0,1fr)_11.5rem] md:items-stretch"
                 >
-                  <div className="flex min-w-0 flex-col gap-3">
+                  <div className="flex min-w-0 flex-col gap-3 overflow-hidden">
                     <div className="flex items-center justify-between gap-3 rounded-xl border border-[#29f7ff]/34 bg-[#29f7ff]/14 px-4 py-3">
                       <div className="text-left">
                         <p className="font-body text-[0.75rem] font-black uppercase tracking-[0.32em] text-[#29f7ff]">
@@ -459,7 +459,8 @@ export default function ScreenClient() {
                       </p>
                     </div>
 
-                    {worldRankingResults.map((result, resultIndex) => {
+                    <div className="flex flex-col gap-3">
+                    {worldRankingResults.slice(0, 3).map((result, resultIndex) => {
                       const isLeader = resultIndex === 0;
 
                       return (
@@ -512,10 +513,11 @@ export default function ScreenClient() {
                         </div>
                       );
                     })}
+                    </div>
                   </div>
 
                   {currentSlide.qrAssetPath && !qrImageError ? (
-                    <div className="flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-[#ffc42e]/72 bg-[linear-gradient(180deg,rgba(255,196,46,0.2),rgba(0,0,0,0.72))] px-4 py-4 shadow-[0_0_0_1px_rgba(255,196,46,0.14),0_24px_54px_rgba(0,0,0,0.72)] md:w-[11rem]">
+                    <div className="flex flex-col items-center justify-center gap-4 rounded-xl border-2 border-[#ffc42e]/72 bg-[linear-gradient(180deg,rgba(255,196,46,0.2),rgba(0,0,0,0.72))] px-4 py-4 shadow-[0_0_0_1px_rgba(255,196,46,0.14),0_24px_54px_rgba(0,0,0,0.72)] md:min-h-full md:w-[11.5rem] md:self-stretch">
                       <img
                         src={currentSlide.qrAssetPath}
                         alt="QR code"
