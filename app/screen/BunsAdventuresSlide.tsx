@@ -2,7 +2,10 @@
 
 import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
-import type { BunsAdventuresEpisode } from "@/lib/campaigns/bunsAdventuresCampaign";
+import {
+  bunsAdventuresCampaign,
+  type BunsAdventuresEpisode,
+} from "@/lib/campaigns/bunsAdventuresCampaign";
 
 type Props = {
   episode: BunsAdventuresEpisode;
@@ -28,13 +31,27 @@ export default function BunsAdventuresSlide({
 }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [qrError, setQrError] = useState(false);
+  const [currentEpisodeIndex, setCurrentEpisodeIndex] = useState(() =>
+    getEpisodeIndex(episode)
+  );
+  const currentEpisode =
+    bunsAdventuresCampaign.episodes[currentEpisodeIndex] ?? bunsAdventuresCampaign.episodes[0];
 
   useEffect(() => {
     setQrError(false);
+    setCurrentEpisodeIndex(getEpisodeIndex(episode));
+  }, [episode.id, episode.number, episode.videoSrc]);
+
+  useEffect(() => {
     void videoRef.current?.play().catch(() => undefined);
-  }, [episode.videoSrc]);
+  }, [currentEpisode.videoSrc]);
 
   const showQr = Boolean(qrImageUrl) && !qrError;
+  const playNextEpisode = () => {
+    setCurrentEpisodeIndex((currentIndex) =>
+      (currentIndex + 1) % bunsAdventuresCampaign.episodes.length
+    );
+  };
 
   return (
     <div className="relative h-dvh w-full overflow-hidden bg-[#050404] text-white">
@@ -45,11 +62,13 @@ export default function BunsAdventuresSlide({
            Parent overflow-hidden clips the scale overshoot.          */}
       <motion.video
         ref={videoRef}
-        src={episode.videoSrc}
-        loop
+        key={currentEpisode.id}
+        src={currentEpisode.videoSrc}
         muted
         playsInline
         autoPlay
+        onEnded={playNextEpisode}
+        onError={playNextEpisode}
         animate={{ scale: [1, 1.05, 1] }}
         transition={{ duration: 34, repeat: Infinity, ease: "easeInOut" }}
         className="absolute inset-0 h-full w-full object-cover"
@@ -126,7 +145,7 @@ export default function BunsAdventuresSlide({
         {/* EP badge + hairline divider */}
         <div className="mb-3 flex items-center gap-3">
           <span className="rounded-sm bg-[#ffd166] px-3.5 py-1 font-mono text-[0.85rem] font-black uppercase tracking-[0.2em] text-black shadow-[0_0_28px_rgba(255,209,102,0.75),0_0_8px_rgba(255,209,102,0.9)]">
-            EP. {episode.number}
+            EP. {currentEpisode.number}
           </span>
           <div className="h-px flex-1 bg-white/10" />
         </div>
@@ -139,7 +158,7 @@ export default function BunsAdventuresSlide({
           transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
           className="font-display text-[clamp(3rem,10.5vw,5.2rem)] font-black uppercase leading-[0.88] tracking-[0.03em] text-white [text-shadow:0_2px_56px_rgba(0,0,0,1),0_0_40px_rgba(255,209,102,0.22),0_0_90px_rgba(255,209,102,0.10)]"
         >
-          {episode.title}
+          {currentEpisode.title}
         </motion.h2>
       </motion.div>
 
@@ -195,5 +214,17 @@ export default function BunsAdventuresSlide({
         ) : null}
       </motion.div>
     </div>
+  );
+}
+
+function getEpisodeIndex(episode: BunsAdventuresEpisode) {
+  return Math.max(
+    0,
+    bunsAdventuresCampaign.episodes.findIndex(
+      (candidate) =>
+        candidate.id === episode.id ||
+        candidate.number === episode.number ||
+        candidate.videoSrc === episode.videoSrc
+    )
   );
 }

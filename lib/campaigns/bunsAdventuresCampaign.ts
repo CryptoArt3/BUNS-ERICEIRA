@@ -24,8 +24,8 @@ export const bunsAdventuresCampaign = {
     {
       id: "episode-02",
       number: "02",
-      title: "Coming Soon",
-      overlayLabel: "Episode 02 — Coming Soon",
+      title: "Ribeira D'Ilhas",
+      overlayLabel: "Episode 02 — Ribeira D'Ilhas",
       videoSrc: "/videos/buns-episode-02.mp4",
       linkedUrl: "https://buns-ericeira.pt/",
     },
