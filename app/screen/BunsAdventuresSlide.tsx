@@ -30,6 +30,8 @@ export default function BunsAdventuresSlide({
   qrLabel = "SCAN TO FOLLOW",
 }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const activeEpisodeIdRef = useRef<string | null>(null);
+  const lastAdvancedEpisodeRef = useRef<string | null>(null);
   const [qrError, setQrError] = useState(false);
   const [currentEpisodeIndex, setCurrentEpisodeIndex] = useState(() =>
     getEpisodeIndex(episode)
@@ -42,14 +44,65 @@ export default function BunsAdventuresSlide({
   }, [qrImageUrl]);
 
   useEffect(() => {
+    activeEpisodeIdRef.current = currentEpisode.id;
+    lastAdvancedEpisodeRef.current = null;
+    console.log("[buns-adventures] active_episode", {
+      id: currentEpisode.id,
+      title: currentEpisode.title,
+      videoSrc: currentEpisode.videoSrc,
+    });
     void videoRef.current?.play().catch(() => undefined);
-  }, [currentEpisode.videoSrc]);
+  }, [currentEpisode.id, currentEpisode.title, currentEpisode.videoSrc]);
 
   const showQr = Boolean(qrImageUrl) && !qrError;
-  const playNextEpisode = () => {
+  const playNextEpisode = (reason: "ended" | "error", sourceEpisodeId: string) => {
+    if (activeEpisodeIdRef.current !== sourceEpisodeId) {
+      console.log("[buns-adventures] ignore_stale_advance", {
+        reason,
+        sourceEpisodeId,
+        activeEpisodeId: activeEpisodeIdRef.current,
+      });
+      return;
+    }
+
+    if (lastAdvancedEpisodeRef.current === sourceEpisodeId) {
+      console.log("[buns-adventures] ignore_duplicate_advance", {
+        reason,
+        sourceEpisodeId,
+      });
+      return;
+    }
+
+    lastAdvancedEpisodeRef.current = sourceEpisodeId;
+    console.log("[buns-adventures] advance_episode", {
+      reason,
+      sourceEpisodeId,
+    });
     setCurrentEpisodeIndex((currentIndex) =>
       (currentIndex + 1) % bunsAdventuresCampaign.episodes.length
     );
+  };
+
+  const handleEnded = () => {
+    console.log("[buns-adventures] onEnded", {
+      id: currentEpisode.id,
+      title: currentEpisode.title,
+    });
+    playNextEpisode("ended", currentEpisode.id);
+  };
+
+  const handleError = () => {
+    const mediaError = videoRef.current?.error;
+    console.log("[buns-adventures] onError", {
+      id: currentEpisode.id,
+      title: currentEpisode.title,
+      videoSrc: currentEpisode.videoSrc,
+      code: mediaError?.code ?? null,
+      message: mediaError?.message ?? null,
+      networkState: videoRef.current?.networkState ?? null,
+      readyState: videoRef.current?.readyState ?? null,
+    });
+    playNextEpisode("error", currentEpisode.id);
   };
 
   return (
@@ -66,8 +119,8 @@ export default function BunsAdventuresSlide({
         muted
         playsInline
         autoPlay
-        onEnded={playNextEpisode}
-        onError={playNextEpisode}
+        onEnded={handleEnded}
+        onError={handleError}
         animate={{ scale: [1, 1.05, 1] }}
         transition={{ duration: 34, repeat: Infinity, ease: "easeInOut" }}
         className="absolute inset-0 h-full w-full object-cover"
