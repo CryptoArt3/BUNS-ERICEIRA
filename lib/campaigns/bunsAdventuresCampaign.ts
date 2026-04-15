@@ -46,6 +46,14 @@ export const bunsAdventuresCampaign = {
       videoSrc: withVideoVersion("/videos/buns-episode-03.mp4"),
       linkedUrl: BUNS_ADVENTURES_INSTAGRAM_URL,
     },
+    {
+      id: "episode-04",
+      number: "4",
+      title: "Ouriço",
+      overlayLabel: "Episódio 04 — Ouriço",
+      videoSrc: withVideoVersion("/videos/buns-episode-04.mp4"),
+      linkedUrl: BUNS_ADVENTURES_INSTAGRAM_URL,
+    },
   ] satisfies BunsAdventuresEpisode[],
 } as const;
 
