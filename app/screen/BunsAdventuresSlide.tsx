@@ -174,7 +174,7 @@ export default function BunsAdventuresSlide({
            Slow 1→1.04 scale loop prevents the "static poster" read
            you get with a locked frame on a physical TV.
            Parent overflow-hidden clips the scale overshoot.          */}
-      <motion.video
+      <video
         ref={videoRef}
         key={currentEpisode.id}
         src={currentEpisode.videoSrc}
@@ -185,16 +185,9 @@ export default function BunsAdventuresSlide({
         onCanPlay={handleCanPlay}
         onEnded={handleEnded}
         onError={handleError}
-        initial={{ opacity: 0.18, scale: 1.015 }}
-        animate={{
-          opacity: isEpisodeReady ? 1 : 0.22,
-          scale: [1, 1.05, 1],
-        }}
-        transition={{
-          opacity: { duration: 0.32, ease: "easeOut" },
-          scale: { duration: 34, repeat: Infinity, ease: "easeInOut" },
-        }}
-        className="absolute inset-0 h-full w-full object-cover"
+        className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-200 ease-out ${
+          isEpisodeReady ? "opacity-100" : "opacity-20"
+        }`}
       />
       <video
         ref={nextVideoRef}
@@ -232,19 +225,9 @@ export default function BunsAdventuresSlide({
         className="absolute left-0 right-0 top-0 z-10 flex items-start justify-between px-5 pt-6"
       >
         <div className="flex flex-col gap-1">
-          <motion.span
-            animate={{
-              textShadow: [
-                "0 0 18px rgba(255,209,102,0.45)",
-                "0 0 50px rgba(255,209,102,0.88)",
-                "0 0 18px rgba(255,209,102,0.45)",
-              ],
-            }}
-            transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
-            className="font-display text-[clamp(1.05rem,3.2vw,1.5rem)] font-black uppercase leading-none tracking-[0.12em] text-[#ffd166]"
-          >
+          <span className="font-display text-[clamp(1.05rem,3.2vw,1.5rem)] font-black uppercase leading-none tracking-[0.12em] text-[#ffd166] [text-shadow:0_0_24px_rgba(255,209,102,0.52)]">
             BUNS ADVENTURES
-          </motion.span>
+          </span>
           <span className="font-body text-[clamp(0.5rem,1.4vw,0.68rem)] font-black uppercase tracking-[0.48em] text-[#00f0ff] [text-shadow:0_0_12px_rgba(0,240,255,0.55)]">
             ERICEIRA STORIES
           </span>
@@ -288,13 +271,9 @@ export default function BunsAdventuresSlide({
         {/* Episode title — 15% larger than before for TV readability
              clamp: 3rem mobile floor / 10.5vw fluid / 5.2rem ceiling
              Slow opacity breath keeps the title alive without distracting  */}
-        <motion.h2
-          animate={{ opacity: [0.88, 1, 0.88] }}
-          transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
-          className="font-display text-[clamp(3rem,10.5vw,5.2rem)] font-black uppercase leading-[0.88] tracking-[0.03em] text-white [text-shadow:0_2px_56px_rgba(0,0,0,1),0_0_40px_rgba(255,209,102,0.22),0_0_90px_rgba(255,209,102,0.10)]"
-        >
+        <h2 className="font-display text-[clamp(3rem,10.5vw,5.2rem)] font-black uppercase leading-[0.88] tracking-[0.03em] text-white [text-shadow:0_2px_56px_rgba(0,0,0,1),0_0_40px_rgba(255,209,102,0.22),0_0_90px_rgba(255,209,102,0.10)]">
           {currentEpisode.title}
-        </motion.h2>
+        </h2>
       </motion.div>
 
       {/* ── FOOTER STRIP ─────────────────────────────────────────
@@ -314,19 +293,9 @@ export default function BunsAdventuresSlide({
           <span className="font-body text-[0.54rem] font-black uppercase tracking-[0.42em] text-[#00f0ff]/72 [text-shadow:0_0_10px_rgba(0,240,255,0.38)]">
             FEATURING
           </span>
-          <motion.span
-            animate={{
-              textShadow: [
-                "0 0 14px rgba(255,209,102,0.32)",
-                "0 0 40px rgba(255,209,102,0.72)",
-                "0 0 14px rgba(255,209,102,0.32)",
-              ],
-            }}
-            transition={{ duration: 4.2, repeat: Infinity, ease: "easeInOut" }}
-            className="font-display text-[clamp(1rem,3.2vw,1.5rem)] font-black uppercase leading-none tracking-[0.08em] text-[#ffd166]"
-          >
+          <span className="font-display text-[clamp(1rem,3.2vw,1.5rem)] font-black uppercase leading-none tracking-[0.08em] text-[#ffd166] [text-shadow:0_0_18px_rgba(255,209,102,0.34)]">
             BUNS & BUNANA
-          </motion.span>
+          </span>
         </div>
 
         {/* QR — small, bottom-right, slight glow, does not overpower */}
