@@ -36,6 +36,7 @@ export default function BunsAdventuresSlide({
   const transitionLockRef = useRef(false);
   const [qrError, setQrError] = useState(false);
   const [isEpisodeReady, setIsEpisodeReady] = useState(false);
+  const [isTransitionMaskVisible, setIsTransitionMaskVisible] = useState(false);
   const [currentEpisodeIndex, setCurrentEpisodeIndex] = useState(() =>
     getEpisodeIndex(episode)
   );
@@ -55,6 +56,7 @@ export default function BunsAdventuresSlide({
     advancedEpisodeIdRef.current = null;
     transitionLockRef.current = false;
     setIsEpisodeReady(false);
+    setIsTransitionMaskVisible(true);
     console.log("[buns-adventures] active_episode", {
       id: currentEpisode.id,
       title: currentEpisode.title,
@@ -150,6 +152,9 @@ export default function BunsAdventuresSlide({
       readyState: videoElement.readyState,
     });
     setIsEpisodeReady(true);
+    window.setTimeout(() => {
+      setIsTransitionMaskVisible(false);
+    }, 140);
   };
 
   const handleError = (event: SyntheticEvent<HTMLVideoElement, Event>) => {
@@ -198,6 +203,19 @@ export default function BunsAdventuresSlide({
         aria-hidden="true"
         className="pointer-events-none absolute h-0 w-0 opacity-0"
       />
+      <motion.div
+        aria-hidden="true"
+        initial={false}
+        animate={{
+          opacity: isTransitionMaskVisible ? 1 : 0,
+          x: isTransitionMaskVisible ? 0 : "8%",
+        }}
+        transition={{ duration: 0.16, ease: "easeOut" }}
+        className="pointer-events-none absolute inset-0 z-[5] bg-[linear-gradient(102deg,rgba(5,4,3,0.96)_0%,rgba(5,4,3,0.96)_34%,rgba(255,209,102,0.16)_58%,rgba(0,240,255,0.1)_74%,rgba(5,4,3,0.92)_100%)]"
+      >
+        <div className="absolute inset-0 opacity-[0.16] [background-image:linear-gradient(rgba(255,209,102,0.5)_1px,transparent_1px),linear-gradient(90deg,rgba(0,240,255,0.3)_1px,transparent_1px)] [background-size:22px_22px]" />
+        <div className="absolute inset-y-0 left-0 w-[3px] bg-gradient-to-b from-transparent via-[#ffd166] to-transparent opacity-80" />
+      </motion.div>
 
       {/* ── ATMOSPHERE ──────────────────────────────────────────── */}
 
