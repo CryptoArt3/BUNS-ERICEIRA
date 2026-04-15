@@ -32,8 +32,8 @@ export const bunsAdventuresCampaign = {
     {
       id: "episode-03",
       number: "03",
-      title: "Coming Soon",
-      overlayLabel: "Episode 03 — Coming Soon",
+      title: "Skatepark",
+      overlayLabel: "Episode 03 — Skatepark",
       videoSrc: "/videos/buns-episode-03.mp4",
       linkedUrl: "https://buns-ericeira.pt/",
     },

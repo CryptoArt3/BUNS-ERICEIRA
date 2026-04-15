@@ -39,8 +39,7 @@ export default function BunsAdventuresSlide({
 
   useEffect(() => {
     setQrError(false);
-    setCurrentEpisodeIndex(getEpisodeIndex(episode));
-  }, [episode.id, episode.number, episode.videoSrc]);
+  }, [qrImageUrl]);
 
   useEffect(() => {
     void videoRef.current?.play().catch(() => undefined);
