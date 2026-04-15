@@ -30,15 +30,21 @@ export default function BunsAdventuresSlide({
   qrLabel = "SCAN TO FOLLOW",
 }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const nextVideoRef = useRef<HTMLVideoElement>(null);
   const activeEpisodeIdRef = useRef<string | null>(null);
   const advancedEpisodeIdRef = useRef<string | null>(null);
   const transitionLockRef = useRef(false);
   const [qrError, setQrError] = useState(false);
+  const [isEpisodeReady, setIsEpisodeReady] = useState(false);
   const [currentEpisodeIndex, setCurrentEpisodeIndex] = useState(() =>
     getEpisodeIndex(episode)
   );
   const currentEpisode =
     bunsAdventuresCampaign.episodes[currentEpisodeIndex] ?? bunsAdventuresCampaign.episodes[0];
+  const nextEpisode =
+    bunsAdventuresCampaign.episodes[
+      (currentEpisodeIndex + 1) % bunsAdventuresCampaign.episodes.length
+    ] ?? bunsAdventuresCampaign.episodes[0];
 
   useEffect(() => {
     setQrError(false);
@@ -48,6 +54,7 @@ export default function BunsAdventuresSlide({
     activeEpisodeIdRef.current = currentEpisode.id;
     advancedEpisodeIdRef.current = null;
     transitionLockRef.current = false;
+    setIsEpisodeReady(false);
     console.log("[buns-adventures] active_episode", {
       id: currentEpisode.id,
       title: currentEpisode.title,
@@ -69,6 +76,12 @@ export default function BunsAdventuresSlide({
         message: error instanceof Error ? error.message : String(error),
       });
     });
+
+    const nextVideo = nextVideoRef.current;
+
+    if (nextVideo) {
+      nextVideo.load();
+    }
   }, [currentEpisode.id, currentEpisode.title, currentEpisode.videoSrc]);
 
   const showQr = Boolean(qrImageUrl) && !qrError;
@@ -124,6 +137,21 @@ export default function BunsAdventuresSlide({
     playNextEpisode("ended", currentEpisode.id, videoElement);
   };
 
+  const handleCanPlay = (event: SyntheticEvent<HTMLVideoElement, Event>) => {
+    const videoElement = event.currentTarget;
+
+    if (videoRef.current !== videoElement || activeEpisodeIdRef.current !== currentEpisode.id) {
+      return;
+    }
+
+    console.log("[buns-adventures] onCanPlay", {
+      id: currentEpisode.id,
+      title: currentEpisode.title,
+      readyState: videoElement.readyState,
+    });
+    setIsEpisodeReady(true);
+  };
+
   const handleError = (event: SyntheticEvent<HTMLVideoElement, Event>) => {
     const videoElement = event.currentTarget;
     const mediaError = videoElement.error;
@@ -153,11 +181,29 @@ export default function BunsAdventuresSlide({
         muted
         playsInline
         autoPlay
+        preload="auto"
+        onCanPlay={handleCanPlay}
         onEnded={handleEnded}
         onError={handleError}
-        animate={{ scale: [1, 1.05, 1] }}
-        transition={{ duration: 34, repeat: Infinity, ease: "easeInOut" }}
+        initial={{ opacity: 0.18, scale: 1.015 }}
+        animate={{
+          opacity: isEpisodeReady ? 1 : 0.22,
+          scale: [1, 1.05, 1],
+        }}
+        transition={{
+          opacity: { duration: 0.32, ease: "easeOut" },
+          scale: { duration: 34, repeat: Infinity, ease: "easeInOut" },
+        }}
         className="absolute inset-0 h-full w-full object-cover"
+      />
+      <video
+        ref={nextVideoRef}
+        src={nextEpisode.videoSrc}
+        muted
+        playsInline
+        preload="auto"
+        aria-hidden="true"
+        className="pointer-events-none absolute h-0 w-0 opacity-0"
       />
 
       {/* ── ATMOSPHERE ──────────────────────────────────────────── */}
@@ -215,9 +261,13 @@ export default function BunsAdventuresSlide({
            Separated from the footer strip so text doesn't pile up
            at the very bottom of the TV.                             */}
       <motion.div
+        key={`title-${currentEpisode.id}`}
         initial={{ opacity: 0, y: 22 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.95, delay: 0.28, ease: "easeOut" }}
+        animate={{
+          opacity: isEpisodeReady ? 1 : 0,
+          y: isEpisodeReady ? 0 : 12,
+        }}
+        transition={{ duration: 0.55, delay: isEpisodeReady ? 0.08 : 0, ease: "easeOut" }}
         className="absolute bottom-[30%] left-0 right-0 z-10 px-5"
       >
         {/* "NOW PLAYING" label with fading rule */}
@@ -252,9 +302,13 @@ export default function BunsAdventuresSlide({
            Anchored at the very bottom. Characters callout on left,
            QR on right. Distinct from the title block above.         */}
       <motion.div
+        key={`footer-${currentEpisode.id}`}
         initial={{ opacity: 0, y: 14 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, delay: 0.45, ease: "easeOut" }}
+        animate={{
+          opacity: isEpisodeReady ? 1 : 0,
+          y: isEpisodeReady ? 0 : 10,
+        }}
+        transition={{ duration: 0.45, delay: isEpisodeReady ? 0.14 : 0, ease: "easeOut" }}
         className="absolute bottom-0 left-0 right-0 z-10 flex items-end justify-between gap-4 px-5 pb-7"
       >
         {/* Characters callout */}
