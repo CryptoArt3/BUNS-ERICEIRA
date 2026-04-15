@@ -87,9 +87,9 @@ const FALLBACK_SLIDES: DisplaySlide[] = [
     episodeId: bunsAdventuresCampaign.episodes[0].id,
     episodeNumber: bunsAdventuresCampaign.episodes[0].number,
     episodeName: bunsAdventuresCampaign.episodes[0].title,
-    qrAssetPath: `https://api.qrserver.com/v1/create-qr-code/?size=512x512&data=${encodeURIComponent(
-      bunsAdventuresCampaign.episodes[0].linkedUrl ?? "https://buns-ericeira.pt/"
-    )}`,
+    qrAssetPath: buildQrCodeUrl(
+      bunsAdventuresCampaign.episodes[0].linkedUrl ?? "https://www.instagram.com/buns.ericeira/"
+    ),
   },
   {
     id: "fallback-smash-burgers",
@@ -728,7 +728,11 @@ function normalizeLiveSlide(slide: ScreenApiSlide, index: number): DisplaySlide 
     image: slide.image?.trim() || null,
     durationMs: normalizeDurationMs(slide.duration),
     type: slide.type?.trim() || null,
-    qrAssetPath: resolveQrAssetPath(slide),
+    qrAssetPath: isBunsAdventuresCampaign
+      ? buildQrCodeUrl(
+          bunsAdventuresEpisode?.linkedUrl ?? "https://www.instagram.com/buns.ericeira/"
+        )
+      : resolveQrAssetPath(slide),
     pollOptions: resolvedPollOptions,
     allPollOptions:
       slide.type === "poll_results"
@@ -778,12 +782,16 @@ function resolveQrAssetPath(slide: ScreenApiSlide) {
   const landingUrl = resolveLandingUrl(slide);
 
   if (landingUrl) {
-    return `https://api.qrserver.com/v1/create-qr-code/?size=512x512&data=${encodeURIComponent(
-      landingUrl
-    )}`;
+    return buildQrCodeUrl(landingUrl);
   }
 
   return slide.qr_enabled ? slide.qr_asset_path?.trim() || null : null;
+}
+
+function buildQrCodeUrl(targetUrl: string) {
+  return `https://api.qrserver.com/v1/create-qr-code/?size=512x512&data=${encodeURIComponent(
+    targetUrl
+  )}`;
 }
 
 function resolveLandingUrl(slide: ScreenApiSlide) {
