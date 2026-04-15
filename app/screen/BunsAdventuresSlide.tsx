@@ -261,13 +261,12 @@ export default function BunsAdventuresSlide({
            Separated from the footer strip so text doesn't pile up
            at the very bottom of the TV.                             */}
       <motion.div
-        key={`title-${currentEpisode.id}`}
         initial={{ opacity: 0, y: 22 }}
         animate={{
           opacity: isEpisodeReady ? 1 : 0,
           y: isEpisodeReady ? 0 : 12,
         }}
-        transition={{ duration: 0.55, delay: isEpisodeReady ? 0.08 : 0, ease: "easeOut" }}
+        transition={{ duration: 0.42, delay: isEpisodeReady ? 0.04 : 0, ease: "easeOut" }}
         className="absolute bottom-[30%] left-0 right-0 z-10 px-5"
       >
         {/* "NOW PLAYING" label with fading rule */}
@@ -302,13 +301,12 @@ export default function BunsAdventuresSlide({
            Anchored at the very bottom. Characters callout on left,
            QR on right. Distinct from the title block above.         */}
       <motion.div
-        key={`footer-${currentEpisode.id}`}
         initial={{ opacity: 0, y: 14 }}
         animate={{
           opacity: isEpisodeReady ? 1 : 0,
           y: isEpisodeReady ? 0 : 10,
         }}
-        transition={{ duration: 0.45, delay: isEpisodeReady ? 0.14 : 0, ease: "easeOut" }}
+        transition={{ duration: 0.36, delay: isEpisodeReady ? 0.08 : 0, ease: "easeOut" }}
         className="absolute bottom-0 left-0 right-0 z-10 flex items-end justify-between gap-4 px-5 pb-7"
       >
         {/* Characters callout */}

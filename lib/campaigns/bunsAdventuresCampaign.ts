@@ -8,6 +8,7 @@ export type BunsAdventuresEpisode = {
 };
 
 const BUNS_ADVENTURES_VIDEO_VERSION = "adventures-v1";
+const BUNS_ADVENTURES_INSTAGRAM_URL = "https://www.instagram.com/buns.ericeira/";
 
 function withVideoVersion(videoSrc: string) {
   const separator = videoSrc.includes("?") ? "&" : "?";
@@ -27,7 +28,7 @@ export const bunsAdventuresCampaign = {
       title: "Jogo da Bola",
       overlayLabel: "Episódio 01 — Jogo da Bola",
       videoSrc: withVideoVersion("/videos/buns-episode-01.mp4"),
-      linkedUrl: "https://buns-ericeira.pt/",
+      linkedUrl: BUNS_ADVENTURES_INSTAGRAM_URL,
     },
     {
       id: "episode-02",
@@ -35,7 +36,7 @@ export const bunsAdventuresCampaign = {
       title: "Ribeira D'Ilhas",
       overlayLabel: "Episode 02 — Ribeira D'Ilhas",
       videoSrc: withVideoVersion("/videos/buns-episode-02.mp4"),
-      linkedUrl: "https://buns-ericeira.pt/",
+      linkedUrl: BUNS_ADVENTURES_INSTAGRAM_URL,
     },
     {
       id: "episode-03",
@@ -43,7 +44,7 @@ export const bunsAdventuresCampaign = {
       title: "Skatepark",
       overlayLabel: "Episode 03 — Skatepark",
       videoSrc: withVideoVersion("/videos/buns-episode-03.mp4"),
-      linkedUrl: "https://buns-ericeira.pt/",
+      linkedUrl: BUNS_ADVENTURES_INSTAGRAM_URL,
     },
   ] satisfies BunsAdventuresEpisode[],
 } as const;
