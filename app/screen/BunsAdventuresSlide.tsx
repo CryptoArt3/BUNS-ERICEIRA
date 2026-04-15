@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import { type SyntheticEvent, useEffect, useRef, useState } from "react";
 import {
   bunsAdventuresCampaign,
   type BunsAdventuresEpisode,
@@ -31,7 +31,8 @@ export default function BunsAdventuresSlide({
 }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const activeEpisodeIdRef = useRef<string | null>(null);
-  const lastAdvancedEpisodeRef = useRef<string | null>(null);
+  const advancedEpisodeIdRef = useRef<string | null>(null);
+  const transitionLockRef = useRef(false);
   const [qrError, setQrError] = useState(false);
   const [currentEpisodeIndex, setCurrentEpisodeIndex] = useState(() =>
     getEpisodeIndex(episode)
@@ -45,17 +46,37 @@ export default function BunsAdventuresSlide({
 
   useEffect(() => {
     activeEpisodeIdRef.current = currentEpisode.id;
-    lastAdvancedEpisodeRef.current = null;
+    advancedEpisodeIdRef.current = null;
+    transitionLockRef.current = false;
     console.log("[buns-adventures] active_episode", {
       id: currentEpisode.id,
       title: currentEpisode.title,
       videoSrc: currentEpisode.videoSrc,
     });
-    void videoRef.current?.play().catch(() => undefined);
+
+    const video = videoRef.current;
+
+    if (!video) {
+      return;
+    }
+
+    video.load();
+    void video.play().catch((error) => {
+      console.log("[buns-adventures] play_rejected", {
+        id: currentEpisode.id,
+        title: currentEpisode.title,
+        videoSrc: currentEpisode.videoSrc,
+        message: error instanceof Error ? error.message : String(error),
+      });
+    });
   }, [currentEpisode.id, currentEpisode.title, currentEpisode.videoSrc]);
 
   const showQr = Boolean(qrImageUrl) && !qrError;
-  const playNextEpisode = (reason: "ended" | "error", sourceEpisodeId: string) => {
+  const playNextEpisode = (
+    reason: "ended" | "error",
+    sourceEpisodeId: string,
+    videoElement: HTMLVideoElement | null
+  ) => {
     if (activeEpisodeIdRef.current !== sourceEpisodeId) {
       console.log("[buns-adventures] ignore_stale_advance", {
         reason,
@@ -65,7 +86,15 @@ export default function BunsAdventuresSlide({
       return;
     }
 
-    if (lastAdvancedEpisodeRef.current === sourceEpisodeId) {
+    if (videoElement && videoRef.current !== videoElement) {
+      console.log("[buns-adventures] ignore_replaced_video_event", {
+        reason,
+        sourceEpisodeId,
+      });
+      return;
+    }
+
+    if (transitionLockRef.current || advancedEpisodeIdRef.current === sourceEpisodeId) {
       console.log("[buns-adventures] ignore_duplicate_advance", {
         reason,
         sourceEpisodeId,
@@ -73,7 +102,8 @@ export default function BunsAdventuresSlide({
       return;
     }
 
-    lastAdvancedEpisodeRef.current = sourceEpisodeId;
+    transitionLockRef.current = true;
+    advancedEpisodeIdRef.current = sourceEpisodeId;
     console.log("[buns-adventures] advance_episode", {
       reason,
       sourceEpisodeId,
@@ -83,26 +113,30 @@ export default function BunsAdventuresSlide({
     );
   };
 
-  const handleEnded = () => {
+  const handleEnded = (event: SyntheticEvent<HTMLVideoElement, Event>) => {
+    const videoElement = event.currentTarget;
     console.log("[buns-adventures] onEnded", {
       id: currentEpisode.id,
       title: currentEpisode.title,
+      currentTime: videoElement.currentTime,
+      duration: videoElement.duration,
     });
-    playNextEpisode("ended", currentEpisode.id);
+    playNextEpisode("ended", currentEpisode.id, videoElement);
   };
 
-  const handleError = () => {
-    const mediaError = videoRef.current?.error;
+  const handleError = (event: SyntheticEvent<HTMLVideoElement, Event>) => {
+    const videoElement = event.currentTarget;
+    const mediaError = videoElement.error;
     console.log("[buns-adventures] onError", {
       id: currentEpisode.id,
       title: currentEpisode.title,
       videoSrc: currentEpisode.videoSrc,
       code: mediaError?.code ?? null,
       message: mediaError?.message ?? null,
-      networkState: videoRef.current?.networkState ?? null,
-      readyState: videoRef.current?.readyState ?? null,
+      networkState: videoElement.networkState,
+      readyState: videoElement.readyState,
     });
-    playNextEpisode("error", currentEpisode.id);
+    playNextEpisode("error", currentEpisode.id, videoElement);
   };
 
   return (
