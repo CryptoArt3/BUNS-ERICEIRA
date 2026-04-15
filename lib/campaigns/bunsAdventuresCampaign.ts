@@ -21,6 +21,22 @@ export const bunsAdventuresCampaign = {
       videoSrc: "/videos/buns-episode-01.mp4",
       linkedUrl: "https://buns-ericeira.pt/",
     },
+    {
+      id: "episode-02",
+      number: "02",
+      title: "Coming Soon",
+      overlayLabel: "Episode 02 — Coming Soon",
+      videoSrc: "/videos/buns-episode-02.mp4",
+      linkedUrl: "https://buns-ericeira.pt/",
+    },
+    {
+      id: "episode-03",
+      number: "03",
+      title: "Coming Soon",
+      overlayLabel: "Episode 03 — Coming Soon",
+      videoSrc: "/videos/buns-episode-03.mp4",
+      linkedUrl: "https://buns-ericeira.pt/",
+    },
   ] satisfies BunsAdventuresEpisode[],
 } as const;
 
