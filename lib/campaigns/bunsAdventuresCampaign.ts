@@ -7,18 +7,26 @@ export type BunsAdventuresEpisode = {
   linkedUrl?: string;
 };
 
+const BUNS_ADVENTURES_VIDEO_VERSION = "adventures-v1";
+
+function withVideoVersion(videoSrc: string) {
+  const separator = videoSrc.includes("?") ? "&" : "?";
+  return `${videoSrc}${separator}v=${BUNS_ADVENTURES_VIDEO_VERSION}`;
+}
+
 export const bunsAdventuresCampaign = {
   id: "buns-adventures",
   title: "BUNS ADVENTURES",
   subtitle: "ERICEIRA STORIES",
   qrLabel: "SCAN TO FOLLOW THE STORY",
+  videoVersion: BUNS_ADVENTURES_VIDEO_VERSION,
   episodes: [
     {
       id: "episode-01",
       number: "01",
       title: "Jogo da Bola",
       overlayLabel: "Episódio 01 — Jogo da Bola",
-      videoSrc: "/videos/buns-episode-01.mp4",
+      videoSrc: withVideoVersion("/videos/buns-episode-01.mp4"),
       linkedUrl: "https://buns-ericeira.pt/",
     },
     {
@@ -26,7 +34,7 @@ export const bunsAdventuresCampaign = {
       number: "02",
       title: "Ribeira D'Ilhas",
       overlayLabel: "Episode 02 — Ribeira D'Ilhas",
-      videoSrc: "/videos/buns-episode-02.mp4",
+      videoSrc: withVideoVersion("/videos/buns-episode-02.mp4"),
       linkedUrl: "https://buns-ericeira.pt/",
     },
     {
@@ -34,7 +42,7 @@ export const bunsAdventuresCampaign = {
       number: "03",
       title: "Skatepark",
       overlayLabel: "Episode 03 — Skatepark",
-      videoSrc: "/videos/buns-episode-03.mp4",
+      videoSrc: withVideoVersion("/videos/buns-episode-03.mp4"),
       linkedUrl: "https://buns-ericeira.pt/",
     },
   ] satisfies BunsAdventuresEpisode[],
