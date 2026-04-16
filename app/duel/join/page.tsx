@@ -2,7 +2,9 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { GameRoom } from "@/lib/duel/types";
+import type { GameRoom, RematchVote } from "@/lib/duel/types";
+
+const MAX_CONSECUTIVE_MATCHES = 3; // mirrors reactionDuel.ts
 
 // ── Player ID management ──────────────────────────────────────────────────────
 
@@ -491,8 +493,122 @@ function MatchWinnerView({
         transition={{ duration: 2, repeat: Infinity }}
         className="font-body text-xs uppercase tracking-[0.4em] text-white/30"
       >
-        New duel starting soon...
+        Deciding rematch...
       </motion.p>
+    </motion.div>
+  );
+}
+
+// ── Rematch wait view (mobile) ────────────────────────────────────────────────
+
+function RematchWaitView({
+  room,
+  playerId,
+  onVote,
+  myVote,
+}: {
+  room: GameRoom;
+  playerId: string;
+  onVote: (vote: RematchVote) => void;
+  myVote: RematchVote | undefined;
+}) {
+  const opponent = room.players.find((p) => p.id !== playerId);
+  const opponentVote = opponent
+    ? (room.rematchVotes[opponent.id] as RematchVote | undefined)
+    : undefined;
+  const isLastGame = room.consecutiveMatchCount >= MAX_CONSECUTIVE_MATCHES;
+
+  return (
+    <motion.div
+      key="rematch_wait"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0 }}
+      className="flex h-full flex-col items-center justify-between py-10 px-6"
+    >
+      {/* Logo + fair-play notice */}
+      <div className="flex flex-col items-center gap-2">
+        <Logo />
+        {isLastGame && (
+          <motion.span
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="mt-1 font-body text-[0.6rem] uppercase tracking-[0.3em] text-buns-orange text-center"
+          >
+            Fair play limit — new challengers after this
+          </motion.span>
+        )}
+      </div>
+
+      {/* Countdown */}
+      <div className="flex flex-col items-center gap-1">
+        <span className="font-body text-[0.55rem] uppercase tracking-[0.5em] text-white/35">
+          DECIDE IN
+        </span>
+        <AnimatePresence mode="wait">
+          <motion.span
+            key={room.rematchCountdown}
+            initial={{ scale: 1.5, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.5, opacity: 0 }}
+            transition={{ duration: 0.22 }}
+            className="font-display text-[8rem] font-black leading-none text-white/75"
+          >
+            {room.rematchCountdown ?? "—"}
+          </motion.span>
+        </AnimatePresence>
+        <span className="font-body text-[0.55rem] uppercase tracking-[0.4em] text-white/25">
+          seconds
+        </span>
+      </div>
+
+      {/* Decision area */}
+      <div className="flex w-full max-w-sm flex-col items-center gap-4">
+        {!myVote ? (
+          <>
+            <motion.button
+              onClick={() => onVote("rematch")}
+              whileTap={{ scale: 0.96 }}
+              className="w-full rounded-xl bg-buns-yellow py-5 font-display text-2xl font-black uppercase tracking-wide text-black"
+            >
+              REMATCH
+            </motion.button>
+            <motion.button
+              onClick={() => onVote("leave")}
+              whileTap={{ scale: 0.96 }}
+              className="w-full rounded-xl border border-white/15 py-4 font-display text-xl font-black uppercase tracking-wide text-white/45"
+            >
+              LEAVE
+            </motion.button>
+          </>
+        ) : (
+          <div className="flex flex-col items-center gap-4">
+            <motion.span
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className={`font-display text-3xl font-black uppercase tracking-wide ${
+                myVote === "rematch" ? "text-buns-yellow" : "text-white/40"
+              }`}
+            >
+              {myVote === "rematch" ? "REMATCH ✓" : "LEAVING..."}
+            </motion.span>
+            {myVote === "rematch" && (
+              <motion.span
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3 }}
+                className="font-body text-sm uppercase tracking-[0.3em] text-white/35 text-center"
+              >
+                {opponentVote === undefined
+                  ? "Waiting for opponent..."
+                  : opponentVote === "rematch"
+                  ? "Opponent wants rematch!"
+                  : "Opponent is leaving..."}
+              </motion.span>
+            )}
+          </div>
+        )}
+      </div>
     </motion.div>
   );
 }
@@ -532,6 +648,7 @@ export default function DuelJoinPage() {
   const [joining, setJoining] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
   const [hasTapped, setHasTapped] = useState(false);
+  const [myRematchVote, setMyRematchVote] = useState<RematchVote | undefined>(undefined);
   const prevRoundRef = useRef<number>(0);
 
   // Init player ID on mount
@@ -539,13 +656,24 @@ export default function DuelJoinPage() {
     setPlayerId(getOrCreatePlayerId());
   }, []);
 
-  // Check if already in room after reconnect
+  // Restore joined state if still in room after reconnect
   useEffect(() => {
     if (!room || !playerId) return;
     if (room.players.find((p) => p.id === playerId)) {
       setHasJoined(true);
     }
   }, [room, playerId]);
+
+  // Handle player removal: if we were joined but are no longer in the room
+  // (opponent left and we were removed, or full room reset), go back to join screen.
+  useEffect(() => {
+    if (!room || !playerId || !hasJoined) return;
+    const stillInRoom = room.players.find((p) => p.id === playerId);
+    if (!stillInRoom) {
+      setHasJoined(false);
+      setMyRematchVote(undefined);
+    }
+  }, [room, playerId, hasJoined]);
 
   // Reset tap state when round changes
   useEffect(() => {
@@ -555,6 +683,14 @@ export default function DuelJoinPage() {
       setHasTapped(false);
     }
   }, [room]);
+
+  // Clear rematch vote once the rematch_wait window closes (any direction)
+  useEffect(() => {
+    if (!room) return;
+    if (room.status !== "rematch_wait") {
+      setMyRematchVote(undefined);
+    }
+  }, [room?.status]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleJoin = useCallback(
     async (name: string) => {
@@ -598,8 +734,32 @@ export default function DuelJoinPage() {
     }
   }, [playerId, hasTapped]);
 
+  const handleRematchVote = useCallback(
+    async (vote: RematchVote) => {
+      if (!playerId || myRematchVote !== undefined) return;
+      setMyRematchVote(vote); // optimistic
+
+      try {
+        await fetch("/api/duel/action", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "rematch_vote", playerId, vote }),
+        });
+      } catch {
+        // vote is best-effort; server will treat silence as "leave" on timeout
+      }
+    },
+    [playerId, myRematchVote]
+  );
+
   const isInRoom = room?.players.find((p) => p.id === playerId) !== undefined;
-  const roomFull = (room?.players.length ?? 0) >= 2 && !isInRoom && room?.status !== "waiting";
+  // Room is "full" to new joiners when a game is underway and they're not a participant.
+  // waiting and rematch_wait are the only states where new players can enter.
+  const roomFull =
+    (room?.players.length ?? 0) >= 2 &&
+    !isInRoom &&
+    room?.status !== "waiting" &&
+    room?.status !== "rematch_wait";
 
   const renderContent = () => {
     if (!room) {
@@ -645,6 +805,15 @@ export default function DuelJoinPage() {
         return <RoundResultView room={room} playerId={playerId} />;
       case "match_winner":
         return <MatchWinnerView room={room} playerId={playerId} />;
+      case "rematch_wait":
+        return (
+          <RematchWaitView
+            room={room}
+            playerId={playerId}
+            onVote={handleRematchVote}
+            myVote={myRematchVote}
+          />
+        );
       default:
         return <LobbyView room={room} playerId={playerId} />;
     }

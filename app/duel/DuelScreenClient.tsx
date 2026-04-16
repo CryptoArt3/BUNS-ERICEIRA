@@ -2,7 +2,9 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
-import type { GameRoom, Player, RoomStatus } from "@/lib/duel/types";
+import type { GameRoom, Player, RematchVote, RoomStatus } from "@/lib/duel/types";
+
+const MAX_CONSECUTIVE_MATCHES = 3; // mirrors reactionDuel.ts — anti-monopoly limit
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -625,8 +627,116 @@ function MatchWinnerView({ room }: { room: GameRoom }) {
           transition={{ delay: 1.2 }}
           className="font-body text-[clamp(0.65rem,1.3vw,1rem)] uppercase tracking-[0.4em] text-white/30"
         >
-          New duel starting soon...
+          Deciding rematch...
         </motion.div>
+      </div>
+    </motion.div>
+  );
+}
+
+// ── Rematch wait view ─────────────────────────────────────────────────────────
+
+function RematchWaitView({ room }: { room: GameRoom }) {
+  const [p1, p2] = room.players;
+  const p1Vote = p1 ? (room.rematchVotes[p1.id] as RematchVote | undefined) : undefined;
+  const p2Vote = p2 ? (room.rematchVotes[p2.id] as RematchVote | undefined) : undefined;
+  const isLastGame = room.consecutiveMatchCount >= MAX_CONSECUTIVE_MATCHES;
+
+  const voteLabel = (vote: RematchVote | undefined) => {
+    if (vote === "rematch") return { text: "REMATCH ✓", cls: "text-buns-yellow" };
+    if (vote === "leave") return { text: "LEAVING", cls: "text-white/30" };
+    return { text: "DECIDING...", cls: "text-white/25" };
+  };
+
+  const p1Display = voteLabel(p1Vote);
+  const p2Display = voteLabel(p2Vote);
+
+  return (
+    <motion.div
+      key="rematch_wait"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="flex h-full w-full flex-col items-center justify-between px-16 py-14"
+    >
+      {/* Header */}
+      <div className="flex flex-col items-center gap-2">
+        {isLastGame && (
+          <motion.span
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="font-body text-[clamp(0.6rem,1.3vw,1rem)] uppercase tracking-[0.4em] text-buns-orange"
+          >
+            FAIR PLAY LIMIT · NEW CHALLENGERS AFTER THIS
+          </motion.span>
+        )}
+        <span className="font-display text-[clamp(2.5rem,6vw,5rem)] font-black uppercase tracking-wider text-white">
+          REMATCH?
+        </span>
+      </div>
+
+      {/* Countdown */}
+      <div className="flex flex-col items-center gap-3">
+        <AnimatePresence mode="wait">
+          <motion.span
+            key={room.rematchCountdown}
+            initial={{ scale: 1.4, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.6, opacity: 0 }}
+            transition={{ duration: 0.22 }}
+            className="font-display text-[clamp(7rem,20vw,16rem)] font-black leading-none text-white/70"
+          >
+            {room.rematchCountdown ?? "—"}
+          </motion.span>
+        </AnimatePresence>
+        <span className="font-body text-[clamp(0.6rem,1.2vw,0.9rem)] uppercase tracking-[0.5em] text-white/30">
+          seconds to decide
+        </span>
+      </div>
+
+      {/* Player decision panels */}
+      <div className="flex w-full items-end justify-between">
+        {/* P1 */}
+        <div className="flex flex-col items-start gap-3">
+          <span
+            className={`font-display text-[clamp(1.5rem,3.5vw,2.8rem)] font-black uppercase ${
+              PLAYER_COLORS[p1?.color ?? "red"].text
+            }`}
+          >
+            {p1?.name ?? "P1"}
+          </span>
+          <motion.span
+            key={p1Vote ?? "pending"}
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            className={`font-display text-[clamp(1rem,2.5vw,2rem)] font-black uppercase ${p1Display.cls}`}
+          >
+            {p1Display.text}
+          </motion.span>
+        </div>
+
+        <span className="font-body text-[clamp(0.55rem,1.1vw,0.85rem)] uppercase tracking-[0.4em] text-white/25">
+          DECIDE ON YOUR PHONE
+        </span>
+
+        {/* P2 */}
+        <div className="flex flex-col items-end gap-3">
+          <span
+            className={`font-display text-[clamp(1.5rem,3.5vw,2.8rem)] font-black uppercase ${
+              PLAYER_COLORS[p2?.color ?? "blue"].text
+            }`}
+          >
+            {p2?.name ?? "P2"}
+          </span>
+          <motion.span
+            key={p2Vote ?? "pending"}
+            initial={{ opacity: 0, x: 10 }}
+            animate={{ opacity: 1, x: 0 }}
+            className={`font-display text-[clamp(1rem,2.5vw,2rem)] font-black uppercase ${p2Display.cls}`}
+          >
+            {p2Display.text}
+          </motion.span>
+        </div>
       </div>
     </motion.div>
   );
@@ -682,6 +792,8 @@ export default function DuelScreenClient() {
           <RoundResultView key={`result_${room.currentRound}`} room={room} />
         ) : status === "match_winner" ? (
           <MatchWinnerView key="match_winner" room={room} />
+        ) : status === "rematch_wait" ? (
+          <RematchWaitView key="rematch_wait" room={room} />
         ) : null}
       </AnimatePresence>
 

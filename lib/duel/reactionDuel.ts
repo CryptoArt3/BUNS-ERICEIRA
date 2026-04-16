@@ -5,28 +5,27 @@ import {
   setDuelTimer,
   updateRoom,
 } from "./gameState";
-import type { Player, Round } from "./types";
+import type { Player, RematchVote, Round } from "./types";
 
 // ── Timing constants ──────────────────────────────────────────────────────────
 const COUNTDOWN_SECONDS = 3;
-const MIN_SIGNAL_DELAY_MS = 2000; // shortest wait before TAP NOW
-const MAX_SIGNAL_DELAY_MS = 5500; // longest wait before TAP NOW
-const TAP_WINDOW_MS = 2500; // window to tap after signal
-const ROUND_RESULT_DISPLAY_MS = 3000; // show round result before next
-const WINNER_DISPLAY_MS = 6000; // show match winner before lobby reset
+const MIN_SIGNAL_DELAY_MS = 2000;
+const MAX_SIGNAL_DELAY_MS = 5500;
+const TAP_WINDOW_MS = 2500;
+const ROUND_RESULT_DISPLAY_MS = 3000;
+const MATCH_WINNER_DISPLAY_MS = 2500; // brief celebration before rematch decision
+const REMATCH_WINDOW_SECONDS = 10; // time players have to decide on rematch
 const WINS_NEEDED = 2; // best of 3
+const MAX_CONSECUTIVE_MATCHES = 3; // anti-monopoly: max same-pair matches in a row
 
 // ── Join ──────────────────────────────────────────────────────────────────────
 
 export function addPlayer(id: string, requestedName: string): boolean {
   const room = getRoom();
 
-  // Reject if game is already running or room is full
   if (room.status !== "waiting") return false;
   if (room.players.length >= 2) return false;
-
-  // Idempotent: already joined
-  if (room.players.find((p) => p.id === id)) return true;
+  if (room.players.find((p) => p.id === id)) return true; // idempotent
 
   const color = room.players.length === 0 ? "red" : "blue";
   const name = requestedName.trim() || `Player ${room.players.length + 1}`;
@@ -47,9 +46,13 @@ export function addPlayer(id: string, requestedName: string): boolean {
 
 function startCountdown() {
   updateRoom({ status: "countdown", countdownValue: COUNTDOWN_SECONDS });
+  runCountdownTicker(startRound);
+}
 
+// Shared countdown ticker — counts from COUNTDOWN_SECONDS down then calls onComplete.
+// Caller is responsible for setting the initial status + countdownValue before calling.
+function runCountdownTicker(onComplete: () => void) {
   let count = COUNTDOWN_SECONDS;
-
   const tick = () => {
     count--;
     if (count > 0) {
@@ -57,10 +60,9 @@ function startCountdown() {
       setDuelTimer(setTimeout(tick, 1000));
     } else {
       updateRoom({ countdownValue: 0 });
-      setDuelTimer(setTimeout(startRound, 800));
+      setDuelTimer(setTimeout(onComplete, 800));
     }
   };
-
   setDuelTimer(setTimeout(tick, 1000));
 }
 
@@ -86,7 +88,6 @@ function startRound() {
     countdownValue: null,
   });
 
-  // Random delay — creates tension
   const delay =
     MIN_SIGNAL_DELAY_MS +
     Math.random() * (MAX_SIGNAL_DELAY_MS - MIN_SIGNAL_DELAY_MS);
@@ -103,8 +104,6 @@ function fireSignal() {
   updatedRounds[idx] = { ...updatedRounds[idx]!, signalFiredAt };
 
   updateRoom({ status: "signal", rounds: updatedRounds });
-
-  // Auto-resolve after tap window expires (handles disconnects / missed taps)
   setDuelTimer(setTimeout(() => resolveRound(), TAP_WINDOW_MS));
 }
 
@@ -120,8 +119,7 @@ export function recordTap(playerId: string): boolean {
   if (roundIdx < 0) return false;
 
   const currentRound = room.rounds[roundIdx]!;
-  // Already tapped
-  if (currentRound.taps[playerId] !== undefined) return false;
+  if (currentRound.taps[playerId] !== undefined) return false; // already tapped
 
   const tapTime = Date.now();
   const updatedRounds = [...room.rounds];
@@ -132,7 +130,6 @@ export function recordTap(playerId: string): boolean {
 
   updateRoom({ rounds: updatedRounds });
 
-  // Resolve as soon as both players have tapped
   const tapCount = Object.keys(updatedRounds[roundIdx]!.taps).length;
   if (tapCount >= room.players.length) {
     clearDuelTimer();
@@ -158,10 +155,9 @@ function resolveRound() {
   for (const player of room.players) {
     const tapTime = currentRound.taps[player.id];
     reactionTimes[player.id] =
-      tapTime !== undefined ? tapTime - signal : TAP_WINDOW_MS + 1000; // missed
+      tapTime !== undefined ? tapTime - signal : TAP_WINDOW_MS + 1000;
   }
 
-  // Determine round winner — lowest reaction time wins
   let roundWinner: string | null = null;
   if (room.players.length >= 2) {
     const [p1, p2] = room.players as [Player, Player];
@@ -169,7 +165,6 @@ function resolveRound() {
     const t2 = reactionTimes[p2.id] ?? Infinity;
     if (t1 < t2) roundWinner = p1.id;
     else if (t2 < t1) roundWinner = p2.id;
-    // equal → draw, no point awarded
   }
 
   const updatedRounds = [...room.rounds];
@@ -185,21 +180,150 @@ function resolveRound() {
     newScores[roundWinner] = (newScores[roundWinner] ?? 0) + 1;
   }
 
-  updateRoom({ status: "round_result", rounds: updatedRounds, scores: newScores });
-
-  // Check for match winner (first to WINS_NEEDED)
   const matchWinner = room.players.find(
     (p) => (newScores[p.id] ?? 0) >= WINS_NEEDED
   );
 
+  updateRoom({
+    status: "round_result",
+    rounds: updatedRounds,
+    scores: newScores,
+    // Increment consecutive count now so it's reflected in rematch_wait UI
+    ...(matchWinner
+      ? { consecutiveMatchCount: room.consecutiveMatchCount + 1 }
+      : {}),
+  });
+
   if (matchWinner) {
     setDuelTimer(
-      setTimeout(() => {
-        updateRoom({ status: "match_winner", winner: matchWinner.id });
-        setDuelTimer(setTimeout(() => resetRoom(), WINNER_DISPLAY_MS));
-      }, ROUND_RESULT_DISPLAY_MS)
+      setTimeout(() => enterMatchWinner(matchWinner.id), ROUND_RESULT_DISPLAY_MS)
     );
   } else {
     setDuelTimer(setTimeout(startRound, ROUND_RESULT_DISPLAY_MS));
   }
+}
+
+// ── Match winner → rematch wait ───────────────────────────────────────────────
+
+function enterMatchWinner(winnerId: string) {
+  updateRoom({ status: "match_winner", winner: winnerId });
+  setDuelTimer(setTimeout(enterRematchWait, MATCH_WINNER_DISPLAY_MS));
+}
+
+function enterRematchWait() {
+  updateRoom({
+    status: "rematch_wait",
+    rematchVotes: {},
+    rematchCountdown: REMATCH_WINDOW_SECONDS,
+  });
+  startRematchCountdown();
+}
+
+function startRematchCountdown() {
+  let seconds = REMATCH_WINDOW_SECONDS;
+
+  const tick = () => {
+    const room = getRoom();
+    // Guard: if state changed (e.g. both voted already), stop ticking
+    if (room.status !== "rematch_wait") return;
+
+    seconds--;
+    if (seconds <= 0) {
+      resolveRematch();
+    } else {
+      updateRoom({ rematchCountdown: seconds });
+      setDuelTimer(setTimeout(tick, 1000));
+    }
+  };
+
+  setDuelTimer(setTimeout(tick, 1000));
+}
+
+// ── Rematch vote ──────────────────────────────────────────────────────────────
+
+export function recordRematchVote(
+  playerId: string,
+  vote: RematchVote
+): boolean {
+  const room = getRoom();
+
+  if (room.status !== "rematch_wait") return false;
+  if (!room.players.find((p) => p.id === playerId)) return false;
+  // Don't allow changing an existing vote
+  if (room.rematchVotes[playerId] !== undefined) return false;
+
+  const newVotes = { ...room.rematchVotes, [playerId]: vote };
+  updateRoom({ rematchVotes: newVotes });
+
+  // Resolve immediately once every player has voted
+  if (Object.keys(newVotes).length >= room.players.length) {
+    clearDuelTimer();
+    resolveRematch();
+  }
+
+  return true;
+}
+
+// ── Rematch resolution ────────────────────────────────────────────────────────
+
+function resolveRematch() {
+  const room = getRoom();
+  // Guard against double-invocation (timer + all-voted race)
+  if (room.status !== "rematch_wait") return;
+
+  const rematchPlayers = room.players.filter(
+    (p) => room.rematchVotes[p.id] === "rematch"
+  );
+  const bothWantRematch =
+    rematchPlayers.length === 2 && room.players.length === 2;
+
+  // ── Anti-monopoly: force full reset if same pair played too many times ──
+  if (bothWantRematch && room.consecutiveMatchCount >= MAX_CONSECUTIVE_MATCHES) {
+    resetRoom();
+    return;
+  }
+
+  // ── Both rematch, under limit ─────────────────────────────────────────────
+  if (bothWantRematch) {
+    startRematch();
+    return;
+  }
+
+  // ── One player rematches, the other leaves (or didn't respond = treated as leave) ──
+  if (rematchPlayers.length === 1) {
+    updateRoom({
+      status: "waiting",
+      players: rematchPlayers,
+      scores: Object.fromEntries(rematchPlayers.map((p) => [p.id, 0])),
+      currentRound: 0,
+      rounds: [],
+      countdownValue: null,
+      winner: null,
+      rematchVotes: {},
+      rematchCountdown: null,
+      consecutiveMatchCount: 0, // new opponent will join — reset streak
+    });
+    return;
+  }
+
+  // ── Both leave, or no votes ───────────────────────────────────────────────
+  resetRoom();
+}
+
+// ── Rematch start (same players, scores reset) ────────────────────────────────
+
+function startRematch() {
+  const room = getRoom();
+  updateRoom({
+    status: "countdown",
+    scores: Object.fromEntries(room.players.map((p) => [p.id, 0])),
+    currentRound: 0,
+    rounds: [],
+    countdownValue: COUNTDOWN_SECONDS,
+    winner: null,
+    rematchVotes: {},
+    rematchCountdown: null,
+    // consecutiveMatchCount already incremented in resolveRound when this match ended
+  });
+  runCountdownTicker(startRound);
 }

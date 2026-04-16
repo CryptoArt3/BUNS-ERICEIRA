@@ -48,6 +48,9 @@ function createRoom(): GameRoom {
     rounds: [],
     countdownValue: null,
     winner: null,
+    rematchVotes: {},
+    rematchCountdown: null,
+    consecutiveMatchCount: 0,
     lastUpdatedAt: Date.now(),
   };
 }

@@ -1,11 +1,12 @@
 // Player action endpoint.
-// POST body: { type: "join" | "tap", playerId: string, playerName?: string }
+// POST body: { type: "join" | "tap" | "rematch_vote", playerId: string, ... }
 
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import { addPlayer, recordTap } from "@/lib/duel/reactionDuel";
+import { addPlayer, recordTap, recordRematchVote } from "@/lib/duel/reactionDuel";
 import { getRoom } from "@/lib/duel/gameState";
+import type { RematchVote } from "@/lib/duel/types";
 
 export async function POST(request: Request) {
   let body: Record<string, unknown>;
@@ -15,10 +16,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { type, playerId, playerName } = body as {
+  const { type, playerId, playerName, vote } = body as {
     type?: string;
     playerId?: string;
     playerName?: string;
+    vote?: unknown;
   };
 
   if (!playerId || typeof playerId !== "string") {
@@ -34,6 +36,17 @@ export async function POST(request: Request) {
 
     case "tap": {
       const success = recordTap(playerId);
+      return NextResponse.json({ success, room: getRoom() });
+    }
+
+    case "rematch_vote": {
+      if (vote !== "rematch" && vote !== "leave") {
+        return NextResponse.json(
+          { error: 'vote must be "rematch" or "leave"' },
+          { status: 400 }
+        );
+      }
+      const success = recordRematchVote(playerId, vote as RematchVote);
       return NextResponse.json({ success, room: getRoom() });
     }
 
