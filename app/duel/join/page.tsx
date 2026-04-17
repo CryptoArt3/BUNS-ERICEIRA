@@ -692,6 +692,67 @@ export default function DuelJoinPage() {
     }
   }, [room?.status]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── Presence: heartbeat ───────────────────────────────────────────────────
+  // Send a lightweight ping every 12 s while in the room.
+  // The server removes players that go silent for > 30 s (STALE_TIMEOUT_MS).
+  // This covers the case where the browser closes without firing pagehide
+  // (e.g. iOS Safari background kill, crash, network drop).
+  useEffect(() => {
+    if (!playerId || !hasJoined) return;
+
+    const HEARTBEAT_MS = 12_000;
+
+    const send = () => {
+      fetch("/api/duel/action", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "heartbeat", playerId }),
+      }).catch(() => {}); // fire and forget
+    };
+
+    send(); // immediate first ping so the server refreshes lastSeen right away
+    const interval = setInterval(send, HEARTBEAT_MS);
+    return () => clearInterval(interval);
+  }, [playerId, hasJoined]);
+
+  // ── Presence: explicit leave on page unload ───────────────────────────────
+  // Fires a best-effort leave when the user navigates away, closes the tab,
+  // or the browser puts the page in the background (mobile).
+  //
+  // sendBeacon is the most reliable mechanism on mobile — the browser
+  // guarantees delivery even during page teardown. fetch with keepalive is
+  // used as a fallback for environments where sendBeacon is unavailable.
+  useEffect(() => {
+    if (!playerId || !hasJoined) return;
+
+    const leave = () => {
+      const body = JSON.stringify({ type: "leave", playerId });
+      try {
+        if (typeof navigator.sendBeacon === "function") {
+          navigator.sendBeacon(
+            "/api/duel/action",
+            new Blob([body], { type: "application/json" })
+          );
+        } else {
+          // keepalive keeps the request alive through page unload
+          fetch("/api/duel/action", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body,
+            keepalive: true,
+          }).catch(() => {});
+        }
+      } catch {
+        // Best-effort — the heartbeat timeout will clean up if this fails
+      }
+    };
+
+    window.addEventListener("pagehide", leave);
+    return () => {
+      window.removeEventListener("pagehide", leave);
+    };
+  }, [playerId, hasJoined]);
+
   const handleJoin = useCallback(
     async (name: string) => {
       if (!playerId) return;

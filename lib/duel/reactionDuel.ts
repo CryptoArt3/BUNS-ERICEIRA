@@ -1,8 +1,14 @@
 import {
   clearDuelTimer,
+  clearLastSeen,
+  getLastSeen,
   getRoom,
+  removeLastSeen,
   resetRoom,
   setDuelTimer,
+  startCleanupInterval,
+  stopCleanupInterval,
+  updateLastSeen,
   updateRoom,
 } from "./gameState";
 import type { Player, RematchVote, Round } from "./types";
@@ -13,10 +19,22 @@ const MIN_SIGNAL_DELAY_MS = 2000;
 const MAX_SIGNAL_DELAY_MS = 5500;
 const TAP_WINDOW_MS = 2500;
 const ROUND_RESULT_DISPLAY_MS = 3000;
-const MATCH_WINNER_DISPLAY_MS = 2500; // brief celebration before rematch decision
-const REMATCH_WINDOW_SECONDS = 10; // time players have to decide on rematch
-const WINS_NEEDED = 2; // best of 3
-const MAX_CONSECUTIVE_MATCHES = 3; // anti-monopoly: max same-pair matches in a row
+const MATCH_WINNER_DISPLAY_MS = 2500;
+const REMATCH_WINDOW_SECONDS = 10;
+const WINS_NEEDED = 2;
+const MAX_CONSECUTIVE_MATCHES = 3;
+
+// ── Presence constants ────────────────────────────────────────────────────────
+// Client sends a heartbeat every HEARTBEAT_INTERVAL_MS (defined on the client).
+// Server removes a player after STALE_TIMEOUT_MS without a heartbeat.
+// Server runs the cleanup scan every CLEANUP_INTERVAL_MS.
+//
+// Worst-case removal latency after disconnect:
+//   STALE_TIMEOUT_MS + CLEANUP_INTERVAL_MS ≈ 40 s
+// This is acceptable for an in-store game. The pagehide/beforeunload explicit
+// leave reduces this to near-instant in the common case.
+const STALE_TIMEOUT_MS = 30_000;
+const CLEANUP_INTERVAL_MS = 10_000;
 
 // ── Join ──────────────────────────────────────────────────────────────────────
 
@@ -25,7 +43,12 @@ export function addPlayer(id: string, requestedName: string): boolean {
 
   if (room.status !== "waiting") return false;
   if (room.players.length >= 2) return false;
-  if (room.players.find((p) => p.id === id)) return true; // idempotent
+
+  // Idempotent: already joined — refresh their lastSeen and return
+  if (room.players.find((p) => p.id === id)) {
+    updateLastSeen(id);
+    return true;
+  }
 
   const color = room.players.length === 0 ? "red" : "blue";
   const name = requestedName.trim() || `Player ${room.players.length + 1}`;
@@ -35,11 +58,115 @@ export function addPlayer(id: string, requestedName: string): boolean {
   const newScores = { ...room.scores, [id]: 0 };
   updateRoom({ players: newPlayers, scores: newScores });
 
+  // Seed presence — ensures cleanup doesn't evict them before first heartbeat
+  updateLastSeen(id);
+
+  // Ensure the janitor is running now that at least one player is in the room
+  startCleanupInterval(cleanupStalePlayers, CLEANUP_INTERVAL_MS);
+
   if (newPlayers.length === 2) {
     startCountdown();
   }
 
   return true;
+}
+
+// ── Presence: heartbeat ───────────────────────────────────────────────────────
+
+export function heartbeat(playerId: string): boolean {
+  const room = getRoom();
+  if (!room.players.find((p) => p.id === playerId)) return false;
+  // Update lastSeen silently — does NOT call updateRoom so no SSE is emitted.
+  updateLastSeen(playerId);
+  return true;
+}
+
+// ── Presence: explicit leave ──────────────────────────────────────────────────
+
+export function leavePlayer(playerId: string): void {
+  handlePlayerDisconnect(playerId);
+}
+
+// ── Presence: stale player cleanup ───────────────────────────────────────────
+
+function cleanupStalePlayers(): void {
+  const room = getRoom();
+  if (room.players.length === 0) return;
+
+  const now = Date.now();
+  const stale = room.players.filter((p) => {
+    // Fall back to joinedAt if no heartbeat has been recorded yet
+    const seen = getLastSeen(p.id) ?? p.joinedAt;
+    return now - seen > STALE_TIMEOUT_MS;
+  });
+
+  for (const player of stale) {
+    // Re-read room inside the loop — state may have changed after each removal
+    handlePlayerDisconnect(player.id);
+  }
+}
+
+// ── Presence: disconnect handler ──────────────────────────────────────────────
+
+function handlePlayerDisconnect(playerId: string): void {
+  const room = getRoom();
+
+  // Already gone (e.g. resolved by a previous cleanup pass this tick)
+  if (!room.players.find((p) => p.id === playerId)) return;
+
+  // ── rematch_wait: use the existing vote mechanism ─────────────────────────
+  if (room.status === "rematch_wait") {
+    // Only inject a vote if they haven't already voted
+    if (room.rematchVotes[playerId] === undefined) {
+      recordRematchVote(playerId, "leave");
+    }
+    removeLastSeen(playerId);
+    return;
+  }
+
+  // ── waiting / match_winner: simple removal, no timer changes ─────────────
+  // match_winner: a 2.5s display timer is already queued → let it fire into
+  // rematch_wait, which handles reduced player count gracefully.
+  if (room.status === "waiting" || room.status === "match_winner") {
+    const remaining = room.players.filter((p) => p.id !== playerId);
+    removeLastSeen(playerId);
+
+    if (remaining.length === 0) {
+      resetRoom(); // also stops cleanup interval + clears all lastSeen
+    } else {
+      updateRoom({
+        players: remaining,
+        scores: Object.fromEntries(
+          remaining.map((p) => [p.id, room.scores[p.id] ?? 0])
+        ),
+      });
+    }
+    return;
+  }
+
+  // ── active game (countdown / get_ready / signal / round_result) ──────────
+  // The match cannot safely continue with one player — cancel all pending
+  // timers and return to waiting with the remaining player.
+  clearDuelTimer();
+  const remaining = room.players.filter((p) => p.id !== playerId);
+  removeLastSeen(playerId);
+
+  if (remaining.length === 0) {
+    resetRoom();
+  } else {
+    updateRoom({
+      status: "waiting",
+      players: remaining,
+      scores: Object.fromEntries(remaining.map((p) => [p.id, 0])),
+      currentRound: 0,
+      rounds: [],
+      countdownValue: null,
+      winner: null,
+      rematchVotes: {},
+      rematchCountdown: null,
+      consecutiveMatchCount: 0, // new opponent will join — reset streak
+    });
+  }
 }
 
 // ── Countdown ─────────────────────────────────────────────────────────────────
@@ -49,8 +176,8 @@ function startCountdown() {
   runCountdownTicker(startRound);
 }
 
-// Shared countdown ticker — counts from COUNTDOWN_SECONDS down then calls onComplete.
-// Caller is responsible for setting the initial status + countdownValue before calling.
+// Shared ticker — counts from COUNTDOWN_SECONDS down then calls onComplete.
+// Caller sets initial status + countdownValue before invoking.
 function runCountdownTicker(onComplete: () => void) {
   let count = COUNTDOWN_SECONDS;
   const tick = () => {
@@ -119,7 +246,7 @@ export function recordTap(playerId: string): boolean {
   if (roundIdx < 0) return false;
 
   const currentRound = room.rounds[roundIdx]!;
-  if (currentRound.taps[playerId] !== undefined) return false; // already tapped
+  if (currentRound.taps[playerId] !== undefined) return false;
 
   const tapTime = Date.now();
   const updatedRounds = [...room.rounds];
@@ -188,7 +315,6 @@ function resolveRound() {
     status: "round_result",
     rounds: updatedRounds,
     scores: newScores,
-    // Increment consecutive count now so it's reflected in rematch_wait UI
     ...(matchWinner
       ? { consecutiveMatchCount: room.consecutiveMatchCount + 1 }
       : {}),
@@ -224,8 +350,7 @@ function startRematchCountdown() {
 
   const tick = () => {
     const room = getRoom();
-    // Guard: if state changed (e.g. both voted already), stop ticking
-    if (room.status !== "rematch_wait") return;
+    if (room.status !== "rematch_wait") return; // guard: state changed externally
 
     seconds--;
     if (seconds <= 0) {
@@ -249,13 +374,11 @@ export function recordRematchVote(
 
   if (room.status !== "rematch_wait") return false;
   if (!room.players.find((p) => p.id === playerId)) return false;
-  // Don't allow changing an existing vote
   if (room.rematchVotes[playerId] !== undefined) return false;
 
   const newVotes = { ...room.rematchVotes, [playerId]: vote };
   updateRoom({ rematchVotes: newVotes });
 
-  // Resolve immediately once every player has voted
   if (Object.keys(newVotes).length >= room.players.length) {
     clearDuelTimer();
     resolveRematch();
@@ -268,8 +391,7 @@ export function recordRematchVote(
 
 function resolveRematch() {
   const room = getRoom();
-  // Guard against double-invocation (timer + all-voted race)
-  if (room.status !== "rematch_wait") return;
+  if (room.status !== "rematch_wait") return; // guard against double-invocation
 
   const rematchPlayers = room.players.filter(
     (p) => room.rematchVotes[p.id] === "rematch"
@@ -277,20 +399,21 @@ function resolveRematch() {
   const bothWantRematch =
     rematchPlayers.length === 2 && room.players.length === 2;
 
-  // ── Anti-monopoly: force full reset if same pair played too many times ──
   if (bothWantRematch && room.consecutiveMatchCount >= MAX_CONSECUTIVE_MATCHES) {
     resetRoom();
     return;
   }
 
-  // ── Both rematch, under limit ─────────────────────────────────────────────
   if (bothWantRematch) {
     startRematch();
     return;
   }
 
-  // ── One player rematches, the other leaves (or didn't respond = treated as leave) ──
   if (rematchPlayers.length === 1) {
+    // Keep the rematching player; clear the leaver's presence
+    const leaverId = room.players.find((p) => room.rematchVotes[p.id] !== "rematch")?.id;
+    if (leaverId) removeLastSeen(leaverId);
+
     updateRoom({
       status: "waiting",
       players: rematchPlayers,
@@ -301,16 +424,16 @@ function resolveRematch() {
       winner: null,
       rematchVotes: {},
       rematchCountdown: null,
-      consecutiveMatchCount: 0, // new opponent will join — reset streak
+      consecutiveMatchCount: 0,
     });
     return;
   }
 
-  // ── Both leave, or no votes ───────────────────────────────────────────────
+  // Both leave or no votes — full reset
   resetRoom();
 }
 
-// ── Rematch start (same players, scores reset) ────────────────────────────────
+// ── Rematch start ─────────────────────────────────────────────────────────────
 
 function startRematch() {
   const room = getRoom();
@@ -323,7 +446,6 @@ function startRematch() {
     winner: null,
     rematchVotes: {},
     rematchCountdown: null,
-    // consecutiveMatchCount already incremented in resolveRound when this match ended
   });
   runCountdownTicker(startRound);
 }

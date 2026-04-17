@@ -1,10 +1,16 @@
 // Player action endpoint.
-// POST body: { type: "join" | "tap" | "rematch_vote", playerId: string, ... }
+// POST body: { type: "join" | "tap" | "rematch_vote" | "heartbeat" | "leave", playerId: string, ... }
 
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import { addPlayer, recordTap, recordRematchVote } from "@/lib/duel/reactionDuel";
+import {
+  addPlayer,
+  heartbeat,
+  leavePlayer,
+  recordRematchVote,
+  recordTap,
+} from "@/lib/duel/reactionDuel";
 import { getRoom } from "@/lib/duel/gameState";
 import type { RematchVote } from "@/lib/duel/types";
 
@@ -48,6 +54,19 @@ export async function POST(request: Request) {
       }
       const success = recordRematchVote(playerId, vote as RematchVote);
       return NextResponse.json({ success, room: getRoom() });
+    }
+
+    case "heartbeat": {
+      // Silent presence ping — no room snapshot needed in the response.
+      // The client already gets room state via SSE; this is fire-and-forget.
+      const success = heartbeat(playerId);
+      return NextResponse.json({ success });
+    }
+
+    case "leave": {
+      // Explicit leave triggered by pagehide / beforeunload.
+      leavePlayer(playerId);
+      return NextResponse.json({ success: true });
     }
 
     default:
