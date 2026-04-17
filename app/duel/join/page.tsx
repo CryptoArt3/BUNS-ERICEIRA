@@ -96,7 +96,7 @@ function useDuelRoom() {
     };
   }, []);
 
-  return { room, connected };
+  return { room, setRoom, connected };
 }
 
 // ── Components ────────────────────────────────────────────────────────────────
@@ -873,7 +873,7 @@ function RoomFullView({ room }: { room: GameRoom }) {
 // ── Root page ─────────────────────────────────────────────────────────────────
 
 export default function DuelJoinPage() {
-  const { room, connected } = useDuelRoom();
+  const { room, setRoom, connected } = useDuelRoom();
   const [playerId, setPlayerId] = useState<string>("");
   const [hasJoined, setHasJoined] = useState(false);
   const [joining, setJoining] = useState(false);
@@ -1040,8 +1040,11 @@ export default function DuelJoinPage() {
           body: JSON.stringify({ type: "join", playerId, playerName: name }),
         });
         const data = (await res.json()) as { success: boolean; room?: GameRoom };
+        if (data.room) {
+          setRoom(data.room);
+        }
         if (data.success) {
-          setHasJoined(true);
+          setHasJoined(data.room?.players.some((p) => p.id === playerId) ?? true);
           setJoinError(null);
         } else {
           setJoinError("Could not join. Room may be full or game in progress.");
@@ -1052,7 +1055,7 @@ export default function DuelJoinPage() {
         setJoining(false);
       }
     },
-    [playerId]
+    [playerId, setRoom]
   );
 
   const flushTapBattleTaps = useCallback(async () => {
@@ -1123,16 +1126,26 @@ export default function DuelJoinPage() {
       setMyRematchVote(vote); // optimistic
 
       try {
-        await fetch("/api/duel/action", {
+        const res = await fetch("/api/duel/action", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ type: "rematch_vote", playerId, vote }),
         });
+        const data = (await res.json()) as {
+          success?: boolean;
+          room?: GameRoom;
+        };
+        if (data.room) {
+          setRoom(data.room);
+        }
+        if (!data.success) {
+          setMyRematchVote(undefined);
+        }
       } catch {
-        // vote is best-effort; server will treat silence as "leave" on timeout
+        setMyRematchVote(undefined);
       }
     },
-    [playerId, myRematchVote]
+    [playerId, myRematchVote, setRoom]
   );
 
   const isInRoom = room?.players.find((p) => p.id === playerId) !== undefined;
