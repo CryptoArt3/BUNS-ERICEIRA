@@ -2,13 +2,24 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
-import type { GameRoom, Player, RematchVote, RoomStatus } from "@/lib/duel/types";
+import type {
+  DuelGameType,
+  GameRoom,
+  Player,
+  RematchVote,
+  RoomStatus,
+} from "@/lib/duel/types";
 
 const MAX_CONSECUTIVE_MATCHES = 3; // mirrors reactionDuel.ts — anti-monopoly limit
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
 const JOIN_URL_PATH = "/duel/join";
+
+const GAME_LABELS: Record<DuelGameType, string> = {
+  reaction: "REACTION DUEL",
+  tap_battle: "TAP BATTLE",
+};
 
 const PLAYER_COLORS = {
   red: {
@@ -234,7 +245,7 @@ function WaitingView({ room, qrUrl }: { room: GameRoom; qrUrl: string }) {
             BUNS DUEL
           </span>
           <span className="font-body text-[clamp(0.6rem,1.4vw,1rem)] uppercase tracking-[0.5em] text-white/50">
-            REACTION DUEL · BEST OF 3
+            {GAME_LABELS[room.gameType]} · BEST OF 3
           </span>
         </div>
         <div className="rounded border border-white/10 bg-white/5 px-4 py-2 font-mono text-[0.65rem] uppercase tracking-[0.3em] text-white/40">
@@ -495,6 +506,106 @@ function SignalView({ room }: { room: GameRoom }) {
   );
 }
 
+function TapBattleSignalView({ room }: { room: GameRoom }) {
+  const [p1, p2] = room.players;
+  const round = room.rounds[room.rounds.length - 1];
+  const p1Count = round?.tapCounts?.[p1?.id ?? ""] ?? 0;
+  const p2Count = round?.tapCounts?.[p2?.id ?? ""] ?? 0;
+  const total = Math.max(1, p1Count + p2Count);
+  const p1Percent = (p1Count / total) * 100;
+  const p2Percent = (p2Count / total) * 100;
+  const leaderId = p1Count === p2Count ? null : p1Count > p2Count ? p1?.id : p2?.id;
+
+  return (
+    <motion.div
+      key={`tap_battle_${room.currentRound}`}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="flex h-full w-full flex-col items-center justify-between px-16 py-14"
+    >
+      <div className="flex w-full items-start justify-between">
+        <PlayerSlot player={p1} score={room.scores[p1?.id ?? ""] ?? 0} side="left" />
+        <div className="flex flex-col items-center gap-2">
+          <span className="font-body text-[clamp(0.6rem,1.2vw,0.9rem)] uppercase tracking-[0.4em] text-white/40">
+            Tap Battle
+          </span>
+          <span className="font-display text-[clamp(2rem,5vw,4rem)] font-black text-buns-yellow">
+            ROUND {room.currentRound}
+          </span>
+          <span className="font-body text-[clamp(0.55rem,1vw,0.8rem)] uppercase tracking-[0.3em] text-white/30">
+            5 SECOND SPRINT
+          </span>
+        </div>
+        <PlayerSlot player={p2} score={room.scores[p2?.id ?? ""] ?? 0} side="right" />
+      </div>
+
+      <div className="flex w-full max-w-5xl flex-col gap-6">
+        <div className="flex items-center justify-between">
+          <span className="font-display text-[clamp(4rem,12vw,9rem)] font-black uppercase leading-none tracking-wide text-buns-yellow [text-shadow:0_0_80px_rgba(255,212,0,0.8)]">
+            TAP BATTLE
+          </span>
+          <div className="rounded-full border border-white/10 bg-white/5 px-5 py-3">
+            <span className="font-body text-[clamp(0.7rem,1.4vw,1rem)] uppercase tracking-[0.35em] text-white/55">
+              LIVE COUNTS
+            </span>
+          </div>
+        </div>
+
+        {[p1, p2].map((player, index) => {
+          const isFirst = index === 0;
+          const count = isFirst ? p1Count : p2Count;
+          const percent = isFirst ? p1Percent : p2Percent;
+          const isLeader = leaderId === player?.id;
+          const colors = PLAYER_COLORS[player?.color ?? (isFirst ? "red" : "blue")];
+
+          return (
+            <div
+              key={player?.id ?? index}
+              className={`rounded-3xl border px-6 py-5 ${
+                isLeader ? `${colors.border} bg-white/10 shadow-[0_0_60px_rgba(255,212,0,0.12)]` : "border-white/10 bg-white/5"
+              }`}
+            >
+              <div className="mb-3 flex items-end justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className={`h-3 w-3 rounded-full ${colors.bg}`} />
+                  <span className={`font-display text-[clamp(1.4rem,3vw,2.4rem)] font-black uppercase ${colors.text}`}>
+                    {player?.name ?? (isFirst ? "P1" : "P2")}
+                  </span>
+                  {isLeader && (
+                    <span className="rounded-full border border-buns-yellow/30 bg-buns-yellow/10 px-3 py-1 font-body text-[0.6rem] uppercase tracking-[0.3em] text-buns-yellow">
+                      Leading
+                    </span>
+                  )}
+                </div>
+                <div className="text-right">
+                  <div className="font-display text-[clamp(2.5rem,6vw,5rem)] font-black leading-none text-white">
+                    {count}
+                  </div>
+                  <div className="font-body text-[clamp(0.6rem,1.2vw,0.9rem)] uppercase tracking-[0.3em] text-white/35">
+                    taps · {Math.round(percent)}%
+                  </div>
+                </div>
+              </div>
+              <div className="h-4 overflow-hidden rounded-full bg-white/10">
+                <motion.div
+                  animate={{ width: `${Math.max(percent, count > 0 ? 8 : 0)}%` }}
+                  transition={{ duration: 0.16, ease: "easeOut" }}
+                  className={`h-full rounded-full ${colors.bg}`}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="font-body text-[clamp(0.6rem,1.2vw,0.9rem)] uppercase tracking-[0.5em] text-white/30">
+        TAP AS FAST AS POSSIBLE
+      </div>
+    </motion.div>
+  );
+}
+
 function RoundResultView({ room }: { room: GameRoom }) {
   const [p1, p2] = room.players;
   const lastRound = room.rounds[room.rounds.length - 1];
@@ -582,6 +693,81 @@ function RoundResultView({ room }: { room: GameRoom }) {
             {p2 ? getReactionLabel(p2.id) : "—"}
           </span>
         </div>
+      </div>
+    </motion.div>
+  );
+}
+
+function TapBattleRoundResultView({ room }: { room: GameRoom }) {
+  const [p1, p2] = room.players;
+  const lastRound = room.rounds[room.rounds.length - 1];
+  const roundWinnerId = lastRound?.winner ?? null;
+  const roundWinner = room.players.find((p) => p.id === roundWinnerId);
+  const p1Count = lastRound?.tapCounts?.[p1?.id ?? ""] ?? 0;
+  const p2Count = lastRound?.tapCounts?.[p2?.id ?? ""] ?? 0;
+
+  return (
+    <motion.div
+      key={`tap_battle_result_${room.currentRound}`}
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0 }}
+      className="flex h-full w-full flex-col items-center justify-between px-16 py-14"
+    >
+      <div className="flex flex-col items-center gap-2">
+        <span className="font-body text-[clamp(0.65rem,1.4vw,1rem)] uppercase tracking-[0.5em] text-white/40">
+          ROUND {lastRound?.number ?? room.currentRound} RESULT
+        </span>
+        <span className="font-body text-[clamp(0.6rem,1.2vw,0.9rem)] uppercase tracking-[0.35em] text-white/25">
+          TAP BATTLE
+        </span>
+      </div>
+
+      <div className="flex flex-col items-center gap-6">
+        {roundWinner ? (
+          <>
+            <div
+              className={`font-display text-[clamp(4rem,12vw,10rem)] font-black uppercase leading-none tracking-wide ${
+                PLAYER_COLORS[roundWinner.color].text
+              } ${PLAYER_COLORS[roundWinner.color].glow}`}
+            >
+              {roundWinner.name}
+            </div>
+            <span className="font-display text-[clamp(1.5rem,4vw,3rem)] font-black uppercase text-white/80 tracking-widest">
+              WINS THE ROUND
+            </span>
+          </>
+        ) : (
+          <span className="font-display text-[clamp(3rem,9vw,7rem)] font-black uppercase text-white/60 tracking-widest">
+            DRAW
+          </span>
+        )}
+      </div>
+
+      <div className="grid w-full max-w-5xl grid-cols-2 gap-8">
+        {[p1, p2].map((player, index) => {
+          const count = index === 0 ? p1Count : p2Count;
+          const colors = PLAYER_COLORS[player?.color ?? (index === 0 ? "red" : "blue")];
+          return (
+            <div
+              key={player?.id ?? index}
+              className="rounded-3xl border border-white/10 bg-white/5 px-8 py-6"
+            >
+              <div className={`font-display text-[clamp(1.5rem,3vw,2.6rem)] font-black uppercase ${colors.text}`}>
+                {player?.name ?? (index === 0 ? "P1" : "P2")}
+              </div>
+              <div className="mt-4 font-display text-[clamp(4rem,9vw,7rem)] font-black leading-none text-white">
+                {count}
+              </div>
+              <div className="mt-2 font-body text-[clamp(0.6rem,1.2vw,0.9rem)] uppercase tracking-[0.35em] text-white/35">
+                taps this round
+              </div>
+              <div className="mt-5 font-display text-[clamp(2.5rem,6vw,4.5rem)] font-black text-white">
+                {room.scores[player?.id ?? ""] ?? 0}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </motion.div>
   );
@@ -814,9 +1000,17 @@ export default function DuelScreenClient() {
         ) : status === "get_ready" ? (
           <GetReadyView key={`get_ready_${room.currentRound}`} room={room} />
         ) : status === "signal" ? (
-          <SignalView key={`signal_${room.currentRound}`} room={room} />
+          room.gameType === "tap_battle" ? (
+            <TapBattleSignalView key={`signal_${room.currentRound}`} room={room} />
+          ) : (
+            <SignalView key={`signal_${room.currentRound}`} room={room} />
+          )
         ) : status === "round_result" ? (
-          <RoundResultView key={`result_${room.currentRound}`} room={room} />
+          room.gameType === "tap_battle" ? (
+            <TapBattleRoundResultView key={`result_${room.currentRound}`} room={room} />
+          ) : (
+            <RoundResultView key={`result_${room.currentRound}`} room={room} />
+          )
         ) : status === "match_winner" ? (
           <MatchWinnerView key="match_winner" room={room} />
         ) : status === "rematch_wait" ? (

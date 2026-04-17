@@ -1,5 +1,7 @@
 export type PlayerColor = "red" | "blue";
 
+export type DuelGameType = "reaction" | "tap_battle";
+
 export type Player = {
   id: string;
   name: string;
@@ -10,7 +12,10 @@ export type Player = {
 export type Round = {
   number: number;
   signalFiredAt: number | null;
+  startedAt?: number | null;
+  endsAt?: number | null;
   taps: Record<string, number>; // playerId → tap timestamp (ms)
+  tapCounts?: Record<string, number>; // playerId → tap count for tap battle
   reactionTimes: Record<string, number>; // playerId → ms from signal
   winner: string | null; // playerId or null (draw / unresolved)
   result: "pending" | "complete";
@@ -29,6 +34,7 @@ export type RoomStatus =
 
 export type GameRoom = {
   id: string;
+  gameType: DuelGameType;
   status: RoomStatus;
   players: Player[];
   scores: Record<string, number>; // playerId → round wins

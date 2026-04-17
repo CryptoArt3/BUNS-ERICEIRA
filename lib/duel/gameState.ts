@@ -1,5 +1,6 @@
 import { EventEmitter } from "events";
 import type { GameRoom } from "./types";
+import { getActiveDuelGameType } from "./config";
 
 // ── PHASE 1 MVP — Production limitations ─────────────────────────────────────
 //
@@ -43,6 +44,7 @@ duelEmitter.setMaxListeners(100); // TV + 2 players + some headroom
 function createRoom(): GameRoom {
   return {
     id: "BUNS",
+    gameType: getActiveDuelGameType(),
     status: "waiting",
     players: [],
     scores: {},

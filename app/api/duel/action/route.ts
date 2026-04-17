@@ -4,15 +4,14 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import {
-  addPlayer,
-  heartbeat,
-  leavePlayer,
-  recordRematchVote,
-  recordTap,
-} from "@/lib/duel/reactionDuel";
 import { getRoom } from "@/lib/duel/gameState";
 import type { RematchVote } from "@/lib/duel/types";
+import * as reactionDuel from "@/lib/duel/reactionDuel";
+import * as tapBattle from "@/lib/duel/tapBattle";
+
+function getActiveEngine() {
+  return getRoom().gameType === "tap_battle" ? tapBattle : reactionDuel;
+}
 
 export async function POST(request: Request) {
   let body: Record<string, unknown>;
@@ -36,12 +35,12 @@ export async function POST(request: Request) {
   switch (type) {
     case "join": {
       const name = typeof playerName === "string" ? playerName : "";
-      const success = addPlayer(playerId, name);
+      const success = getActiveEngine().addPlayer(playerId, name);
       return NextResponse.json({ success, room: getRoom() });
     }
 
     case "tap": {
-      const success = recordTap(playerId);
+      const success = getActiveEngine().recordTap(playerId);
       return NextResponse.json({ success, room: getRoom() });
     }
 
@@ -52,20 +51,23 @@ export async function POST(request: Request) {
           { status: 400 }
         );
       }
-      const success = recordRematchVote(playerId, vote as RematchVote);
+      const success = getActiveEngine().recordRematchVote(
+        playerId,
+        vote as RematchVote
+      );
       return NextResponse.json({ success, room: getRoom() });
     }
 
     case "heartbeat": {
       // Silent presence ping — no room snapshot needed in the response.
       // The client already gets room state via SSE; this is fire-and-forget.
-      const success = heartbeat(playerId);
+      const success = getActiveEngine().heartbeat(playerId);
       return NextResponse.json({ success });
     }
 
     case "leave": {
       // Explicit leave triggered by pagehide / beforeunload.
-      leavePlayer(playerId);
+      getActiveEngine().leavePlayer(playerId);
       return NextResponse.json({ success: true });
     }
 
