@@ -24,6 +24,10 @@ const REMATCH_WINDOW_SECONDS = 10;
 const WINS_NEEDED = 2;
 const MAX_CONSECUTIVE_MATCHES = 3;
 
+function getReactionTimestamp() {
+  return performance.now();
+}
+
 // ── Presence constants ────────────────────────────────────────────────────────
 // Client sends a heartbeat every HEARTBEAT_INTERVAL_MS (defined on the client).
 // Server removes a player after STALE_TIMEOUT_MS without a heartbeat.
@@ -223,7 +227,7 @@ function startRound() {
 
 function fireSignal() {
   const room = getRoom();
-  const signalFiredAt = Date.now();
+  const signalFiredAt = getReactionTimestamp();
 
   const updatedRounds = [...room.rounds];
   const idx = updatedRounds.length - 1;
@@ -248,7 +252,7 @@ export function recordTap(playerId: string): boolean {
   const currentRound = room.rounds[roundIdx]!;
   if (currentRound.taps[playerId] !== undefined) return false;
 
-  const tapTime = Date.now();
+  const tapTime = getReactionTimestamp();
   const updatedRounds = [...room.rounds];
   updatedRounds[roundIdx] = {
     ...currentRound,
@@ -277,19 +281,22 @@ function resolveRound() {
   if (!currentRound.signalFiredAt) return;
 
   const signal = currentRound.signalFiredAt;
+  const rawReactionTimes: Record<string, number> = {};
   const reactionTimes: Record<string, number> = {};
 
   for (const player of room.players) {
     const tapTime = currentRound.taps[player.id];
-    reactionTimes[player.id] =
+    const reactionTime =
       tapTime !== undefined ? tapTime - signal : TAP_WINDOW_MS + 1000;
+    rawReactionTimes[player.id] = reactionTime;
+    reactionTimes[player.id] = Math.max(0, Math.round(reactionTime));
   }
 
   let roundWinner: string | null = null;
   if (room.players.length >= 2) {
     const [p1, p2] = room.players as [Player, Player];
-    const t1 = reactionTimes[p1.id] ?? Infinity;
-    const t2 = reactionTimes[p2.id] ?? Infinity;
+    const t1 = rawReactionTimes[p1.id] ?? Infinity;
+    const t2 = rawReactionTimes[p2.id] ?? Infinity;
     if (t1 < t2) roundWinner = p1.id;
     else if (t2 < t1) roundWinner = p2.id;
   }
