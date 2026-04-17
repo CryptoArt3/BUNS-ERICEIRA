@@ -25,27 +25,58 @@ function useDuelRoom() {
   useEffect(() => {
     let es: EventSource;
     let retryTimeout: ReturnType<typeof setTimeout>;
+    let retryDelay = 3_000;
+    let isClosed = false;
+    let lastUpdatedAt = 0;
+
+    // Poll fallback — catches silent SSE death by comparing lastUpdatedAt.
+    // Runs every 15 s regardless of SSE state; no-ops when SSE is healthy.
+    const pollInterval = setInterval(async () => {
+      try {
+        const res = await fetch("/api/duel/room");
+        const data = (await res.json()) as GameRoom;
+        if (data.lastUpdatedAt > lastUpdatedAt) {
+          lastUpdatedAt = data.lastUpdatedAt;
+          setRoom(data);
+        }
+      } catch {
+        // ignore — SSE or next poll will recover
+      }
+    }, 15_000);
 
     const connect = () => {
+      if (isClosed) return;
       es = new EventSource("/api/duel/events");
-      es.onopen = () => setConnected(true);
+
+      es.onopen = () => {
+        setConnected(true);
+        retryDelay = 3_000; // reset backoff on successful connection
+      };
+
       es.onmessage = (event) => {
         try {
-          setRoom(JSON.parse(event.data as string) as GameRoom);
+          const data = JSON.parse(event.data as string) as GameRoom;
+          lastUpdatedAt = data.lastUpdatedAt;
+          setRoom(data);
         } catch {
           // ignore
         }
       };
+
       es.onerror = () => {
         setConnected(false);
         es.close();
-        retryTimeout = setTimeout(connect, 3000);
+        // Exponential backoff: 3 → 6 → 12 → 24 → 30 s cap
+        retryTimeout = setTimeout(() => connect(), retryDelay);
+        retryDelay = Math.min(retryDelay * 2, 30_000);
       };
     };
 
     connect();
     return () => {
+      isClosed = true;
       clearTimeout(retryTimeout);
+      clearInterval(pollInterval);
       es?.close();
     };
   }, []);

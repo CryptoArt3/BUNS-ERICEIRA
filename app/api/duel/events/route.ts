@@ -36,30 +36,44 @@ export async function GET(request: Request) {
 
   const stream = new ReadableStream({
     start(controller) {
-      const send = (room: GameRoom) => {
-        try {
-          controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify(room)}\n\n`)
-          );
-        } catch {
-          // Client already disconnected — ignore write errors
-        }
+      let closed = false;
+
+      const cleanup = () => {
+        if (closed) return;
+        closed = true;
+        duelEmitter.off("update", listener);
+        clearInterval(keepaliveInterval);
+        try { controller.close(); } catch { /* already closed */ }
       };
 
-      // Immediately push current state so the client doesn't wait
-      send(getRoom());
+      const send = (room: GameRoom) => {
+        if (closed) return;
+        try {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(room)}\n\n`));
+        } catch {
+          // Write failed — client disconnected; tear down this stream
+          cleanup();
+        }
+      };
 
       const listener = (room: GameRoom) => send(room);
       duelEmitter.on("update", listener);
 
-      request.signal.addEventListener("abort", () => {
-        duelEmitter.off("update", listener);
+      // Keepalive comment every 20 s prevents proxies from closing idle connections.
+      // SSE comment lines (": ...") are ignored by EventSource but keep TCP alive.
+      const keepaliveInterval = setInterval(() => {
+        if (closed) return;
         try {
-          controller.close();
+          controller.enqueue(encoder.encode(": keep-alive\n\n"));
         } catch {
-          // Already closed
+          cleanup();
         }
-      });
+      }, 20_000);
+
+      request.signal.addEventListener("abort", cleanup);
+
+      // Send initial state last — all handlers are wired, nothing can be missed
+      send(getRoom());
     },
   });
 
