@@ -21,6 +21,16 @@ function getOrCreatePlayerId(): string {
   return id;
 }
 
+function createFreshPlayerId(): string {
+  const id = `p_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+  sessionStorage.setItem("buns_duel_player_id", id);
+  return id;
+}
+
+function clearStoredPlayerId(): void {
+  sessionStorage.removeItem("buns_duel_player_id");
+}
+
 // ── SSE hook ──────────────────────────────────────────────────────────────────
 
 function useDuelRoom() {
@@ -111,11 +121,13 @@ function JoinView({
   joining,
   error,
   gameType,
+  disabled,
 }: {
   onJoin: (name: string) => void;
   joining: boolean;
   error: string | null;
   gameType?: DuelGameType;
+  disabled?: boolean;
 }) {
   const [name, setName] = useState("");
 
@@ -165,11 +177,11 @@ function JoinView({
 
           <motion.button
             type="submit"
-            disabled={joining}
+            disabled={joining || disabled}
             whileTap={{ scale: 0.96 }}
             className="relative w-full overflow-hidden rounded-xl bg-buns-yellow py-5 font-display text-2xl font-black uppercase tracking-wider text-black disabled:opacity-60"
           >
-            {joining ? "JOINING..." : "ENTER DUEL"}
+            {joining ? "JOINING..." : disabled ? "PREPARING..." : "ENTER DUEL"}
           </motion.button>
         </form>
       </div>
@@ -873,6 +885,23 @@ export default function DuelJoinPage() {
   const tapBattleFlushTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const tapBattleFlushInFlightRef = useRef(false);
 
+  const resetLocalSession = useCallback(() => {
+    clearStoredPlayerId();
+    const nextPlayerId = createFreshPlayerId();
+    setPlayerId(nextPlayerId);
+    setHasJoined(false);
+    setJoining(false);
+    setJoinError(null);
+    setHasTapped(false);
+    setMyRematchVote(undefined);
+    tapBattlePendingRef.current = 0;
+    tapBattleFlushInFlightRef.current = false;
+    if (tapBattleFlushTimeoutRef.current) {
+      clearTimeout(tapBattleFlushTimeoutRef.current);
+      tapBattleFlushTimeoutRef.current = null;
+    }
+  }, []);
+
   // Init player ID on mount
   useEffect(() => {
     setPlayerId(getOrCreatePlayerId());
@@ -892,10 +921,9 @@ export default function DuelJoinPage() {
     if (!room || !playerId || !hasJoined) return;
     const stillInRoom = room.players.find((p) => p.id === playerId);
     if (!stillInRoom) {
-      setHasJoined(false);
-      setMyRematchVote(undefined);
+      resetLocalSession();
     }
-  }, [room, playerId, hasJoined]);
+  }, [room, playerId, hasJoined, resetLocalSession]);
 
   // Reset tap state when round changes
   useEffect(() => {
@@ -1014,6 +1042,7 @@ export default function DuelJoinPage() {
         const data = (await res.json()) as { success: boolean; room?: GameRoom };
         if (data.success) {
           setHasJoined(true);
+          setJoinError(null);
         } else {
           setJoinError("Could not join. Room may be full or game in progress.");
         }
@@ -1139,6 +1168,7 @@ export default function DuelJoinPage() {
           joining={joining}
           error={joinError}
           gameType={room?.gameType}
+          disabled={!playerId}
         />
       );
     }
