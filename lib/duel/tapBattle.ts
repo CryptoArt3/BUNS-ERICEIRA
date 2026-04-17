@@ -197,17 +197,18 @@ function startBattle() {
   setDuelTimer(setTimeout(resolveRound, ROUND_DURATION_MS));
 }
 
-export function recordTap(playerId: string): boolean {
+export function recordTap(playerId: string, tapDelta = 1): boolean {
   const room = getRoom();
 
   if (room.status !== "signal") return false;
   if (!room.players.find((p) => p.id === playerId)) return false;
+  if (!Number.isFinite(tapDelta) || tapDelta < 1) return false;
 
   const roundIdx = room.rounds.length - 1;
   if (roundIdx < 0) return false;
 
   const currentRound = room.rounds[roundIdx]!;
-  const nextCount = (currentRound.tapCounts?.[playerId] ?? 0) + 1;
+  const nextCount = (currentRound.tapCounts?.[playerId] ?? 0) + Math.floor(tapDelta);
   const updatedRounds = [...room.rounds];
   updatedRounds[roundIdx] = {
     ...currentRound,

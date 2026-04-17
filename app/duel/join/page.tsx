@@ -869,6 +869,9 @@ export default function DuelJoinPage() {
   const [hasTapped, setHasTapped] = useState(false);
   const [myRematchVote, setMyRematchVote] = useState<RematchVote | undefined>(undefined);
   const prevRoundRef = useRef<number>(0);
+  const tapBattlePendingRef = useRef(0);
+  const tapBattleFlushTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tapBattleFlushInFlightRef = useRef(false);
 
   // Init player ID on mount
   useEffect(() => {
@@ -900,8 +903,24 @@ export default function DuelJoinPage() {
     if (room.currentRound !== prevRoundRef.current) {
       prevRoundRef.current = room.currentRound;
       setHasTapped(false);
+      tapBattlePendingRef.current = 0;
+      tapBattleFlushInFlightRef.current = false;
+      if (tapBattleFlushTimeoutRef.current) {
+        clearTimeout(tapBattleFlushTimeoutRef.current);
+        tapBattleFlushTimeoutRef.current = null;
+      }
     }
   }, [room]);
+
+  useEffect(() => {
+    if (room?.gameType !== "tap_battle" || room.status === "signal") return;
+    tapBattlePendingRef.current = 0;
+    tapBattleFlushInFlightRef.current = false;
+    if (tapBattleFlushTimeoutRef.current) {
+      clearTimeout(tapBattleFlushTimeoutRef.current);
+      tapBattleFlushTimeoutRef.current = null;
+    }
+  }, [room?.gameType, room?.status]);
 
   // Clear rematch vote once the rematch_wait window closes (any direction)
   useEffect(() => {
@@ -933,6 +952,14 @@ export default function DuelJoinPage() {
     const interval = setInterval(send, HEARTBEAT_MS);
     return () => clearInterval(interval);
   }, [playerId, hasJoined]);
+
+  useEffect(() => {
+    return () => {
+      if (tapBattleFlushTimeoutRef.current) {
+        clearTimeout(tapBattleFlushTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // ── Presence: explicit leave on page unload ───────────────────────────────
   // Fires a best-effort leave when the user navigates away, closes the tab,
@@ -999,8 +1026,55 @@ export default function DuelJoinPage() {
     [playerId]
   );
 
+  const flushTapBattleTaps = useCallback(async () => {
+    if (!playerId || tapBattleFlushInFlightRef.current) return;
+
+    const delta = tapBattlePendingRef.current;
+    if (delta <= 0) return;
+
+    tapBattlePendingRef.current = 0;
+    tapBattleFlushInFlightRef.current = true;
+
+    try {
+      const res = await fetch("/api/duel/action", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "tap", playerId, tapCount: delta }),
+      });
+
+      const data = (await res.json()) as { success?: boolean };
+      if (!data.success) {
+        tapBattlePendingRef.current += delta;
+      }
+    } catch {
+      tapBattlePendingRef.current += delta;
+    } finally {
+      tapBattleFlushInFlightRef.current = false;
+      if (tapBattlePendingRef.current > 0) {
+        tapBattleFlushTimeoutRef.current = setTimeout(() => {
+          tapBattleFlushTimeoutRef.current = null;
+          void flushTapBattleTaps();
+        }, 50);
+      }
+    }
+  }, [playerId]);
+
   const handleTap = useCallback(async () => {
-    if (!playerId || hasTapped) return;
+    if (!playerId) return;
+
+    if (room?.gameType === "tap_battle") {
+      if (room.status !== "signal") return;
+      tapBattlePendingRef.current += 1;
+      if (!tapBattleFlushTimeoutRef.current) {
+        tapBattleFlushTimeoutRef.current = setTimeout(() => {
+          tapBattleFlushTimeoutRef.current = null;
+          void flushTapBattleTaps();
+        }, 50);
+      }
+      return;
+    }
+
+    if (hasTapped) return;
     setHasTapped(true); // optimistic update
 
     try {
@@ -1012,7 +1086,7 @@ export default function DuelJoinPage() {
     } catch {
       // tap is best-effort
     }
-  }, [playerId, hasTapped]);
+  }, [playerId, hasTapped, room?.gameType, room?.status, flushTapBattleTaps]);
 
   const handleRematchVote = useCallback(
     async (vote: RematchVote) => {

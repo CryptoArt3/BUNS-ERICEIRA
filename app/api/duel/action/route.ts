@@ -21,11 +21,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { type, playerId, playerName, vote } = body as {
+  const { type, playerId, playerName, vote, tapCount } = body as {
     type?: string;
     playerId?: string;
     playerName?: string;
     vote?: unknown;
+    tapCount?: unknown;
   };
 
   if (!playerId || typeof playerId !== "string") {
@@ -40,7 +41,15 @@ export async function POST(request: Request) {
     }
 
     case "tap": {
-      const success = getActiveEngine().recordTap(playerId);
+      const room = getRoom();
+      const parsedTapCount =
+        typeof tapCount === "number" && Number.isFinite(tapCount)
+          ? Math.max(1, Math.floor(tapCount))
+          : 1;
+      const success =
+        room.gameType === "tap_battle"
+          ? tapBattle.recordTap(playerId, parsedTapCount)
+          : reactionDuel.recordTap(playerId);
       return NextResponse.json({ success, room: getRoom() });
     }
 
