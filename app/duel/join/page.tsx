@@ -875,12 +875,12 @@ function RoomFullView({ room }: { room: GameRoom }) {
 export default function DuelJoinPage() {
   const { room, setRoom, connected } = useDuelRoom();
   const [playerId, setPlayerId] = useState<string>("");
-  const [hasJoined, setHasJoined] = useState(false);
   const [joining, setJoining] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
   const [hasTapped, setHasTapped] = useState(false);
   const [myRematchVote, setMyRematchVote] = useState<RematchVote | undefined>(undefined);
   const prevRoundRef = useRef<number>(0);
+  const wasInRoomRef = useRef(false);
   const tapBattlePendingRef = useRef(0);
   const tapBattleFlushTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const tapBattleFlushInFlightRef = useRef(false);
@@ -891,7 +891,6 @@ export default function DuelJoinPage() {
     clearStoredPlayerId();
     const nextPlayerId = createFreshPlayerId();
     setPlayerId(nextPlayerId);
-    setHasJoined(false);
     setJoining(false);
     setJoinError(null);
     setHasTapped(false);
@@ -914,23 +913,18 @@ export default function DuelJoinPage() {
     latestGameTypeRef.current = room?.gameType ?? null;
   }, [room]);
 
-  // Restore joined state if still in room after reconnect
-  useEffect(() => {
-    if (!room || !playerId) return;
-    if (room.players.find((p) => p.id === playerId)) {
-      setHasJoined(true);
-    }
-  }, [room, playerId]);
+  const isInRoom = room?.players.some((p) => p.id === playerId) ?? false;
 
   // Handle player removal: if we were joined but are no longer in the room
   // (opponent left and we were removed, or full room reset), go back to join screen.
   useEffect(() => {
-    if (!room || !playerId || !hasJoined) return;
-    const stillInRoom = room.players.find((p) => p.id === playerId);
-    if (!stillInRoom) {
+    if (!room || !playerId) return;
+    const wasInRoom = wasInRoomRef.current;
+    wasInRoomRef.current = isInRoom;
+    if (!joining && wasInRoom && !isInRoom) {
       resetLocalSession();
     }
-  }, [room, playerId, hasJoined, resetLocalSession]);
+  }, [room, playerId, joining, isInRoom, resetLocalSession]);
 
   // Reset tap state when round changes
   useEffect(() => {
@@ -971,7 +965,7 @@ export default function DuelJoinPage() {
   // This covers the case where the browser closes without firing pagehide
   // (e.g. iOS Safari background kill, crash, network drop).
   useEffect(() => {
-    if (!playerId || !hasJoined) return;
+    if (!playerId || !isInRoom) return;
 
     const HEARTBEAT_MS = 12_000;
 
@@ -986,7 +980,7 @@ export default function DuelJoinPage() {
     send(); // immediate first ping so the server refreshes lastSeen right away
     const interval = setInterval(send, HEARTBEAT_MS);
     return () => clearInterval(interval);
-  }, [playerId, hasJoined]);
+  }, [playerId, isInRoom]);
 
   useEffect(() => {
     return () => {
@@ -1004,7 +998,7 @@ export default function DuelJoinPage() {
   // guarantees delivery even during page teardown. fetch with keepalive is
   // used as a fallback for environments where sendBeacon is unavailable.
   useEffect(() => {
-    if (!playerId || !hasJoined) return;
+    if (!playerId || !isInRoom) return;
 
     const leave = () => {
       const body = JSON.stringify({ type: "leave", playerId });
@@ -1032,7 +1026,7 @@ export default function DuelJoinPage() {
     return () => {
       window.removeEventListener("pagehide", leave);
     };
-  }, [playerId, hasJoined]);
+  }, [playerId, isInRoom]);
 
   const handleJoin = useCallback(
     async (name: string) => {
@@ -1051,7 +1045,6 @@ export default function DuelJoinPage() {
           setRoom(data.room);
         }
         if (data.success) {
-          setHasJoined(data.room?.players.some((p) => p.id === playerId) ?? true);
           setJoinError(null);
         } else {
           setJoinError("Could not join. Room may be full or game in progress.");
@@ -1166,7 +1159,6 @@ export default function DuelJoinPage() {
     [playerId, myRematchVote, setRoom]
   );
 
-  const isInRoom = room?.players.find((p) => p.id === playerId) !== undefined;
   // Room is "full" to new joiners when a game is underway and they're not a participant.
   // waiting and rematch_wait are the only states where new players can enter.
   const roomFull =
@@ -1191,7 +1183,7 @@ export default function DuelJoinPage() {
     }
 
     // Not joined yet
-    if (!hasJoined) {
+    if (!isInRoom) {
       if (roomFull) return <RoomFullView room={room} />;
       return (
         <JoinView
