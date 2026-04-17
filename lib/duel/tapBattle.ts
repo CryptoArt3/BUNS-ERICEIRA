@@ -15,6 +15,7 @@ import type { Player, RematchVote, Round } from "./types";
 const COUNTDOWN_SECONDS = 3;
 const READY_DISPLAY_MS = 1200;
 const ROUND_DURATION_MS = 5000;
+const ROUND_FINALIZATION_GRACE_MS = 180;
 const ROUND_RESULT_DISPLAY_MS = 3000;
 const MATCH_WINNER_DISPLAY_MS = 2500;
 const REMATCH_WINDOW_SECONDS = 10;
@@ -194,7 +195,7 @@ function startBattle() {
   };
 
   updateRoom({ status: "signal", rounds: updatedRounds });
-  setDuelTimer(setTimeout(resolveRound, ROUND_DURATION_MS));
+  setDuelTimer(setTimeout(beginRoundResolution, ROUND_DURATION_MS));
 }
 
 export function recordTap(playerId: string, tapDelta = 1): boolean {
@@ -208,6 +209,14 @@ export function recordTap(playerId: string, tapDelta = 1): boolean {
   if (roundIdx < 0) return false;
 
   const currentRound = room.rounds[roundIdx]!;
+  if (currentRound.result !== "pending") return false;
+  if (
+    currentRound.endsAt !== null &&
+    currentRound.endsAt !== undefined &&
+    Date.now() > currentRound.endsAt + ROUND_FINALIZATION_GRACE_MS
+  ) {
+    return false;
+  }
   const nextCount = (currentRound.tapCounts?.[playerId] ?? 0) + Math.floor(tapDelta);
   const updatedRounds = [...room.rounds];
   updatedRounds[roundIdx] = {
@@ -220,12 +229,24 @@ export function recordTap(playerId: string, tapDelta = 1): boolean {
   return true;
 }
 
+function beginRoundResolution() {
+  const room = getRoom();
+  const roundIdx = room.rounds.length - 1;
+  if (room.status !== "signal" || roundIdx < 0) return;
+
+  const currentRound = room.rounds[roundIdx]!;
+  if (currentRound.result !== "pending") return;
+
+  setDuelTimer(setTimeout(resolveRound, ROUND_FINALIZATION_GRACE_MS));
+}
+
 function resolveRound() {
   const room = getRoom();
   const roundIdx = room.rounds.length - 1;
   if (roundIdx < 0) return;
 
   const currentRound = room.rounds[roundIdx]!;
+  if (currentRound.result !== "pending") return;
   const counts = Object.fromEntries(
     room.players.map((player) => [player.id, currentRound.tapCounts?.[player.id] ?? 0])
   );
