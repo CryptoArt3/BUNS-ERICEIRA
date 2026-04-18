@@ -352,6 +352,7 @@ export function recordRematchVote(
 function resolveRematch() {
   const room = getRoom();
   if (room.status !== "rematch_wait") return;
+  clearDuelTimer();
 
   const rematchPlayers = room.players.filter(
     (p) => room.rematchVotes[p.id] === "rematch"
@@ -372,6 +373,7 @@ function resolveRematch() {
   if (rematchPlayers.length === 1) {
     const leaverId = room.players.find((p) => room.rematchVotes[p.id] !== "rematch")?.id;
     if (leaverId) removeLastSeen(leaverId);
+    updateLastSeen(rematchPlayers[0]!.id);
 
     updateRoom({
       status: "waiting",

@@ -890,6 +890,7 @@ export default function DuelJoinPage() {
   const resetLocalSession = useCallback(() => {
     clearStoredPlayerId();
     const nextPlayerId = createFreshPlayerId();
+    wasInRoomRef.current = false;
     setPlayerId(nextPlayerId);
     setJoining(false);
     setJoinError(null);
