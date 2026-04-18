@@ -876,6 +876,7 @@ export default function DuelJoinPage() {
   const { room, setRoom, connected } = useDuelRoom();
   const [playerId, setPlayerId] = useState<string>("");
   const [joining, setJoining] = useState(false);
+  const [reconnecting, setReconnecting] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
   const [hasTapped, setHasTapped] = useState(false);
   const [myRematchVote, setMyRematchVote] = useState<RematchVote | undefined>(undefined);
@@ -1160,6 +1161,28 @@ export default function DuelJoinPage() {
     [playerId, myRematchVote, setRoom]
   );
 
+  const handleReconnect = useCallback(async () => {
+    if (!playerId || reconnecting) return;
+    setReconnecting(true);
+
+    try {
+      const res = await fetch("/api/duel/room");
+      const data = (await res.json()) as GameRoom;
+      setRoom(data);
+
+      const playerStillInRoom = data.players.some((p) => p.id === playerId);
+      if (!playerStillInRoom) {
+        resetLocalSession();
+      } else {
+        setJoinError(null);
+      }
+    } catch {
+      setJoinError("Reconnect failed. Try again.");
+    } finally {
+      setReconnecting(false);
+    }
+  }, [playerId, reconnecting, resetLocalSession, setRoom]);
+
   // Room is "full" to new joiners when a game is underway and they're not a participant.
   // waiting and rematch_wait are the only states where new players can enter.
   const roomFull =
@@ -1248,6 +1271,16 @@ export default function DuelJoinPage() {
       <div className="pointer-events-none absolute inset-0 opacity-[0.03] [background-image:linear-gradient(rgba(255,212,0,0.6)_1px,transparent_1px),linear-gradient(90deg,rgba(255,212,0,0.4)_1px,transparent_1px)] [background-size:32px_32px]" />
 
       <AnimatePresence mode="wait">{renderContent()}</AnimatePresence>
+
+      <motion.button
+        type="button"
+        onClick={handleReconnect}
+        disabled={reconnecting || !playerId}
+        whileTap={{ scale: 0.97 }}
+        className="absolute left-4 top-4 rounded-full border border-white/10 bg-black/40 px-4 py-2 font-body text-[0.65rem] uppercase tracking-[0.25em] text-white/75 backdrop-blur-sm disabled:opacity-50"
+      >
+        {reconnecting ? "RECONNECTING..." : "🔄 Reconnect"}
+      </motion.button>
 
       {/* Connection dot */}
       <div
