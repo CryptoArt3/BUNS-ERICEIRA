@@ -19,7 +19,42 @@ const JOIN_URL_PATH = "/duel/join";
 const GAME_LABELS: Record<DuelGameType, string> = {
   reaction: "REACTION DUEL",
   tap_battle: "TAP BATTLE",
+  memory_flash: "MEMORY FLASH",
 };
+
+const MEMORY_FLASH_OPTIONS = [
+  {
+    key: "red",
+    label: "RED",
+    shortLabel: "R",
+    tileClass: "border-[#ff5a5a]/50 bg-[#ff5a5a]/20 text-[#ff8d8d]",
+  },
+  {
+    key: "yellow",
+    label: "YELLOW",
+    shortLabel: "Y",
+    tileClass: "border-buns-yellow/40 bg-buns-yellow/15 text-buns-yellow",
+  },
+  {
+    key: "blue",
+    label: "BLUE",
+    shortLabel: "B",
+    tileClass: "border-[#57a0ff]/40 bg-[#57a0ff]/15 text-[#7fb7ff]",
+  },
+  {
+    key: "green",
+    label: "GREEN",
+    shortLabel: "G",
+    tileClass: "border-[#52d684]/40 bg-[#52d684]/15 text-[#7ff0aa]",
+  },
+] as const;
+
+function getMemoryOption(symbol: string) {
+  return (
+    MEMORY_FLASH_OPTIONS.find((option) => option.key === symbol) ??
+    MEMORY_FLASH_OPTIONS[0]
+  );
+}
 
 const PLAYER_COLORS = {
   red: {
@@ -606,6 +641,168 @@ function TapBattleSignalView({ room }: { room: GameRoom }) {
   );
 }
 
+function MemorySequenceStrip({
+  sequence,
+  enteredByPlayer,
+}: {
+  sequence: string[];
+  enteredByPlayer?: string[];
+}) {
+  return (
+    <div className="flex flex-wrap items-center justify-center gap-4">
+      {sequence.map((symbol, index) => {
+        const option = getMemoryOption(symbol);
+        const matched = enteredByPlayer?.[index] === symbol;
+        const wrong =
+          enteredByPlayer !== undefined &&
+          enteredByPlayer[index] !== undefined &&
+          !matched;
+
+        return (
+          <div
+            key={`${symbol}-${index}`}
+            className={`flex h-20 w-20 items-center justify-center rounded-3xl border font-display text-2xl font-black uppercase tracking-[0.25em] ${
+              wrong
+                ? "border-red-400/60 bg-red-500/15 text-red-300"
+                : matched
+                ? "border-white/40 bg-white/10 text-white"
+                : option.tileClass
+            }`}
+          >
+            {option.shortLabel}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function MemoryFlashGetReadyView({ room }: { room: GameRoom }) {
+  const [p1, p2] = room.players;
+  const round = room.rounds[room.rounds.length - 1];
+  const sequence = round?.memorySequence ?? [];
+
+  return (
+    <motion.div
+      key={`memory_get_ready_${room.currentRound}`}
+      initial={{ opacity: 0, scale: 0.96 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0 }}
+      className="flex h-full w-full flex-col items-center justify-between px-16 py-14"
+    >
+      <div className="flex w-full items-start justify-between">
+        <PlayerSlot player={p1} score={room.scores[p1?.id ?? ""] ?? 0} side="left" />
+        <div className="flex flex-col items-center gap-2">
+          <span className="font-body text-[clamp(0.6rem,1.2vw,0.9rem)] uppercase tracking-[0.4em] text-white/40">
+            MEMORY FLASH
+          </span>
+          <span className="font-display text-[clamp(2rem,5vw,4rem)] font-black text-white">
+            ROUND {room.currentRound}
+          </span>
+          <span className="font-body text-[clamp(0.55rem,1vw,0.8rem)] uppercase tracking-[0.3em] text-white/30">
+            WATCH THE PATTERN
+          </span>
+        </div>
+        <PlayerSlot player={p2} score={room.scores[p2?.id ?? ""] ?? 0} side="right" />
+      </div>
+
+      <div className="flex w-full max-w-5xl flex-col items-center gap-8">
+        <div className="flex flex-col items-center gap-4 text-center">
+          <span className="font-display text-[clamp(4rem,10vw,8rem)] font-black uppercase leading-none tracking-wide text-buns-yellow [text-shadow:0_0_80px_rgba(255,212,0,0.8)]">
+            WHERE MEMORY
+            <br />
+            MEETS SPEED
+          </span>
+          <span className="font-body text-[clamp(0.65rem,1.3vw,1rem)] uppercase tracking-[0.45em] text-white/40">
+            Memorize first. Then repeat it perfectly.
+          </span>
+        </div>
+
+        <div className="rounded-[2rem] border border-white/10 bg-white/5 px-10 py-8">
+          <MemorySequenceStrip sequence={sequence} />
+        </div>
+      </div>
+
+      <div className="font-body text-[clamp(0.6rem,1.2vw,0.9rem)] uppercase tracking-[0.45em] text-white/28">
+        Sequence reveal in progress
+      </div>
+    </motion.div>
+  );
+}
+
+function MemoryFlashSignalView({ room }: { room: GameRoom }) {
+  const [p1, p2] = room.players;
+  const round = room.rounds[room.rounds.length - 1];
+  const sequence = round?.memorySequence ?? [];
+  const players = [p1, p2].filter(Boolean) as Player[];
+
+  return (
+    <motion.div
+      key={`memory_signal_${room.currentRound}`}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="flex h-full w-full flex-col items-center justify-between px-16 py-14"
+    >
+      <div className="flex w-full items-start justify-between">
+        <PlayerSlot player={p1} score={room.scores[p1?.id ?? ""] ?? 0} side="left" />
+        <div className="flex flex-col items-center gap-2">
+          <span className="font-body text-[clamp(0.6rem,1.2vw,0.9rem)] uppercase tracking-[0.4em] text-white/40">
+            LIVE INPUT
+          </span>
+          <span className="font-display text-[clamp(2rem,5vw,4rem)] font-black text-buns-yellow">
+            MEMORY FLASH
+          </span>
+          <span className="font-body text-[clamp(0.55rem,1vw,0.8rem)] uppercase tracking-[0.3em] text-white/30">
+            Repeat the pattern now
+          </span>
+        </div>
+        <PlayerSlot player={p2} score={room.scores[p2?.id ?? ""] ?? 0} side="right" />
+      </div>
+
+      <div className="flex w-full max-w-5xl flex-col gap-8">
+        <div className="rounded-[2rem] border border-white/10 bg-white/5 px-10 py-8">
+          <MemorySequenceStrip sequence={sequence} />
+        </div>
+
+        <div className="grid grid-cols-2 gap-6">
+          {players.map((player) => {
+            const colors = PLAYER_COLORS[player.color];
+            const inputs = round?.memoryInputs?.[player.id] ?? [];
+            const completed = round?.memoryCompletedAt?.[player.id] !== undefined;
+            const correct = round?.memoryCorrect?.[player.id] === true;
+
+            return (
+              <div
+                key={player.id}
+                className="rounded-[2rem] border border-white/10 bg-white/5 px-7 py-6"
+              >
+                <div className="mb-5 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className={`h-3 w-3 rounded-full ${colors.bg}`} />
+                    <span className={`font-display text-[clamp(1.5rem,3vw,2.6rem)] font-black uppercase ${colors.text}`}>
+                      {player.name}
+                    </span>
+                  </div>
+                  <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1 font-body text-[0.55rem] uppercase tracking-[0.3em] text-white/45">
+                    {completed ? (correct ? "LOCKED IN" : "MISS") : "ENTERING"}
+                  </span>
+                </div>
+
+                <MemorySequenceStrip sequence={sequence} enteredByPlayer={inputs} />
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="font-body text-[clamp(0.6rem,1.2vw,0.9rem)] uppercase tracking-[0.45em] text-white/28">
+        Correct pattern wins. If both are correct, fastest wins.
+      </div>
+    </motion.div>
+  );
+}
+
 function RoundResultView({ room }: { room: GameRoom }) {
   const [p1, p2] = room.players;
   const lastRound = room.rounds[room.rounds.length - 1];
@@ -761,6 +958,90 @@ function TapBattleRoundResultView({ room }: { room: GameRoom }) {
               </div>
               <div className="mt-2 font-body text-[clamp(0.6rem,1.2vw,0.9rem)] uppercase tracking-[0.35em] text-white/35">
                 taps this round
+              </div>
+              <div className="mt-5 font-display text-[clamp(2.5rem,6vw,4.5rem)] font-black text-white">
+                {room.scores[player?.id ?? ""] ?? 0}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </motion.div>
+  );
+}
+
+function MemoryFlashRoundResultView({ room }: { room: GameRoom }) {
+  const [p1, p2] = room.players;
+  const lastRound = room.rounds[room.rounds.length - 1];
+  const roundWinnerId = lastRound?.winner ?? null;
+  const roundWinner = room.players.find((p) => p.id === roundWinnerId);
+  const startedAt = lastRound?.startedAt ?? 0;
+
+  const formatCompletion = (playerId: string | undefined) => {
+    if (!playerId) return "MISS";
+    const completedAt = lastRound?.memoryCompletedAt?.[playerId];
+    const isCorrect = lastRound?.memoryCorrect?.[playerId] === true;
+    if (!isCorrect || completedAt === undefined || !Number.isFinite(completedAt)) {
+      return "MISS";
+    }
+    return `${Math.max(0, completedAt - startedAt)}ms`;
+  };
+
+  return (
+    <motion.div
+      key={`memory_result_${room.currentRound}`}
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0 }}
+      className="flex h-full w-full flex-col items-center justify-between px-16 py-14"
+    >
+      <div className="flex flex-col items-center gap-2">
+        <span className="font-body text-[clamp(0.65rem,1.4vw,1rem)] uppercase tracking-[0.5em] text-white/40">
+          ROUND {lastRound?.number ?? room.currentRound} RESULT
+        </span>
+        <span className="font-body text-[clamp(0.6rem,1.2vw,0.9rem)] uppercase tracking-[0.35em] text-white/25">
+          MEMORY FLASH
+        </span>
+      </div>
+
+      <div className="flex flex-col items-center gap-6">
+        {roundWinner ? (
+          <>
+            <div
+              className={`font-display text-[clamp(4rem,12vw,10rem)] font-black uppercase leading-none tracking-wide ${
+                PLAYER_COLORS[roundWinner.color].text
+              } ${PLAYER_COLORS[roundWinner.color].glow}`}
+            >
+              {roundWinner.name}
+            </div>
+            <span className="font-display text-[clamp(1.5rem,4vw,3rem)] font-black uppercase text-white/80 tracking-widest">
+              WINS THE ROUND
+            </span>
+          </>
+        ) : (
+          <span className="font-display text-[clamp(3rem,9vw,7rem)] font-black uppercase text-white/60 tracking-widest">
+            DRAW
+          </span>
+        )}
+      </div>
+
+      <div className="grid w-full max-w-5xl grid-cols-2 gap-8">
+        {[p1, p2].map((player, index) => {
+          const colors = PLAYER_COLORS[player?.color ?? (index === 0 ? "red" : "blue")];
+          const correct = player ? lastRound?.memoryCorrect?.[player.id] === true : false;
+          return (
+            <div
+              key={player?.id ?? index}
+              className="rounded-3xl border border-white/10 bg-white/5 px-8 py-6"
+            >
+              <div className={`font-display text-[clamp(1.5rem,3vw,2.6rem)] font-black uppercase ${colors.text}`}>
+                {player?.name ?? (index === 0 ? "P1" : "P2")}
+              </div>
+              <div className="mt-4 font-display text-[clamp(2.4rem,6vw,4.2rem)] font-black leading-none text-white">
+                {correct ? "CORRECT" : "MISS"}
+              </div>
+              <div className="mt-2 font-body text-[clamp(0.6rem,1.2vw,0.9rem)] uppercase tracking-[0.35em] text-white/35">
+                {formatCompletion(player?.id)}
               </div>
               <div className="mt-5 font-display text-[clamp(2.5rem,6vw,4.5rem)] font-black text-white">
                 {room.scores[player?.id ?? ""] ?? 0}
@@ -998,16 +1279,24 @@ export default function DuelScreenClient() {
         ) : status === "countdown" ? (
           <CountdownView key="countdown" room={room} />
         ) : status === "get_ready" ? (
-          <GetReadyView key={`get_ready_${room.currentRound}`} room={room} />
+          room.gameType === "memory_flash" ? (
+            <MemoryFlashGetReadyView key={`get_ready_${room.currentRound}`} room={room} />
+          ) : (
+            <GetReadyView key={`get_ready_${room.currentRound}`} room={room} />
+          )
         ) : status === "signal" ? (
           room.gameType === "tap_battle" ? (
             <TapBattleSignalView key={`signal_${room.currentRound}`} room={room} />
+          ) : room.gameType === "memory_flash" ? (
+            <MemoryFlashSignalView key={`signal_${room.currentRound}`} room={room} />
           ) : (
             <SignalView key={`signal_${room.currentRound}`} room={room} />
           )
         ) : status === "round_result" ? (
           room.gameType === "tap_battle" ? (
             <TapBattleRoundResultView key={`result_${room.currentRound}`} room={room} />
+          ) : room.gameType === "memory_flash" ? (
+            <MemoryFlashRoundResultView key={`result_${room.currentRound}`} room={room} />
           ) : (
             <RoundResultView key={`result_${room.currentRound}`} room={room} />
           )

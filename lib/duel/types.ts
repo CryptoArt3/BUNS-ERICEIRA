@@ -1,6 +1,6 @@
 export type PlayerColor = "red" | "blue";
 
-export type DuelGameType = "reaction" | "tap_battle";
+export type DuelGameType = "reaction" | "tap_battle" | "memory_flash";
 
 export type Player = {
   id: string;
@@ -16,6 +16,10 @@ export type Round = {
   endsAt?: number | null;
   taps: Record<string, number>; // playerId → tap timestamp (ms)
   tapCounts?: Record<string, number>; // playerId → tap count for tap battle
+  memorySequence?: string[];
+  memoryInputs?: Record<string, string[]>;
+  memoryCompletedAt?: Record<string, number>;
+  memoryCorrect?: Record<string, boolean>;
   reactionTimes: Record<string, number>; // playerId → ms from signal
   winner: string | null; // playerId or null (draw / unresolved)
   result: "pending" | "complete";

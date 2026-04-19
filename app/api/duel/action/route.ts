@@ -8,9 +8,13 @@ import { getRoom } from "@/lib/duel/gameState";
 import type { RematchVote } from "@/lib/duel/types";
 import * as reactionDuel from "@/lib/duel/reactionDuel";
 import * as tapBattle from "@/lib/duel/tapBattle";
+import * as memoryFlash from "@/lib/duel/memoryFlash";
 
 function getActiveEngine() {
-  return getRoom().gameType === "tap_battle" ? tapBattle : reactionDuel;
+  const gameType = getRoom().gameType;
+  if (gameType === "tap_battle") return tapBattle;
+  if (gameType === "memory_flash") return memoryFlash;
+  return reactionDuel;
 }
 
 export async function POST(request: Request) {
@@ -21,12 +25,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { type, playerId, playerName, vote, tapCount } = body as {
+  const { type, playerId, playerName, vote, tapCount, symbol } = body as {
     type?: string;
     playerId?: string;
     playerName?: string;
     vote?: unknown;
     tapCount?: unknown;
+    symbol?: unknown;
   };
 
   if (!playerId || typeof playerId !== "string") {
@@ -50,6 +55,18 @@ export async function POST(request: Request) {
         room.gameType === "tap_battle"
           ? tapBattle.recordTap(playerId, parsedTapCount)
           : reactionDuel.recordTap(playerId);
+      return NextResponse.json({ success, room: getRoom() });
+    }
+
+    case "memory_input": {
+      if (typeof symbol !== "string" || symbol.length === 0) {
+        return NextResponse.json({ error: "Missing symbol" }, { status: 400 });
+      }
+
+      const success =
+        getRoom().gameType === "memory_flash"
+          ? memoryFlash.recordMemoryInput(playerId, symbol)
+          : false;
       return NextResponse.json({ success, room: getRoom() });
     }
 

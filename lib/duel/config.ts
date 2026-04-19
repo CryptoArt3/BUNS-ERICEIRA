@@ -4,6 +4,9 @@ const DEFAULT_DUEL_GAME_TYPE: DuelGameType = "reaction";
 
 export function getActiveDuelGameType(): DuelGameType {
   const configured = process.env.BUNS_DUEL_ACTIVE_GAME?.trim().toLowerCase();
+  if (configured === "memory-flash" || configured === "memory_flash") {
+    return "memory_flash";
+  }
   if (configured === "tap-battle" || configured === "tap_battle") {
     return "tap_battle";
   }
@@ -13,4 +16,5 @@ export function getActiveDuelGameType(): DuelGameType {
 export const DUEL_GAME_LABELS: Record<DuelGameType, string> = {
   reaction: "Reaction Duel",
   tap_battle: "Tap Battle",
+  memory_flash: "Memory Flash",
 };
