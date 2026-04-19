@@ -560,9 +560,11 @@ function TapBattleSignalView({
 function MemorySequencePreview({
   sequence,
   entered,
+  concealed = false,
 }: {
   sequence: string[];
   entered?: string[];
+  concealed?: boolean;
 }) {
   return (
     <div className="flex flex-wrap items-center justify-center gap-3">
@@ -578,10 +580,12 @@ function MemorySequencePreview({
                 ? "border-red-400/50 bg-red-500/15 text-red-300"
                 : matched
                 ? "border-white/40 bg-white/10 text-white"
+                : concealed
+                ? "border-white/10 bg-white/[0.03] text-white/20"
                 : option.tileClass
             }`}
           >
-            {option.shortLabel}
+            {concealed && !matched && !missed ? "•" : option.shortLabel}
           </div>
         );
       })}
@@ -672,7 +676,11 @@ function MemoryFlashSignalView({
 
       <div className="flex w-full max-w-sm flex-col items-center gap-5">
         <div className="w-full rounded-3xl border border-white/10 bg-white/5 px-5 py-6">
-          <MemorySequencePreview sequence={sequence} entered={myInputs} />
+          <MemorySequencePreview
+            sequence={sequence}
+            entered={myInputs}
+            concealed
+          />
         </div>
 
         <div className="grid w-full grid-cols-2 gap-4">
@@ -696,7 +704,7 @@ function MemoryFlashSignalView({
           ? correct
             ? "Sequence locked in."
             : "Wrong move. Waiting for round result."
-          : "Tap the colors in the same order."}
+          : "Repeat from memory. Filled slots track your progress."}
       </p>
     </motion.div>
   );

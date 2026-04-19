@@ -671,9 +671,11 @@ function TapBattleSignalView({ room }: { room: GameRoom }) {
 function MemorySequenceStrip({
   sequence,
   enteredByPlayer,
+  concealed = false,
 }: {
   sequence: string[];
   enteredByPlayer?: string[];
+  concealed?: boolean;
 }) {
   return (
     <div className="flex flex-wrap items-center justify-center gap-4">
@@ -693,10 +695,12 @@ function MemorySequenceStrip({
                 ? "border-red-400/60 bg-red-500/15 text-red-300"
                 : matched
                 ? "border-white/40 bg-white/10 text-white"
+                : concealed
+                ? "border-white/10 bg-white/[0.03] text-white/20"
                 : option.tileClass
             }`}
           >
-            {option.shortLabel}
+            {concealed && !matched && !wrong ? "•" : option.shortLabel}
           </div>
         );
       })}
@@ -789,7 +793,7 @@ function MemoryFlashSignalView({ room }: { room: GameRoom }) {
 
       <div className="flex w-full max-w-5xl flex-col gap-8">
         <div className="rounded-[2rem] border border-white/10 bg-white/5 px-10 py-8">
-          <MemorySequenceStrip sequence={sequence} />
+          <MemorySequenceStrip sequence={sequence} concealed />
         </div>
 
         <div className="grid grid-cols-2 gap-6">
@@ -816,7 +820,11 @@ function MemoryFlashSignalView({ room }: { room: GameRoom }) {
                   </span>
                 </div>
 
-                <MemorySequenceStrip sequence={sequence} enteredByPlayer={inputs} />
+                <MemorySequenceStrip
+                  sequence={sequence}
+                  enteredByPlayer={inputs}
+                  concealed
+                />
               </div>
             );
           })}
@@ -824,7 +832,7 @@ function MemoryFlashSignalView({ room }: { room: GameRoom }) {
       </div>
 
       <div className="font-body text-[clamp(0.6rem,1.2vw,0.9rem)] uppercase tracking-[0.45em] text-white/28">
-        Correct pattern wins. If both are correct, fastest wins.
+        Sequence hidden. Progress fills as players answer from memory.
       </div>
     </motion.div>
   );
