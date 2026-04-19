@@ -290,17 +290,6 @@ function WaitingView({ room, qrUrl }: { room: GameRoom; qrUrl: string }) {
 
       {/* Main — QR + status */}
       <div className="flex flex-col items-center gap-8">
-        <div className="flex flex-col items-center gap-4 text-center">
-          <div className="rounded-full border border-white/10 bg-white/5 px-5 py-2 font-body text-[clamp(0.6rem,1.2vw,0.8rem)] uppercase tracking-[0.4em] text-white/45">
-            LIVE ARCADE FACE-OFF
-          </div>
-          <span className="font-display text-[clamp(3rem,8vw,6.5rem)] font-black uppercase leading-none tracking-wide text-white">
-            SCAN.
-            <span className="text-buns-yellow"> JOIN.</span>
-            <br />
-            DUEL.
-          </span>
-        </div>
         <div className="relative">
           <div className="overflow-hidden rounded-2xl border-2 border-buns-yellow/60 bg-white p-3 shadow-[0_0_80px_rgba(255,212,0,0.4)]">
             <img
@@ -381,20 +370,7 @@ function CountdownView({ room }: { room: GameRoom }) {
       </div>
 
       {/* Countdown */}
-      <div className="relative flex flex-col items-center gap-4">
-        <motion.div
-          animate={{ scale: [0.82, 1.2], opacity: [0.2, 0] }}
-          transition={{ duration: 1.1, repeat: Infinity, ease: "easeOut" }}
-          className="absolute h-[24rem] w-[24rem] rounded-full border border-buns-yellow/20"
-        />
-        <motion.div
-          animate={{ scale: [0.95, 1.35], opacity: [0.12, 0] }}
-          transition={{ duration: 1.1, repeat: Infinity, ease: "easeOut", delay: 0.18 }}
-          className="absolute h-[30rem] w-[30rem] rounded-full border border-white/10"
-        />
-        <div className="rounded-full border border-white/10 bg-white/5 px-5 py-2 font-body text-[clamp(0.55rem,1.1vw,0.8rem)] uppercase tracking-[0.4em] text-white/45">
-          MATCH INTRO
-        </div>
+      <div className="flex flex-col items-center gap-4">
         <span className="font-body text-[clamp(0.8rem,1.8vw,1.3rem)] uppercase tracking-[0.5em] text-white/50">
           DUEL STARTS IN
         </span>
@@ -448,10 +424,7 @@ function GetReadyView({ room }: { room: GameRoom }) {
       </div>
 
       {/* Get Ready pulse */}
-      <div className="flex flex-col items-center gap-6 text-center">
-        <div className="rounded-full border border-white/10 bg-white/5 px-5 py-2 font-body text-[clamp(0.55rem,1.1vw,0.8rem)] uppercase tracking-[0.4em] text-white/40">
-          SHOWTIME
-        </div>
+      <div className="flex flex-col items-center gap-6">
         <motion.div
           animate={{
             opacity: [0.5, 1, 0.5],
@@ -892,7 +865,7 @@ function RoundResultView({ room }: { room: GameRoom }) {
       </div>
 
       {/* Scores + reaction times */}
-      <div className="flex w-full items-end justify-between rounded-[2rem] border border-white/10 bg-white/5 px-10 py-8 shadow-[0_0_45px_rgba(0,0,0,0.18)]">
+      <div className="flex w-full items-end justify-between">
         {/* P1 */}
         <div className="flex flex-col items-start gap-2">
           <span className={`font-display text-[clamp(1.2rem,3vw,2.2rem)] font-black uppercase ${PLAYER_COLORS[p1?.color ?? "red"].text}`}>
@@ -983,7 +956,7 @@ function TapBattleRoundResultView({ room }: { room: GameRoom }) {
           return (
             <div
               key={player?.id ?? index}
-              className="rounded-3xl border border-white/10 bg-white/5 px-8 py-6 shadow-[0_0_40px_rgba(0,0,0,0.18)]"
+              className="rounded-3xl border border-white/10 bg-white/5 px-8 py-6"
             >
               <div className={`font-display text-[clamp(1.5rem,3vw,2.6rem)] font-black uppercase ${colors.text}`}>
                 {player?.name ?? (index === 0 ? "P1" : "P2")}
@@ -1067,7 +1040,7 @@ function MemoryFlashRoundResultView({ room }: { room: GameRoom }) {
           return (
             <div
               key={player?.id ?? index}
-              className="rounded-3xl border border-white/10 bg-white/5 px-8 py-6 shadow-[0_0_40px_rgba(0,0,0,0.18)]"
+              className="rounded-3xl border border-white/10 bg-white/5 px-8 py-6"
             >
               <div className={`font-display text-[clamp(1.5rem,3vw,2.6rem)] font-black uppercase ${colors.text}`}>
                 {player?.name ?? (index === 0 ? "P1" : "P2")}
@@ -1112,7 +1085,7 @@ function MatchWinnerView({ room }: { room: GameRoom }) {
         />
       )}
 
-      <div className="relative z-10 flex flex-col items-center gap-6 rounded-[2.5rem] border border-white/10 bg-black/25 px-12 py-10 shadow-[0_0_60px_rgba(0,0,0,0.2)]">
+      <div className="relative z-10 flex flex-col items-center gap-6">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -1224,7 +1197,7 @@ function RematchWaitView({ room }: { room: GameRoom }) {
       </div>
 
       {/* Player decision panels */}
-      <div className="flex w-full items-end justify-between rounded-[2rem] border border-white/10 bg-white/5 px-10 py-8 shadow-[0_0_45px_rgba(0,0,0,0.18)]">
+      <div className="flex w-full items-end justify-between">
         {/* P1 */}
         <div className="flex flex-col items-start gap-3">
           <span
