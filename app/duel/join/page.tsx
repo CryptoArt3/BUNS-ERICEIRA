@@ -142,7 +142,10 @@ function useDuelRoom() {
 
 function Logo({ gameType = "reaction" }: { gameType?: DuelGameType }) {
   return (
-    <div className="flex flex-col items-center gap-0.5">
+    <div className="flex flex-col items-center gap-1.5">
+      <div className="rounded-full border border-buns-yellow/25 bg-buns-yellow/10 px-3 py-1 font-body text-[0.5rem] uppercase tracking-[0.38em] text-buns-yellow/80 shadow-[0_0_25px_rgba(255,212,0,0.18)]">
+        ARCADE MODE
+      </div>
       <span className="font-display text-3xl font-black uppercase tracking-wider text-buns-yellow [text-shadow:0_0_30px_rgba(255,212,0,0.5)]">
         BUNS DUEL
       </span>
@@ -187,6 +190,9 @@ function JoinView({
 
       <div className="flex w-full max-w-sm flex-col gap-6">
         <div className="text-center">
+          <div className="mb-3 inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 font-body text-[0.55rem] uppercase tracking-[0.35em] text-white/45">
+            1v1 LIVE ARCADE
+          </div>
           <p className="font-display text-2xl font-black uppercase text-white tracking-wide">
             JOIN THE DUEL
           </p>
@@ -260,7 +266,7 @@ function LobbyView({
         <motion.div
           initial={{ scale: 0.8 }}
           animate={{ scale: 1 }}
-          className={`flex flex-col items-center gap-2 rounded-2xl border-2 px-8 py-6 ${
+          className={`flex flex-col items-center gap-3 rounded-3xl border-2 px-8 py-6 shadow-[0_0_35px_rgba(0,0,0,0.2)] ${
             me?.color === "red"
               ? "border-[#FF4444]/60 bg-[#FF4444]/10"
               : "border-[#4488FF]/60 bg-[#4488FF]/10"
@@ -307,6 +313,15 @@ function LobbyView({
             </motion.div>
           )}
         </div>
+
+        <div className="w-full rounded-3xl border border-white/10 bg-white/5 px-5 py-4 text-center">
+          <p className="font-body text-[0.55rem] uppercase tracking-[0.35em] text-white/35">
+            Arena status
+          </p>
+          <p className="mt-2 font-display text-xl font-black uppercase tracking-[0.18em] text-white">
+            {opponent ? "MATCH LOCKED IN" : "LOOKING FOR RIVAL"}
+          </p>
+        </div>
       </div>
 
       <p className="font-body text-[0.6rem] uppercase tracking-[0.4em] text-white/20">
@@ -325,8 +340,21 @@ function CountdownView({ room }: { room: GameRoom }) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="flex h-full flex-col items-center justify-center gap-6"
+      className="relative flex h-full flex-col items-center justify-center gap-6 overflow-hidden"
     >
+      <motion.div
+        animate={{ scale: [0.8, 1.25], opacity: [0.2, 0] }}
+        transition={{ duration: 1.1, repeat: Infinity, ease: "easeOut" }}
+        className="absolute h-72 w-72 rounded-full border border-buns-yellow/30"
+      />
+      <motion.div
+        animate={{ scale: [0.9, 1.4], opacity: [0.15, 0] }}
+        transition={{ duration: 1.1, repeat: Infinity, ease: "easeOut", delay: 0.22 }}
+        className="absolute h-[24rem] w-[24rem] rounded-full border border-white/10"
+      />
+      <div className="rounded-full border border-white/10 bg-white/5 px-4 py-1 font-body text-[0.55rem] uppercase tracking-[0.35em] text-white/45">
+        MATCH INTRO
+      </div>
       <span className="font-body text-xs uppercase tracking-[0.5em] text-white/50">
         GET READY
       </span>
@@ -355,8 +383,11 @@ function GetReadyView({ room }: { room: GameRoom }) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="flex h-full flex-col items-center justify-center gap-6 px-8"
+      className="flex h-full flex-col items-center justify-center gap-6 px-8 text-center"
     >
+      <div className="rounded-full border border-white/10 bg-white/5 px-4 py-1 font-body text-[0.55rem] uppercase tracking-[0.35em] text-white/40">
+        SHOWTIME
+      </div>
       <span className="font-body text-xs uppercase tracking-[0.4em] text-white/40">
         ROUND {room.currentRound} OF {room.totalRounds}
       </span>
@@ -697,7 +728,7 @@ function RoundResultView({
     >
       <Logo gameType={room.gameType} />
 
-      <div className="flex flex-col items-center gap-4 w-full max-w-sm">
+      <div className="flex w-full max-w-sm flex-col items-center gap-4 rounded-[2rem] border border-white/10 bg-white/5 px-6 py-7 shadow-[0_0_40px_rgba(0,0,0,0.18)]">
         <span className="font-body text-[0.6rem] uppercase tracking-[0.4em] text-white/40">
           Round {lastRound?.number ?? room.currentRound}
         </span>
@@ -783,7 +814,7 @@ function TapBattleRoundResultView({
     >
       <Logo gameType={room.gameType} />
 
-      <div className="flex w-full max-w-sm flex-col items-center gap-5">
+      <div className="flex w-full max-w-sm flex-col items-center gap-5 rounded-[2rem] border border-white/10 bg-white/5 px-6 py-7 shadow-[0_0_40px_rgba(0,0,0,0.18)]">
         <span className="font-body text-[0.6rem] uppercase tracking-[0.4em] text-white/40">
           Round {lastRound?.number ?? room.currentRound}
         </span>
@@ -894,7 +925,7 @@ function MemoryFlashRoundResultView({
     >
       <Logo gameType={room.gameType} />
 
-      <div className="flex w-full max-w-sm flex-col items-center gap-5">
+      <div className="flex w-full max-w-sm flex-col items-center gap-5 rounded-[2rem] border border-white/10 bg-white/5 px-6 py-7 shadow-[0_0_40px_rgba(0,0,0,0.18)]">
         <span className="font-body text-[0.58rem] uppercase tracking-[0.4em] text-white/35">
           Round {lastRound?.number ?? room.currentRound}
         </span>
@@ -986,8 +1017,13 @@ function MatchWinnerView({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="flex h-full flex-col items-center justify-center gap-8 px-8"
+      className="relative flex h-full flex-col items-center justify-center gap-8 overflow-hidden px-8 text-center"
     >
+      <motion.div
+        animate={{ scale: [0.85, 1.25], opacity: [0.14, 0] }}
+        transition={{ duration: 1.6, repeat: Infinity, ease: "easeOut" }}
+        className="absolute h-[24rem] w-[24rem] rounded-full bg-buns-yellow/20 blur-3xl"
+      />
       {iWon ? (
         <>
           <motion.div
@@ -1067,7 +1103,7 @@ function RematchWaitView({
       </div>
 
       {/* Countdown */}
-      <div className="flex flex-col items-center gap-1">
+      <div className="flex flex-col items-center gap-1 rounded-[2rem] border border-white/10 bg-white/5 px-8 py-5 shadow-[0_0_35px_rgba(0,0,0,0.16)]">
         <span className="font-body text-[0.55rem] uppercase tracking-[0.5em] text-white/35">
           DECIDE IN
         </span>
@@ -1089,7 +1125,7 @@ function RematchWaitView({
       </div>
 
       {/* Decision area */}
-      <div className="flex w-full max-w-sm flex-col items-center gap-4">
+      <div className="flex w-full max-w-sm flex-col items-center gap-4 rounded-[2rem] border border-white/10 bg-black/20 px-5 py-5">
         {!myVote ? (
           <>
             <motion.button
