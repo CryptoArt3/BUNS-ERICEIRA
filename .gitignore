@@ -24,6 +24,9 @@ Thumbs.db
 .env
 .env.*.local
 
+# Runtime state
+.data/
+
 # Editor
 .vscode/
 .idea/
