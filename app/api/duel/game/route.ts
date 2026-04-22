@@ -9,6 +9,7 @@ import {
 } from "@/lib/duel/config";
 import {
   getDuelGameStorePath,
+  hasDurableDuelGameStore,
   hydrateRuntimeActiveDuelGameState,
   readRuntimeActiveDuelGameType,
   writeRuntimeActiveDuelGameType,
@@ -17,16 +18,32 @@ import { resetRoomForGame } from "@/lib/duel/gameState";
 
 export async function GET() {
   const state = await hydrateRuntimeActiveDuelGameState();
-  const runtimeGameType = readRuntimeActiveDuelGameType();
+  const hasDurableStore = hasDurableDuelGameStore();
+
+  if (
+    hasDurableStore &&
+    (state.source === "error" || state.source === "missing" || state.source === "none")
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "Active duel game is not available from durable storage.",
+        source: state.source,
+      },
+      { status: 503 }
+    );
+  }
+
+  const runtimeGameType = hasDurableStore ? state.gameType : readRuntimeActiveDuelGameType();
   const envGameType = getEnvDuelGameType();
 
   return NextResponse.json({
     ok: true,
-    activeGameType: getActiveDuelGameType(),
+    activeGameType: runtimeGameType ?? (hasDurableStore ? null : getActiveDuelGameType()),
     runtimeGameType,
     envGameType,
     source:
-      state.source === "none" || state.source === "missing"
+      !hasDurableStore && (state.source === "none" || state.source === "missing")
         ? "env"
         : state.source,
     storePath: getDuelGameStorePath(),

@@ -50,6 +50,7 @@ export async function POST(request: Request) {
     symbol,
     roomSessionId,
     roundNumber,
+    roundId,
   } = body as {
     type?: string;
     playerId?: string;
@@ -59,6 +60,7 @@ export async function POST(request: Request) {
     symbol?: unknown;
     roomSessionId?: unknown;
     roundNumber?: unknown;
+    roundId?: unknown;
   };
 
   if (!playerId || typeof playerId !== "string") {
@@ -89,6 +91,15 @@ export async function POST(request: Request) {
       ) {
         return NextResponse.json({ success: false, room, staleRound: true });
       }
+      const currentRoundId = room.rounds[room.rounds.length - 1]?.id;
+      if (
+        typeof roundId === "string" &&
+        roundId.length > 0 &&
+        currentRoundId &&
+        roundId !== currentRoundId
+      ) {
+        return NextResponse.json({ success: false, room, staleRound: true });
+      }
       const parsedTapCount =
         typeof tapCount === "number" && Number.isFinite(tapCount)
           ? Math.max(1, Math.floor(tapCount))
@@ -112,6 +123,15 @@ export async function POST(request: Request) {
         typeof roundNumber === "number" &&
         Number.isFinite(roundNumber) &&
         roundNumber !== room.currentRound
+      ) {
+        return NextResponse.json({ success: false, room, staleRound: true });
+      }
+      const currentRoundId = room.rounds[room.rounds.length - 1]?.id;
+      if (
+        typeof roundId === "string" &&
+        roundId.length > 0 &&
+        currentRoundId &&
+        roundId !== currentRoundId
       ) {
         return NextResponse.json({ success: false, room, staleRound: true });
       }

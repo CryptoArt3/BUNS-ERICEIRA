@@ -58,6 +58,7 @@ function createRoom(): GameRoom {
     rematchVotes: {},
     rematchCountdown: null,
     consecutiveMatchCount: 0,
+    forcedRoundAdvances: 0,
     lastUpdatedAt: Date.now(),
   };
 }
