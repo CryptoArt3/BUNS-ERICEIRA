@@ -5,6 +5,7 @@ export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import { getRoom } from "@/lib/duel/gameState";
+import { hydrateRuntimeActiveDuelGameType } from "@/lib/duel/activeGameStore";
 import type { RematchVote } from "@/lib/duel/types";
 import * as reactionDuel from "@/lib/duel/reactionDuel";
 import * as tapBattle from "@/lib/duel/tapBattle";
@@ -18,6 +19,8 @@ function getActiveEngine() {
 }
 
 export async function POST(request: Request) {
+  await hydrateRuntimeActiveDuelGameType();
+
   let body: Record<string, unknown>;
   try {
     body = await request.json();
@@ -25,7 +28,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { type, playerId, playerName, vote, tapCount, symbol, roomSessionId } = body as {
+  const {
+    type,
+    playerId,
+    playerName,
+    vote,
+    tapCount,
+    symbol,
+    roomSessionId,
+    roundNumber,
+  } = body as {
     type?: string;
     playerId?: string;
     playerName?: string;
@@ -33,6 +45,7 @@ export async function POST(request: Request) {
     tapCount?: unknown;
     symbol?: unknown;
     roomSessionId?: unknown;
+    roundNumber?: unknown;
   };
 
   if (!playerId || typeof playerId !== "string") {
@@ -56,6 +69,13 @@ export async function POST(request: Request) {
 
     case "tap": {
       const room = getRoom();
+      if (
+        typeof roundNumber === "number" &&
+        Number.isFinite(roundNumber) &&
+        roundNumber !== room.currentRound
+      ) {
+        return NextResponse.json({ success: false, room, staleRound: true });
+      }
       const parsedTapCount =
         typeof tapCount === "number" && Number.isFinite(tapCount)
           ? Math.max(1, Math.floor(tapCount))
@@ -74,8 +94,17 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "Missing symbol" }, { status: 400 });
       }
 
+      const room = getRoom();
+      if (
+        typeof roundNumber === "number" &&
+        Number.isFinite(roundNumber) &&
+        roundNumber !== room.currentRound
+      ) {
+        return NextResponse.json({ success: false, room, staleRound: true });
+      }
+
       const success =
-        getRoom().gameType === "memory_flash"
+        room.gameType === "memory_flash"
           ? memoryFlash.recordMemoryInput(playerId, symbol)
           : false;
       return NextResponse.json({ success, room: getRoom() });

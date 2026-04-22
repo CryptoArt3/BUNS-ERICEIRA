@@ -1186,6 +1186,7 @@ export default function DuelJoinPage() {
   const prevRoundRef = useRef<number>(0);
   const wasInRoomRef = useRef(false);
   const tapBattlePendingRef = useRef(0);
+  const tapBattlePendingRoundRef = useRef<number | null>(null);
   const tapBattleFlushTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const tapBattleFlushInFlightRef = useRef(false);
   const latestRoomStatusRef = useRef<GameRoom["status"] | null>(null);
@@ -1202,6 +1203,7 @@ export default function DuelJoinPage() {
     setHasTapped(false);
     setMyRematchVote(undefined);
     tapBattlePendingRef.current = 0;
+    tapBattlePendingRoundRef.current = null;
     tapBattleFlushInFlightRef.current = false;
     if (tapBattleFlushTimeoutRef.current) {
       clearTimeout(tapBattleFlushTimeoutRef.current);
@@ -1233,6 +1235,7 @@ export default function DuelJoinPage() {
       setHasTapped(false);
       setMyRematchVote(undefined);
       tapBattlePendingRef.current = 0;
+      tapBattlePendingRoundRef.current = null;
       tapBattleFlushInFlightRef.current = false;
       if (tapBattleFlushTimeoutRef.current) {
         clearTimeout(tapBattleFlushTimeoutRef.current);
@@ -1263,6 +1266,7 @@ export default function DuelJoinPage() {
       prevRoundRef.current = room.currentRound;
       setHasTapped(false);
       tapBattlePendingRef.current = 0;
+      tapBattlePendingRoundRef.current = null;
       tapBattleFlushInFlightRef.current = false;
       if (tapBattleFlushTimeoutRef.current) {
         clearTimeout(tapBattleFlushTimeoutRef.current);
@@ -1274,6 +1278,7 @@ export default function DuelJoinPage() {
   useEffect(() => {
     if (room?.gameType !== "tap_battle" || room.status === "signal") return;
     tapBattlePendingRef.current = 0;
+    tapBattlePendingRoundRef.current = null;
     tapBattleFlushInFlightRef.current = false;
     if (tapBattleFlushTimeoutRef.current) {
       clearTimeout(tapBattleFlushTimeoutRef.current);
@@ -1397,16 +1402,24 @@ export default function DuelJoinPage() {
     if (!playerId || tapBattleFlushInFlightRef.current) return;
 
     const delta = tapBattlePendingRef.current;
+    const pendingRoundNumber = tapBattlePendingRoundRef.current;
     if (delta <= 0) return;
 
     tapBattlePendingRef.current = 0;
+    tapBattlePendingRoundRef.current = null;
     tapBattleFlushInFlightRef.current = true;
 
     try {
       const res = await fetch("/api/duel/action", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "tap", playerId, tapCount: delta, roomSessionId }),
+        body: JSON.stringify({
+          type: "tap",
+          playerId,
+          tapCount: delta,
+          roomSessionId,
+          roundNumber: pendingRoundNumber,
+        }),
       });
 
       const data = (await res.json()) as { success?: boolean };
@@ -1415,6 +1428,7 @@ export default function DuelJoinPage() {
         latestRoomStatusRef.current === "signal";
       if (!data.success && shouldRetry) {
         tapBattlePendingRef.current += delta;
+        tapBattlePendingRoundRef.current = pendingRoundNumber;
       }
     } catch {
       const shouldRetry =
@@ -1422,6 +1436,7 @@ export default function DuelJoinPage() {
         latestRoomStatusRef.current === "signal";
       if (shouldRetry) {
         tapBattlePendingRef.current += delta;
+        tapBattlePendingRoundRef.current = pendingRoundNumber;
       }
     } finally {
       tapBattleFlushInFlightRef.current = false;
@@ -1442,6 +1457,9 @@ export default function DuelJoinPage() {
 
     if (room?.gameType === "tap_battle") {
       if (room.status !== "signal") return;
+      if (tapBattlePendingRoundRef.current === null) {
+        tapBattlePendingRoundRef.current = room.currentRound;
+      }
       tapBattlePendingRef.current += 1;
       if (!tapBattleFlushTimeoutRef.current) {
         tapBattleFlushTimeoutRef.current = setTimeout(() => {
@@ -1459,7 +1477,12 @@ export default function DuelJoinPage() {
       await fetch("/api/duel/action", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "tap", playerId, roomSessionId }),
+        body: JSON.stringify({
+          type: "tap",
+          playerId,
+          roomSessionId,
+          roundNumber: room?.currentRound,
+        }),
       });
     } catch {
       // tap is best-effort
@@ -1476,7 +1499,13 @@ export default function DuelJoinPage() {
         await fetch("/api/duel/action", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ type: "memory_input", playerId, symbol, roomSessionId }),
+          body: JSON.stringify({
+            type: "memory_input",
+            playerId,
+            symbol,
+            roomSessionId,
+            roundNumber: room.currentRound,
+          }),
         });
       } catch {
         // best effort
