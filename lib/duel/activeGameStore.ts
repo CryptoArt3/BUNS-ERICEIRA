@@ -10,7 +10,7 @@ type StoredDuelGameState = {
 
 type HydratedDuelGameState = {
   gameType: DuelGameType | null;
-  source: "supabase" | "local" | "memory" | "missing" | "error" | "none";
+  source: "supabase" | "local" | "missing" | "error" | "none";
 };
 
 const g = globalThis as typeof globalThis & {
@@ -96,10 +96,7 @@ export async function hydrateRuntimeActiveDuelGameState(): Promise<HydratedDuelG
         .maybeSingle();
 
       if (error) {
-        return {
-          gameType: g.__duelRuntimeGameType ?? null,
-          source: g.__duelRuntimeGameType ? "memory" : "error",
-        };
+        return { gameType: null, source: "error" };
       }
 
       const value = data?.value as Partial<StoredDuelGameState> | null | undefined;
@@ -110,16 +107,13 @@ export async function hydrateRuntimeActiveDuelGameState(): Promise<HydratedDuelG
       }
 
       return {
-        gameType: g.__duelRuntimeGameType ?? null,
-        source: g.__duelRuntimeGameType ? "memory" : "missing",
+        gameType: null,
+        source: "missing",
       };
     } catch {
       // Supabase is the production source of truth. Do not fall back to a stale
       // local file when durable storage is configured but temporarily fails.
-      return {
-        gameType: g.__duelRuntimeGameType ?? null,
-        source: g.__duelRuntimeGameType ? "memory" : "error",
-      };
+      return { gameType: null, source: "error" };
     }
   }
 

@@ -1187,6 +1187,7 @@ export default function DuelJoinPage() {
   const wasInRoomRef = useRef(false);
   const tapBattlePendingRef = useRef(0);
   const tapBattlePendingRoundRef = useRef<number | null>(null);
+  const tapBattlePendingRoundIdRef = useRef<string | null>(null);
   const tapBattleFlushTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const tapBattleFlushInFlightRef = useRef(false);
   const latestRoomStatusRef = useRef<GameRoom["status"] | null>(null);
@@ -1204,6 +1205,7 @@ export default function DuelJoinPage() {
     setMyRematchVote(undefined);
     tapBattlePendingRef.current = 0;
     tapBattlePendingRoundRef.current = null;
+    tapBattlePendingRoundIdRef.current = null;
     tapBattleFlushInFlightRef.current = false;
     if (tapBattleFlushTimeoutRef.current) {
       clearTimeout(tapBattleFlushTimeoutRef.current);
@@ -1236,6 +1238,7 @@ export default function DuelJoinPage() {
       setMyRematchVote(undefined);
       tapBattlePendingRef.current = 0;
       tapBattlePendingRoundRef.current = null;
+      tapBattlePendingRoundIdRef.current = null;
       tapBattleFlushInFlightRef.current = false;
       if (tapBattleFlushTimeoutRef.current) {
         clearTimeout(tapBattleFlushTimeoutRef.current);
@@ -1267,6 +1270,7 @@ export default function DuelJoinPage() {
       setHasTapped(false);
       tapBattlePendingRef.current = 0;
       tapBattlePendingRoundRef.current = null;
+      tapBattlePendingRoundIdRef.current = null;
       tapBattleFlushInFlightRef.current = false;
       if (tapBattleFlushTimeoutRef.current) {
         clearTimeout(tapBattleFlushTimeoutRef.current);
@@ -1279,6 +1283,7 @@ export default function DuelJoinPage() {
     if (room?.gameType !== "tap_battle" || room.status === "signal") return;
     tapBattlePendingRef.current = 0;
     tapBattlePendingRoundRef.current = null;
+    tapBattlePendingRoundIdRef.current = null;
     tapBattleFlushInFlightRef.current = false;
     if (tapBattleFlushTimeoutRef.current) {
       clearTimeout(tapBattleFlushTimeoutRef.current);
@@ -1403,10 +1408,12 @@ export default function DuelJoinPage() {
 
     const delta = tapBattlePendingRef.current;
     const pendingRoundNumber = tapBattlePendingRoundRef.current;
+    const pendingRoundId = tapBattlePendingRoundIdRef.current;
     if (delta <= 0) return;
 
     tapBattlePendingRef.current = 0;
     tapBattlePendingRoundRef.current = null;
+    tapBattlePendingRoundIdRef.current = null;
     tapBattleFlushInFlightRef.current = true;
 
     try {
@@ -1419,6 +1426,7 @@ export default function DuelJoinPage() {
           tapCount: delta,
           roomSessionId,
           roundNumber: pendingRoundNumber,
+          roundId: pendingRoundId,
         }),
       });
 
@@ -1429,6 +1437,7 @@ export default function DuelJoinPage() {
       if (!data.success && shouldRetry) {
         tapBattlePendingRef.current += delta;
         tapBattlePendingRoundRef.current = pendingRoundNumber;
+        tapBattlePendingRoundIdRef.current = pendingRoundId;
       }
     } catch {
       const shouldRetry =
@@ -1437,6 +1446,7 @@ export default function DuelJoinPage() {
       if (shouldRetry) {
         tapBattlePendingRef.current += delta;
         tapBattlePendingRoundRef.current = pendingRoundNumber;
+        tapBattlePendingRoundIdRef.current = pendingRoundId;
       }
     } finally {
       tapBattleFlushInFlightRef.current = false;
@@ -1459,6 +1469,8 @@ export default function DuelJoinPage() {
       if (room.status !== "signal") return;
       if (tapBattlePendingRoundRef.current === null) {
         tapBattlePendingRoundRef.current = room.currentRound;
+        tapBattlePendingRoundIdRef.current =
+          room.rounds[room.rounds.length - 1]?.id ?? null;
       }
       tapBattlePendingRef.current += 1;
       if (!tapBattleFlushTimeoutRef.current) {
@@ -1482,12 +1494,22 @@ export default function DuelJoinPage() {
           playerId,
           roomSessionId,
           roundNumber: room?.currentRound,
+          roundId: room?.rounds[room.rounds.length - 1]?.id,
         }),
       });
     } catch {
       // tap is best-effort
     }
-  }, [playerId, hasTapped, room?.gameType, room?.status, roomSessionId, flushTapBattleTaps]);
+  }, [
+    playerId,
+    hasTapped,
+    room?.gameType,
+    room?.status,
+    room?.currentRound,
+    room?.rounds,
+    roomSessionId,
+    flushTapBattleTaps,
+  ]);
 
   const handleMemoryInput = useCallback(
     async (symbol: string) => {
@@ -1505,13 +1527,14 @@ export default function DuelJoinPage() {
             symbol,
             roomSessionId,
             roundNumber: room.currentRound,
+            roundId: room.rounds[room.rounds.length - 1]?.id,
           }),
         });
       } catch {
         // best effort
       }
     },
-    [playerId, room?.gameType, room?.status, roomSessionId]
+    [playerId, room?.gameType, room?.status, room?.currentRound, room?.rounds, roomSessionId]
   );
 
   const handleRematchVote = useCallback(

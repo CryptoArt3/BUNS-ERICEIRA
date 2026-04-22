@@ -42,11 +42,11 @@ duelEmitter.setMaxListeners(100); // TV + 2 players + some headroom
 
 // ── Room factory ─────────────────────────────────────────────────────────────
 
-function createRoom(): GameRoom {
+function createRoom(gameType: DuelGameType = getActiveDuelGameType()): GameRoom {
   return {
     id: "BUNS",
     sessionId: `room_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
-    gameType: getActiveDuelGameType(),
+    gameType,
     status: "waiting",
     players: [],
     scores: {},
@@ -58,6 +58,7 @@ function createRoom(): GameRoom {
     rematchVotes: {},
     rematchCountdown: null,
     consecutiveMatchCount: 0,
+    forcedRoundAdvances: 0,
     lastUpdatedAt: Date.now(),
   };
 }
@@ -85,10 +86,11 @@ export function updateRoom(updates: Partial<GameRoom>): GameRoom {
 }
 
 export function resetRoom(): GameRoom {
+  const gameType = getRoom().gameType;
   clearDuelTimer();
   stopCleanupInterval(); // no players left — stop the janitor
   clearLastSeen();
-  g.__duelRoom = createRoom();
+  g.__duelRoom = createRoom(gameType);
   duelEmitter.emit("update", g.__duelRoom);
   return g.__duelRoom;
 }
@@ -97,13 +99,22 @@ export function resetRoomForGame(gameType: DuelGameType): GameRoom {
   clearDuelTimer();
   stopCleanupInterval();
   clearLastSeen();
-  g.__duelRoom = { ...createRoom(), gameType };
+  g.__duelRoom = createRoom(gameType);
   duelEmitter.emit("update", g.__duelRoom);
   return g.__duelRoom;
 }
 
 export function syncRoomGameType(gameType: DuelGameType): GameRoom {
-  const room = getRoom();
+  if (!g.__duelRoom || !g.__duelRoom.sessionId) {
+    clearDuelTimer();
+    stopCleanupInterval();
+    clearLastSeen();
+    g.__duelRoom = createRoom(gameType);
+    duelEmitter.emit("update", g.__duelRoom);
+    return g.__duelRoom;
+  }
+
+  const room = g.__duelRoom;
 
   if (room.gameType === gameType) {
     return room;
