@@ -20,8 +20,6 @@ const MATCH_WINNER_DISPLAY_MS = 2500;
 const REMATCH_WINDOW_SECONDS = 10;
 const WINS_NEEDED = 2;
 const MAX_CONSECUTIVE_MATCHES = 3;
-const MAX_DRAW_REPLAYS_PER_ROUND = 1;
-const MAX_FORCED_ROUND_ADVANCES = 4;
 
 const STALE_TIMEOUT_MS = 30_000;
 const CLEANUP_INTERVAL_MS = 10_000;
@@ -167,16 +165,10 @@ function startRound(replayCurrentRound = false) {
   const roundNumber = replayCurrentRound
     ? Math.max(room.currentRound, 1)
     : room.currentRound + 1;
-  const previousRound = room.rounds[room.rounds.length - 1];
-  const drawReplayCount = replayCurrentRound
-    ? (previousRound?.drawReplayCount ?? 0) + 1
-    : 0;
   const sequence = generateSequence(roundNumber);
 
   const newRound: Round = {
-    id: `memory_${roundNumber}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
     number: roundNumber,
-    drawReplayCount,
     signalFiredAt: null,
     startedAt: Date.now(),
     endsAt: null,
@@ -327,34 +319,23 @@ function resolveRound() {
   const matchWinner = room.players.find(
     (p) => (newScores[p.id] ?? 0) >= WINS_NEEDED
   );
-  const shouldReplayDraw =
-    roundWinner === null &&
-    (currentRound.drawReplayCount ?? 0) < MAX_DRAW_REPLAYS_PER_ROUND;
-  const forcedRoundAdvances =
-    roundWinner === null && !shouldReplayDraw
-      ? (room.forcedRoundAdvances ?? 0) + 1
-      : room.forcedRoundAdvances ?? 0;
-  const shouldForceMatchReset = forcedRoundAdvances >= MAX_FORCED_ROUND_ADVANCES;
 
   updateRoom({
     status: "round_result",
     rounds: updatedRounds,
     scores: newScores,
-    forcedRoundAdvances,
     ...(matchWinner
       ? { consecutiveMatchCount: room.consecutiveMatchCount + 1 }
       : {}),
   });
 
-  if (shouldForceMatchReset) {
-    setDuelTimer(setTimeout(resetRoom, ROUND_RESULT_DISPLAY_MS));
-  } else if (matchWinner) {
+  if (matchWinner) {
     setDuelTimer(
       setTimeout(() => enterMatchWinner(matchWinner.id), ROUND_RESULT_DISPLAY_MS)
     );
   } else {
     setDuelTimer(
-      setTimeout(() => startRound(shouldReplayDraw), ROUND_RESULT_DISPLAY_MS)
+      setTimeout(() => startRound(roundWinner === null), ROUND_RESULT_DISPLAY_MS)
     );
   }
 }
@@ -450,7 +431,6 @@ function resolveRematch() {
       rematchVotes: {},
       rematchCountdown: null,
       consecutiveMatchCount: 0,
-      forcedRoundAdvances: 0,
     });
     return;
   }
@@ -469,7 +449,6 @@ function startRematch() {
     winner: null,
     rematchVotes: {},
     rematchCountdown: null,
-    forcedRoundAdvances: 0,
   });
   runCountdownTicker(startRound);
 }
