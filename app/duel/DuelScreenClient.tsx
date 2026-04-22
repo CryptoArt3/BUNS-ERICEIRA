@@ -1283,35 +1283,35 @@ export default function DuelScreenClient() {
             </span>
           </motion.div>
         ) : status === "waiting" ? (
-          <WaitingView key="waiting" room={room} qrUrl={qrUrl} />
+          <WaitingView key={`${room.sessionId}_waiting`} room={room} qrUrl={qrUrl} />
         ) : status === "countdown" ? (
-          <CountdownView key="countdown" room={room} />
+          <CountdownView key={`${room.sessionId}_countdown`} room={room} />
         ) : status === "get_ready" ? (
           room.gameType === "memory_flash" ? (
-            <MemoryFlashGetReadyView key={`get_ready_${room.currentRound}`} room={room} />
+            <MemoryFlashGetReadyView key={`${room.sessionId}_get_ready_${room.currentRound}`} room={room} />
           ) : (
-            <GetReadyView key={`get_ready_${room.currentRound}`} room={room} />
+            <GetReadyView key={`${room.sessionId}_get_ready_${room.currentRound}`} room={room} />
           )
         ) : status === "signal" ? (
           room.gameType === "tap_battle" ? (
-            <TapBattleSignalView key={`signal_${room.currentRound}`} room={room} />
+            <TapBattleSignalView key={`${room.sessionId}_signal_${room.currentRound}`} room={room} />
           ) : room.gameType === "memory_flash" ? (
-            <MemoryFlashSignalView key={`signal_${room.currentRound}`} room={room} />
+            <MemoryFlashSignalView key={`${room.sessionId}_signal_${room.currentRound}`} room={room} />
           ) : (
-            <SignalView key={`signal_${room.currentRound}`} room={room} />
+            <SignalView key={`${room.sessionId}_signal_${room.currentRound}`} room={room} />
           )
         ) : status === "round_result" ? (
           room.gameType === "tap_battle" ? (
-            <TapBattleRoundResultView key={`result_${room.currentRound}`} room={room} />
+            <TapBattleRoundResultView key={`${room.sessionId}_result_${room.currentRound}`} room={room} />
           ) : room.gameType === "memory_flash" ? (
-            <MemoryFlashRoundResultView key={`result_${room.currentRound}`} room={room} />
+            <MemoryFlashRoundResultView key={`${room.sessionId}_result_${room.currentRound}`} room={room} />
           ) : (
-            <RoundResultView key={`result_${room.currentRound}`} room={room} />
+            <RoundResultView key={`${room.sessionId}_result_${room.currentRound}`} room={room} />
           )
         ) : status === "match_winner" ? (
-          <MatchWinnerView key="match_winner" room={room} />
+          <MatchWinnerView key={`${room.sessionId}_match_winner`} room={room} />
         ) : status === "rematch_wait" ? (
-          <RematchWaitView key="rematch_wait" room={room} />
+          <RematchWaitView key={`${room.sessionId}_rematch_wait`} room={room} />
         ) : null}
       </AnimatePresence>
 

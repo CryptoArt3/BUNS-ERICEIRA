@@ -38,6 +38,7 @@ export type RoomStatus =
 
 export type GameRoom = {
   id: string;
+  sessionId: string;
   gameType: DuelGameType;
   status: RoomStatus;
   players: Player[];

@@ -1190,6 +1190,7 @@ export default function DuelJoinPage() {
   const tapBattleFlushInFlightRef = useRef(false);
   const latestRoomStatusRef = useRef<GameRoom["status"] | null>(null);
   const latestGameTypeRef = useRef<DuelGameType | null>(null);
+  const prevRoomSessionIdRef = useRef<string | null>(null);
 
   const resetLocalSession = useCallback(() => {
     clearStoredPlayerId();
@@ -1219,6 +1220,30 @@ export default function DuelJoinPage() {
   }, [room]);
 
   const isInRoom = room?.players.some((p) => p.id === playerId) ?? false;
+  const roomSessionId = room?.sessionId ?? null;
+
+  useEffect(() => {
+    if (!roomSessionId) return;
+    const previousRoomSessionId = prevRoomSessionIdRef.current;
+    prevRoomSessionIdRef.current = roomSessionId;
+
+    if (previousRoomSessionId && previousRoomSessionId !== roomSessionId) {
+      setJoining(false);
+      setJoinError(null);
+      setHasTapped(false);
+      setMyRematchVote(undefined);
+      tapBattlePendingRef.current = 0;
+      tapBattleFlushInFlightRef.current = false;
+      if (tapBattleFlushTimeoutRef.current) {
+        clearTimeout(tapBattleFlushTimeoutRef.current);
+        tapBattleFlushTimeoutRef.current = null;
+      }
+
+      if (!isInRoom) {
+        resetLocalSession();
+      }
+    }
+  }, [roomSessionId, isInRoom, resetLocalSession]);
 
   // Handle player removal: if we were joined but are no longer in the room
   // (opponent left and we were removed, or full room reset), go back to join screen.
@@ -1278,14 +1303,14 @@ export default function DuelJoinPage() {
       fetch("/api/duel/action", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "heartbeat", playerId }),
+        body: JSON.stringify({ type: "heartbeat", playerId, roomSessionId }),
       }).catch(() => {}); // fire and forget
     };
 
     send(); // immediate first ping so the server refreshes lastSeen right away
     const interval = setInterval(send, HEARTBEAT_MS);
     return () => clearInterval(interval);
-  }, [playerId, isInRoom]);
+  }, [playerId, isInRoom, roomSessionId]);
 
   useEffect(() => {
     return () => {
@@ -1306,7 +1331,7 @@ export default function DuelJoinPage() {
     if (!playerId || !isInRoom) return;
 
     const leave = () => {
-      const body = JSON.stringify({ type: "leave", playerId });
+      const body = JSON.stringify({ type: "leave", playerId, roomSessionId });
       try {
         if (typeof navigator.sendBeacon === "function") {
           navigator.sendBeacon(
@@ -1331,7 +1356,7 @@ export default function DuelJoinPage() {
     return () => {
       window.removeEventListener("pagehide", leave);
     };
-  }, [playerId, isInRoom]);
+  }, [playerId, isInRoom, roomSessionId]);
 
   const handleJoin = useCallback(
     async (name: string) => {
@@ -1343,7 +1368,12 @@ export default function DuelJoinPage() {
         const res = await fetch("/api/duel/action", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ type: "join", playerId, playerName: name }),
+          body: JSON.stringify({
+            type: "join",
+            playerId,
+            playerName: name,
+            roomSessionId,
+          }),
         });
         const data = (await res.json()) as { success: boolean; room?: GameRoom };
         if (data.room) {
@@ -1360,7 +1390,7 @@ export default function DuelJoinPage() {
         setJoining(false);
       }
     },
-    [playerId, setRoom]
+    [playerId, roomSessionId, setRoom]
   );
 
   const flushTapBattleTaps = useCallback(async () => {
@@ -1376,7 +1406,7 @@ export default function DuelJoinPage() {
       const res = await fetch("/api/duel/action", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "tap", playerId, tapCount: delta }),
+        body: JSON.stringify({ type: "tap", playerId, tapCount: delta, roomSessionId }),
       });
 
       const data = (await res.json()) as { success?: boolean };
@@ -1405,7 +1435,7 @@ export default function DuelJoinPage() {
         }, 50);
       }
     }
-  }, [playerId]);
+  }, [playerId, roomSessionId]);
 
   const handleTap = useCallback(async () => {
     if (!playerId) return;
@@ -1429,12 +1459,12 @@ export default function DuelJoinPage() {
       await fetch("/api/duel/action", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "tap", playerId }),
+        body: JSON.stringify({ type: "tap", playerId, roomSessionId }),
       });
     } catch {
       // tap is best-effort
     }
-  }, [playerId, hasTapped, room?.gameType, room?.status, flushTapBattleTaps]);
+  }, [playerId, hasTapped, room?.gameType, room?.status, roomSessionId, flushTapBattleTaps]);
 
   const handleMemoryInput = useCallback(
     async (symbol: string) => {
@@ -1446,13 +1476,13 @@ export default function DuelJoinPage() {
         await fetch("/api/duel/action", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ type: "memory_input", playerId, symbol }),
+          body: JSON.stringify({ type: "memory_input", playerId, symbol, roomSessionId }),
         });
       } catch {
         // best effort
       }
     },
-    [playerId, room?.gameType, room?.status]
+    [playerId, room?.gameType, room?.status, roomSessionId]
   );
 
   const handleRematchVote = useCallback(
@@ -1464,7 +1494,7 @@ export default function DuelJoinPage() {
         const res = await fetch("/api/duel/action", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ type: "rematch_vote", playerId, vote }),
+          body: JSON.stringify({ type: "rematch_vote", playerId, vote, roomSessionId }),
         });
         const data = (await res.json()) as {
           success?: boolean;
@@ -1480,7 +1510,7 @@ export default function DuelJoinPage() {
         setMyRematchVote(undefined);
       }
     },
-    [playerId, myRematchVote, setRoom]
+    [playerId, myRematchVote, roomSessionId, setRoom]
   );
 
   const handleReconnect = useCallback(async () => {

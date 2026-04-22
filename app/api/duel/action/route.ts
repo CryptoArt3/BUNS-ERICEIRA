@@ -25,17 +25,26 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { type, playerId, playerName, vote, tapCount, symbol } = body as {
+  const { type, playerId, playerName, vote, tapCount, symbol, roomSessionId } = body as {
     type?: string;
     playerId?: string;
     playerName?: string;
     vote?: unknown;
     tapCount?: unknown;
     symbol?: unknown;
+    roomSessionId?: unknown;
   };
 
   if (!playerId || typeof playerId !== "string") {
     return NextResponse.json({ error: "Missing playerId" }, { status: 400 });
+  }
+
+  if (
+    typeof roomSessionId === "string" &&
+    roomSessionId.length > 0 &&
+    roomSessionId !== getRoom().sessionId
+  ) {
+    return NextResponse.json({ success: false, room: getRoom(), staleSession: true });
   }
 
   switch (type) {
@@ -54,7 +63,9 @@ export async function POST(request: Request) {
       const success =
         room.gameType === "tap_battle"
           ? tapBattle.recordTap(playerId, parsedTapCount)
-          : reactionDuel.recordTap(playerId);
+          : room.gameType === "reaction"
+          ? reactionDuel.recordTap(playerId)
+          : false;
       return NextResponse.json({ success, room: getRoom() });
     }
 

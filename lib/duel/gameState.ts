@@ -44,6 +44,7 @@ duelEmitter.setMaxListeners(100); // TV + 2 players + some headroom
 function createRoom(): GameRoom {
   return {
     id: "BUNS",
+    sessionId: `room_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
     gameType: getActiveDuelGameType(),
     status: "waiting",
     players: [],
@@ -65,6 +66,12 @@ function createRoom(): GameRoom {
 export function getRoom(): GameRoom {
   if (!g.__duelRoom) {
     g.__duelRoom = createRoom();
+  } else if (!g.__duelRoom.sessionId) {
+    clearDuelTimer();
+    stopCleanupInterval();
+    clearLastSeen();
+    g.__duelRoom = createRoom();
+    duelEmitter.emit("update", g.__duelRoom);
   }
   return g.__duelRoom;
 }
