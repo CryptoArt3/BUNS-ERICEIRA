@@ -204,7 +204,6 @@ function startRound() {
   const roundNumber = room.currentRound + 1;
 
   const newRound: Round = {
-    id: `reaction_${roundNumber}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
     number: roundNumber,
     signalFiredAt: null,
     taps: {},

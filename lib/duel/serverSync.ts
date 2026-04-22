@@ -3,33 +3,15 @@ import {
   hydrateRuntimeActiveDuelGameState,
 } from "./activeGameStore";
 import { getActiveDuelGameType } from "./config";
-import { resetRoomForGame, syncRoomGameType } from "./gameState";
-import type { GameRoom } from "./types";
-
-const TRANSIENT_STATUS_TIMEOUT_MS = 30_000;
-
-function recoverStuckRoom(room: GameRoom): GameRoom {
-  if (room.status === "waiting" || room.status === "rematch_wait") {
-    return room;
-  }
-
-  if (Date.now() - room.lastUpdatedAt <= TRANSIENT_STATUS_TIMEOUT_MS) {
-    return room;
-  }
-
-  return resetRoomForGame(room.gameType);
-}
+import { syncRoomGameType } from "./gameState";
 
 export async function syncDuelRoomWithActiveGame() {
   const state = await hydrateRuntimeActiveDuelGameState();
   const activeGameType = state.gameType ?? getActiveDuelGameType();
 
-  if (
-    hasDurableDuelGameStore() &&
-    (state.source === "error" || state.source === "missing" || state.source === "none")
-  ) {
+  if (hasDurableDuelGameStore() && state.source === "error") {
     throw new Error("Active duel game is not available from durable storage.");
   }
 
-  return recoverStuckRoom(syncRoomGameType(activeGameType));
+  return syncRoomGameType(activeGameType);
 }

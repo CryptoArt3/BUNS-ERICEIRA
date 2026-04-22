@@ -10,9 +10,7 @@ export type Player = {
 };
 
 export type Round = {
-  id: string;
   number: number;
-  drawReplayCount?: number;
   signalFiredAt: number | null;
   startedAt?: number | null;
   endsAt?: number | null;
@@ -54,6 +52,5 @@ export type GameRoom = {
   rematchVotes: Record<string, RematchVote>; // playerId → decision
   rematchCountdown: number | null; // seconds left in rematch window
   consecutiveMatchCount: number; // same-pair match counter (anti-monopoly)
-  forcedRoundAdvances?: number; // defensive cap for repeated draw/no-winner loops
   lastUpdatedAt: number;
 };
