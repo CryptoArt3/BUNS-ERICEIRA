@@ -1,6 +1,7 @@
 import { EventEmitter } from "events";
 import type { GameRoom } from "./types";
 import { getActiveDuelGameType } from "./config";
+import type { DuelGameType } from "./types";
 
 // ── PHASE 1 MVP — Production limitations ─────────────────────────────────────
 //
@@ -90,6 +91,25 @@ export function resetRoom(): GameRoom {
   g.__duelRoom = createRoom();
   duelEmitter.emit("update", g.__duelRoom);
   return g.__duelRoom;
+}
+
+export function resetRoomForGame(gameType: DuelGameType): GameRoom {
+  clearDuelTimer();
+  stopCleanupInterval();
+  clearLastSeen();
+  g.__duelRoom = { ...createRoom(), gameType };
+  duelEmitter.emit("update", g.__duelRoom);
+  return g.__duelRoom;
+}
+
+export function syncRoomGameType(gameType: DuelGameType): GameRoom {
+  const room = getRoom();
+
+  if (room.gameType === gameType) {
+    return room;
+  }
+
+  return resetRoomForGame(gameType);
 }
 
 // ── Game timer ────────────────────────────────────────────────────────────────

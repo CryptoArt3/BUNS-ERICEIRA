@@ -29,9 +29,21 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 import { duelEmitter, getRoom } from "@/lib/duel/gameState";
+import { syncDuelRoomWithActiveGame } from "@/lib/duel/serverSync";
 import type { GameRoom } from "@/lib/duel/types";
 
 export async function GET(request: Request) {
+  try {
+    await syncDuelRoomWithActiveGame();
+  } catch (error) {
+    return new Response(
+      error instanceof Error
+        ? error.message
+        : "Failed to synchronize active duel game.",
+      { status: 503 }
+    );
+  }
+
   const encoder = new TextEncoder();
 
   const stream = new ReadableStream({

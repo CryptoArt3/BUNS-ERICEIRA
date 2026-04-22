@@ -9,12 +9,14 @@ import {
 } from "@/lib/duel/config";
 import {
   getDuelGameStorePath,
+  hydrateRuntimeActiveDuelGameState,
   readRuntimeActiveDuelGameType,
   writeRuntimeActiveDuelGameType,
 } from "@/lib/duel/activeGameStore";
-import { resetRoom } from "@/lib/duel/gameState";
+import { resetRoomForGame } from "@/lib/duel/gameState";
 
 export async function GET() {
+  const state = await hydrateRuntimeActiveDuelGameState();
   const runtimeGameType = readRuntimeActiveDuelGameType();
   const envGameType = getEnvDuelGameType();
 
@@ -23,7 +25,10 @@ export async function GET() {
     activeGameType: getActiveDuelGameType(),
     runtimeGameType,
     envGameType,
-    source: runtimeGameType ? "runtime" : "env",
+    source:
+      state.source === "none" || state.source === "missing"
+        ? "env"
+        : state.source,
     storePath: getDuelGameStorePath(),
   });
 }
@@ -47,8 +52,23 @@ export async function POST(request: Request) {
     );
   }
 
-  const state = writeRuntimeActiveDuelGameType(gameType);
-  const room = resetRoom();
+  let state: Awaited<ReturnType<typeof writeRuntimeActiveDuelGameType>>;
+  try {
+    state = await writeRuntimeActiveDuelGameType(gameType);
+  } catch (error) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to persist active duel game.",
+      },
+      { status: 500 }
+    );
+  }
+
+  const room = resetRoomForGame(gameType);
 
   return NextResponse.json({
     ok: true,

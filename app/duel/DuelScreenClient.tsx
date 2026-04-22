@@ -88,9 +88,8 @@ function useDuelRoom() {
     let isClosed = false;
     let lastUpdatedAt = 0;
 
-    // Poll fallback — catches silent SSE death by comparing lastUpdatedAt.
-    // Runs every 15 s regardless of SSE state; no-ops when SSE is healthy
-    // (data won't have advanced). Stops only on component unmount.
+    // Poll fallback — catches silent SSE lag/death by comparing lastUpdatedAt.
+    // Keep this quick for the TV so join/game-switch updates don't look stale.
     const pollInterval = setInterval(async () => {
       try {
         const res = await fetch("/api/duel/room");
@@ -102,7 +101,7 @@ function useDuelRoom() {
       } catch {
         // ignore — SSE or next poll will recover
       }
-    }, 15_000);
+    }, 3_000);
 
     const connect = () => {
       if (isClosed) return;

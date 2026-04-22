@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import { getRoom } from "@/lib/duel/gameState";
-import { hydrateRuntimeActiveDuelGameType } from "@/lib/duel/activeGameStore";
+import { syncDuelRoomWithActiveGame } from "@/lib/duel/serverSync";
 import type { RematchVote } from "@/lib/duel/types";
 import * as reactionDuel from "@/lib/duel/reactionDuel";
 import * as tapBattle from "@/lib/duel/tapBattle";
@@ -19,7 +19,20 @@ function getActiveEngine() {
 }
 
 export async function POST(request: Request) {
-  await hydrateRuntimeActiveDuelGameType();
+  try {
+    await syncDuelRoomWithActiveGame();
+  } catch (error) {
+    return NextResponse.json(
+      {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to synchronize active duel game.",
+      },
+      { status: 503 }
+    );
+  }
 
   let body: Record<string, unknown>;
   try {
