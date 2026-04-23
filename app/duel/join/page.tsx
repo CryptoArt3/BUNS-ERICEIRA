@@ -60,16 +60,6 @@ function getOrCreatePlayerId(): string {
   return id;
 }
 
-function createFreshPlayerId(): string {
-  const id = `p_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
-  sessionStorage.setItem("buns_duel_player_id", id);
-  return id;
-}
-
-function clearStoredPlayerId(): void {
-  sessionStorage.removeItem("buns_duel_player_id");
-}
-
 // ── SSE hook ──────────────────────────────────────────────────────────────────
 
 function useDuelRoom() {
@@ -84,7 +74,7 @@ function useDuelRoom() {
     let lastUpdatedAt = 0;
 
     // Poll fallback — catches silent SSE death by comparing lastUpdatedAt.
-    // Runs every 15 s regardless of SSE state; no-ops when SSE is healthy.
+    // Keep this fairly quick so phones re-sync promptly after reconnects.
     const pollInterval = setInterval(async () => {
       try {
         const res = await fetch("/api/duel/room");
@@ -96,7 +86,7 @@ function useDuelRoom() {
       } catch {
         // ignore — SSE or next poll will recover
       }
-    }, 15_000);
+    }, 5_000);
 
     const connect = () => {
       if (isClosed) return;
@@ -1194,10 +1184,7 @@ export default function DuelJoinPage() {
   const prevRoomSessionIdRef = useRef<string | null>(null);
 
   const resetLocalSession = useCallback(() => {
-    clearStoredPlayerId();
-    const nextPlayerId = createFreshPlayerId();
     wasInRoomRef.current = false;
-    setPlayerId(nextPlayerId);
     setJoining(false);
     setJoinError(null);
     setHasTapped(false);
@@ -1377,7 +1364,6 @@ export default function DuelJoinPage() {
             type: "join",
             playerId,
             playerName: name,
-            roomSessionId,
           }),
         });
         const data = (await res.json()) as { success: boolean; room?: GameRoom };
@@ -1395,7 +1381,7 @@ export default function DuelJoinPage() {
         setJoining(false);
       }
     },
-    [playerId, roomSessionId, setRoom]
+    [playerId, setRoom]
   );
 
   const flushTapBattleTaps = useCallback(async () => {

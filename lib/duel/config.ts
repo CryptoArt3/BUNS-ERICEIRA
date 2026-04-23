@@ -1,7 +1,6 @@
 import type { DuelGameType } from "./types";
-import { readRuntimeActiveDuelGameType } from "./activeGameStore";
 
-const DEFAULT_DUEL_GAME_TYPE: DuelGameType = "reaction";
+const FROZEN_DUEL_GAME_TYPE: DuelGameType = "memory_flash";
 
 export function normalizeDuelGameType(value: unknown): DuelGameType | null {
   if (typeof value !== "string") return null;
@@ -19,11 +18,11 @@ export function normalizeDuelGameType(value: unknown): DuelGameType | null {
 }
 
 export function getEnvDuelGameType(): DuelGameType {
-  return normalizeDuelGameType(process.env.BUNS_DUEL_ACTIVE_GAME) ?? DEFAULT_DUEL_GAME_TYPE;
+  return FROZEN_DUEL_GAME_TYPE;
 }
 
 export function getActiveDuelGameType(): DuelGameType {
-  return readRuntimeActiveDuelGameType() ?? getEnvDuelGameType();
+  return FROZEN_DUEL_GAME_TYPE;
 }
 
 export const DUEL_GAME_LABELS: Record<DuelGameType, string> = {

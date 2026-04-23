@@ -7,15 +7,10 @@ import { NextResponse } from "next/server";
 import { getRoom } from "@/lib/duel/gameState";
 import { syncDuelRoomWithActiveGame } from "@/lib/duel/serverSync";
 import type { RematchVote } from "@/lib/duel/types";
-import * as reactionDuel from "@/lib/duel/reactionDuel";
-import * as tapBattle from "@/lib/duel/tapBattle";
 import * as memoryFlash from "@/lib/duel/memoryFlash";
 
 function getActiveEngine() {
-  const gameType = getRoom().gameType;
-  if (gameType === "tap_battle") return tapBattle;
-  if (gameType === "memory_flash") return memoryFlash;
-  return reactionDuel;
+  return memoryFlash;
 }
 
 export async function POST(request: Request) {
@@ -46,7 +41,6 @@ export async function POST(request: Request) {
     playerId,
     playerName,
     vote,
-    tapCount,
     symbol,
     roomSessionId,
     roundNumber,
@@ -55,7 +49,6 @@ export async function POST(request: Request) {
     playerId?: string;
     playerName?: string;
     vote?: unknown;
-    tapCount?: unknown;
     symbol?: unknown;
     roomSessionId?: unknown;
     roundNumber?: unknown;
@@ -66,6 +59,7 @@ export async function POST(request: Request) {
   }
 
   if (
+    type !== "join" &&
     typeof roomSessionId === "string" &&
     roomSessionId.length > 0 &&
     roomSessionId !== getRoom().sessionId
@@ -89,16 +83,7 @@ export async function POST(request: Request) {
       ) {
         return NextResponse.json({ success: false, room, staleRound: true });
       }
-      const parsedTapCount =
-        typeof tapCount === "number" && Number.isFinite(tapCount)
-          ? Math.max(1, Math.floor(tapCount))
-          : 1;
-      const success =
-        room.gameType === "tap_battle"
-          ? tapBattle.recordTap(playerId, parsedTapCount)
-          : room.gameType === "reaction"
-          ? reactionDuel.recordTap(playerId)
-          : false;
+      const success = false;
       return NextResponse.json({ success, room: getRoom() });
     }
 
