@@ -18,6 +18,12 @@ type MenuImpactSlide = {
   durationMs: number;
 };
 
+const BURGER_BASE_NOTE = [
+  "Brioche bun",
+  "2 patties of 70g",
+  "Double American cheese",
+];
+
 const MENU_IMPACT_SLIDES: MenuImpactSlide[] = [
   {
     id: "classic",
@@ -103,6 +109,35 @@ const MENU_IMPACT_SLIDES: MenuImpactSlide[] = [
     title: "VEGGIE BUN",
     lines: ["Buns Special Sauce", "Beyond Meat", "Onion", "Iceberg Lettuce"],
     emphasis: "PLANT, LOUD AND SATISFYING",
+    mode: "ingredients",
+    accent: "gold",
+    durationMs: 6500,
+  },
+  {
+    id: "chicken",
+    eyebrow: "CRAVEABLE CLASSIC",
+    title: "CHICKEN BUN MENU",
+    price: "13.90€",
+    kicker: "CRISPY COMFORT. BUNS STYLE.",
+    menuIncludes: "INCLUDES FRIES + DRINK",
+    burgerOnly: "burger only 9.90€",
+    mode: "hero",
+    accent: "gold",
+    durationMs: 7000,
+  },
+  {
+    id: "chicken-ingredients",
+    eyebrow: "WHAT'S INSIDE",
+    title: "CHICKEN BUN",
+    lines: [
+      "Double chicken breast patty",
+      "Double American cheese",
+      "Caramelized onion",
+      "Iceberg lettuce",
+      "Buns Special Sauce",
+      "Pickles",
+    ],
+    emphasis: "CRUNCH, MELT AND SAUCE",
     mode: "ingredients",
     accent: "gold",
     durationMs: 6500,
@@ -262,6 +297,17 @@ export default function BunsMenuImpactSlide() {
               <p className="mt-4 font-body text-[clamp(0.86rem,1.7vw,1.05rem)] font-semibold uppercase tracking-[0.24em] text-white/55">
                 {currentSlide.burgerOnly}
               </p>
+            ) : null}
+
+            {(slideMode === "hero" || isIngredientsSlide) ? (
+              <div className="mt-5 rounded-2xl border border-white/10 bg-black/38 px-5 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+                <p className="font-body text-[0.66rem] font-black uppercase tracking-[0.28em] text-[#ffd166]">
+                  All burgers served with
+                </p>
+                <p className="mt-1 font-body text-[clamp(0.78rem,1.55vw,0.98rem)] font-semibold uppercase tracking-[0.1em] text-white/82">
+                  {BURGER_BASE_NOTE.join(" • ")}
+                </p>
+              </div>
             ) : null}
 
             {currentSlide.lines?.length ? (

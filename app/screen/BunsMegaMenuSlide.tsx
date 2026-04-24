@@ -21,6 +21,26 @@ const RIGHT_MENU_ITEM = {
   ingredients: ["Buns Special Sauce", "Beyond Meat", "Onion", "Iceberg Lettuce"],
 };
 
+const CHICKEN_MENU_ITEM = {
+  title: "CHICKEN BUN MENU",
+  price: "13.90€",
+  burgerOnly: "Burger only 9.90€",
+  ingredients: [
+    "Double chicken breast patty",
+    "Double American cheese",
+    "Caramelized onion",
+    "Iceberg lettuce",
+    "Buns Special Sauce",
+    "Pickles",
+  ],
+};
+
+const BURGER_BASE_NOTE = [
+  "Brioche bun",
+  "2 patties of 70g",
+  "Double American cheese",
+];
+
 const EXTRAS = ["Beef Patty +2€", "American Cheese +1€", "Bacon +2€"];
 const SAUCES = ["Buns Special Sauce", "Garlic Mayo", "Spicy Mayo", "Smoky BBQ"];
 const SIDES = ["Regular Fries 2.50€", "Sweet Potato Fries 2.50€"];
@@ -100,6 +120,17 @@ export default function BunsMegaMenuSlide() {
       </div>
 
       <section className="relative z-10 mx-auto grid min-h-dvh w-full max-w-[96rem] grid-rows-[auto_auto] gap-6 px-6 py-20 sm:px-8 xl:px-12">
+        <div className="flex justify-center">
+          <div className="rounded-full border border-[#ffd166]/24 bg-black/45 px-5 py-2.5 text-center backdrop-blur-sm">
+            <p className="font-body text-[0.68rem] font-black uppercase tracking-[0.3em] text-[#ffd166]">
+              All burgers served with
+            </p>
+            <p className="mt-1 font-body text-[0.84rem] font-semibold uppercase tracking-[0.12em] text-white/86">
+              {BURGER_BASE_NOTE.join(" • ")}
+            </p>
+          </div>
+        </div>
+
         <div className="grid min-h-0 gap-6 xl:grid-cols-[1.05fr_1.3fr_1.05fr]">
           <div className="grid gap-5 self-center">
             {LEFT_MENU_ITEMS.map((item) => (
@@ -149,6 +180,12 @@ export default function BunsMegaMenuSlide() {
           <div className="grid gap-5 self-center">
             <SectionCard title={RIGHT_MENU_ITEM.title} subtitle={RIGHT_MENU_ITEM.price}>
               <MenuList items={RIGHT_MENU_ITEM.ingredients} />
+            </SectionCard>
+            <SectionCard title={CHICKEN_MENU_ITEM.title} subtitle={CHICKEN_MENU_ITEM.price}>
+              <p className="mb-3 font-body text-[0.78rem] font-black uppercase tracking-[0.18em] text-[#00f0ff]">
+                {CHICKEN_MENU_ITEM.burgerOnly}
+              </p>
+              <MenuList items={CHICKEN_MENU_ITEM.ingredients} />
             </SectionCard>
           </div>
         </div>
