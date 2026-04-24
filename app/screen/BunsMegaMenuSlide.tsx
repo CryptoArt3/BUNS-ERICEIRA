@@ -18,13 +18,13 @@ const LEFT_MENU_ITEMS = [
 const RIGHT_MENU_ITEM = {
   title: "VEGGIE BUN MENU",
   price: "14.90€",
-  ingredients: ["Beyond Meat", "Onion", "Iceberg Lettuce"],
+  ingredients: ["Buns Special Sauce", "Beyond Meat", "Onion", "Iceberg Lettuce"],
 };
 
-const EXTRAS = ["Beef Patty +2€", "Bacon +2€", "American Cheese +1€"];
+const EXTRAS = ["Beef Patty +2€", "American Cheese +1€", "Bacon +2€"];
 const SAUCES = ["Buns Special Sauce", "Garlic Mayo", "Spicy Mayo", "Smoky BBQ"];
 const SIDES = ["Regular Fries 2.50€", "Sweet Potato Fries 2.50€"];
-const DRINKS = ["Water 1.50€", "Soda 2.50€", "Beer 20CL/33CL 1.50€ / 2.00€"];
+const DRINKS = ["Water 50CL 1.50€", "Soda 2.50€", "Beer 20CL/33CL 1.50€ / 2.00€"];
 
 function SectionCard({
   title,
@@ -178,7 +178,7 @@ export default function BunsMegaMenuSlide() {
               FROZEN BUNANA
             </p>
             <p className="mt-4 font-display text-[3.25rem] font-black leading-none text-[#ffd166]">
-              3€
+              3.00€
             </p>
           </div>
         </div>
