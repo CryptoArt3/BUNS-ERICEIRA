@@ -86,6 +86,14 @@ export const bunsAdventuresCampaign = {
       videoSrc: withVideoVersion("/videos/buns-episode-08.mp4"),
       linkedUrl: BUNS_ADVENTURES_INSTAGRAM_URL,
     },
+    {
+      id: "episode-09",
+      number: "09",
+      title: "Praia do Sul",
+      overlayLabel: "Episódio 09 — Praia do Sul",
+      videoSrc: withVideoVersion("/videos/buns-episode-09.mp4"),
+      linkedUrl: BUNS_ADVENTURES_INSTAGRAM_URL,
+    },
   ] satisfies BunsAdventuresEpisode[],
 } as const;
 
