@@ -18,7 +18,11 @@ type MenuImpactSlide = {
   durationMs: number;
 };
 
-const BURGER_BASE_NOTE = ["Brioche bun", "Double American cheese"];
+const SMASH_BURGER_BASE_NOTE = [
+  "Brioche bun",
+  "Double 70G beef patty",
+  "Double American cheese",
+];
 
 const MENU_IMPACT_SLIDES: MenuImpactSlide[] = [
   {
@@ -204,6 +208,14 @@ export default function BunsMenuImpactSlide() {
   const slideMode = currentSlide.mode ?? "hero";
   const isIngredientsSlide = slideMode === "ingredients";
   const isUpsellSlide = slideMode === "upsell";
+  const showSmashBurgerBaseNote = [
+    "classic",
+    "classic-ingredients",
+    "bacon",
+    "bacon-ingredients",
+    "epic",
+    "epic-ingredients",
+  ].includes(currentSlide.id);
 
   return (
     <div className="relative h-dvh w-full overflow-hidden bg-[#040303] text-white">
@@ -293,13 +305,13 @@ export default function BunsMenuImpactSlide() {
               </p>
             ) : null}
 
-            {(slideMode === "hero" || isIngredientsSlide) ? (
+            {showSmashBurgerBaseNote ? (
               <div className="mt-5 rounded-2xl border border-white/10 bg-black/38 px-5 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
                 <p className="font-body text-[0.66rem] font-black uppercase tracking-[0.28em] text-[#ffd166]">
-                  All burgers served with
+                  Smash buns served with
                 </p>
                 <p className="mt-1 font-body text-[clamp(0.78rem,1.55vw,0.98rem)] font-semibold uppercase tracking-[0.1em] text-white/82">
-                  {BURGER_BASE_NOTE.join(" • ")}
+                  {SMASH_BURGER_BASE_NOTE.join(" • ")}
                 </p>
               </div>
             ) : null}

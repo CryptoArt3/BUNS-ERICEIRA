@@ -33,7 +33,11 @@ const CHICKEN_MENU_ITEM = {
   ],
 };
 
-const BURGER_BASE_NOTE = ["Brioche bun", "Double American cheese"];
+const SMASH_BURGER_BASE_NOTE = [
+  "Brioche bun",
+  "Double 70G beef patty",
+  "Double American cheese",
+];
 
 const EXTRAS = ["Beef Patty +2€", "American Cheese +1€", "Bacon +2€"];
 const SAUCES = ["Buns Special Sauce", "Garlic Mayo", "Spicy Mayo", "Smoky BBQ"];
@@ -117,10 +121,10 @@ export default function BunsMegaMenuSlide() {
         <div className="flex justify-center">
           <div className="rounded-full border border-[#ffd166]/24 bg-black/45 px-5 py-2.5 text-center backdrop-blur-sm">
             <p className="font-body text-[0.68rem] font-black uppercase tracking-[0.3em] text-[#ffd166]">
-              All burgers served with
+              Smash buns served with
             </p>
             <p className="mt-1 font-body text-[0.84rem] font-semibold uppercase tracking-[0.12em] text-white/86">
-              {BURGER_BASE_NOTE.join(" • ")}
+              {SMASH_BURGER_BASE_NOTE.join(" • ")}
             </p>
           </div>
         </div>
