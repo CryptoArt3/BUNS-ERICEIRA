@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useMemo, useRef, useState } from "react";
 import DuelScreenClient from "@/app/duel/DuelScreenClient";
 import BunsAdventuresSlide from "./BunsAdventuresSlide";
+import BunsFrozenBunanasSlide from "./BunsFrozenBunanasSlide";
 import BunsMegaMenuSlide from "./BunsMegaMenuSlide";
 import BunsMenuImpactSlide from "./BunsMenuImpactSlide";
 import BunsVibeSlide from "./BunsVibeSlide";
@@ -358,6 +359,9 @@ export default function ScreenClient() {
     currentSlide.type === "buns-adventures" || currentSlide.campaignId === bunsAdventuresCampaign.id;
   const isBunsVibeSlide =
     currentSlide.type === "buns-vibe" || currentSlide.campaignId === "buns-vibe";
+  const isBunsFrozenBunanasSlide =
+    currentSlide.type === "buns-frozen-bunanas" ||
+    currentSlide.campaignId === "buns-frozen-bunanas";
   const isBunsMegaMenuSlide =
     currentSlide.type === "buns-mega-menu" || currentSlide.campaignId === "buns-mega-menu";
   const isBunsMenuImpactSlide =
@@ -405,6 +409,19 @@ export default function ScreenClient() {
     return (
       <div className="relative h-dvh w-full overflow-hidden">
         <BunsVibeSlide />
+        <div className="absolute right-4 top-4 z-50 flex items-center gap-3 rounded-sm border border-[#ffd166]/55 bg-black/75 px-4 py-1.5 text-[0.65rem] font-black uppercase tracking-[0.24em] text-[#ffd166] shadow-[0_0_18px_rgba(255,209,102,0.18),0_8px_22px_rgba(0,0,0,0.6)] backdrop-blur-md sm:right-6 sm:top-6">
+          <span>{sourceLabel}</span>
+          <span className="h-1.5 w-1.5 rounded-full bg-[#ffd166] shadow-[0_0_10px_rgba(255,209,102,1)]" />
+          <span>{statusLabel}</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (isBunsFrozenBunanasSlide) {
+    return (
+      <div className="relative h-dvh w-full overflow-hidden">
+        <BunsFrozenBunanasSlide />
         <div className="absolute right-4 top-4 z-50 flex items-center gap-3 rounded-sm border border-[#ffd166]/55 bg-black/75 px-4 py-1.5 text-[0.65rem] font-black uppercase tracking-[0.24em] text-[#ffd166] shadow-[0_0_18px_rgba(255,209,102,0.18),0_8px_22px_rgba(0,0,0,0.6)] backdrop-blur-md sm:right-6 sm:top-6">
           <span>{sourceLabel}</span>
           <span className="h-1.5 w-1.5 rounded-full bg-[#ffd166] shadow-[0_0_10px_rgba(255,209,102,1)]" />
@@ -727,6 +744,7 @@ function normalizeLiveSlides(payload: ScreenApiResponse): DisplaySlide[] | null 
       slide.type === "poll_results" ||
       slide.type === "buns-adventures" ||
       slide.type === "buns-vibe" ||
+      slide.type === "buns-frozen-bunanas" ||
       slide.type === "buns-mega-menu" ||
       slide.type === "buns-menu-impact" ||
       slide.type === "buns-duel" ||
@@ -780,6 +798,9 @@ function normalizeLiveSlide(slide: ScreenApiSlide, index: number): DisplaySlide 
     slide.campaign_id?.trim() === bunsAdventuresCampaign.id;
   const isBunsVibeCampaign =
     slide.type?.trim() === "buns-vibe" || slide.campaign_id?.trim() === "buns-vibe";
+  const isBunsFrozenBunanasCampaign =
+    slide.type?.trim() === "buns-frozen-bunanas" ||
+    slide.campaign_id?.trim() === "buns-frozen-bunanas";
   const isBunsMegaMenuCampaign =
     slide.type?.trim() === "buns-mega-menu" ||
     slide.campaign_id?.trim() === "buns-mega-menu";
@@ -801,6 +822,7 @@ function normalizeLiveSlide(slide: ScreenApiSlide, index: number): DisplaySlide 
     !headline &&
     !isBunsDuelCampaign &&
     !isBunsVibeCampaign &&
+    !isBunsFrozenBunanasCampaign &&
     !isBunsMegaMenuCampaign &&
     !isBunsMenuImpactCampaign
   ) {
@@ -810,6 +832,8 @@ function normalizeLiveSlide(slide: ScreenApiSlide, index: number): DisplaySlide 
   const resolvedHeadline = headline
     || (isBunsVibeCampaign
       ? "BUNS ERICEIRA"
+      : isBunsFrozenBunanasCampaign
+        ? "FROZEN BUNANAS"
       : isBunsMegaMenuCampaign
         ? "BUNS MEGA MENU"
       : isBunsMenuImpactCampaign
