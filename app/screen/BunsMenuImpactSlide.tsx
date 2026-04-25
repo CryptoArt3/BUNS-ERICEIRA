@@ -18,11 +18,7 @@ type MenuImpactSlide = {
   durationMs: number;
 };
 
-const BURGER_BASE_NOTE = [
-  "Brioche bun",
-  "2 patties of 70g",
-  "Double American cheese",
-];
+const BURGER_BASE_NOTE = ["Brioche bun", "Double American cheese"];
 
 const MENU_IMPACT_SLIDES: MenuImpactSlide[] = [
   {
@@ -107,7 +103,7 @@ const MENU_IMPACT_SLIDES: MenuImpactSlide[] = [
     id: "veggie-ingredients",
     eyebrow: "WHAT'S INSIDE",
     title: "VEGGIE BUN",
-    lines: ["Buns Special Sauce", "Beyond Meat", "Onion", "Iceberg Lettuce"],
+    lines: ["Buns Special Sauce", "120G Veggie Patty", "Onion", "Iceberg Lettuce"],
     emphasis: "PLANT, LOUD AND SATISFYING",
     mode: "ingredients",
     accent: "gold",
@@ -130,11 +126,9 @@ const MENU_IMPACT_SLIDES: MenuImpactSlide[] = [
     eyebrow: "WHAT'S INSIDE",
     title: "CHICKEN BUN",
     lines: [
-      "Double chicken breast patty",
-      "Double American cheese",
-      "Caramelized onion",
-      "Iceberg lettuce",
       "Buns Special Sauce",
+      "Caramelized Onion",
+      "Iceberg Lettuce",
       "Pickles",
     ],
     emphasis: "CRUNCH, MELT AND SAUCE",

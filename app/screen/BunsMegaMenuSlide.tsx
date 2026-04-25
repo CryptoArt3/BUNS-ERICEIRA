@@ -18,7 +18,7 @@ const LEFT_MENU_ITEMS = [
 const RIGHT_MENU_ITEM = {
   title: "VEGGIE BUN MENU",
   price: "14.90€",
-  ingredients: ["Buns Special Sauce", "Beyond Meat", "Onion", "Iceberg Lettuce"],
+  ingredients: ["Buns Special Sauce", "120G Veggie Patty", "Onion", "Iceberg Lettuce"],
 };
 
 const CHICKEN_MENU_ITEM = {
@@ -26,20 +26,14 @@ const CHICKEN_MENU_ITEM = {
   price: "13.90€",
   burgerOnly: "Burger only 9.90€",
   ingredients: [
-    "Double chicken breast patty",
-    "Double American cheese",
-    "Caramelized onion",
-    "Iceberg lettuce",
     "Buns Special Sauce",
+    "Caramelized Onion",
+    "Iceberg Lettuce",
     "Pickles",
   ],
 };
 
-const BURGER_BASE_NOTE = [
-  "Brioche bun",
-  "2 patties of 70g",
-  "Double American cheese",
-];
+const BURGER_BASE_NOTE = ["Brioche bun", "Double American cheese"];
 
 const EXTRAS = ["Beef Patty +2€", "American Cheese +1€", "Bacon +2€"];
 const SAUCES = ["Buns Special Sauce", "Garlic Mayo", "Spicy Mayo", "Smoky BBQ"];
