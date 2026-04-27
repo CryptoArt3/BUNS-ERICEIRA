@@ -133,6 +133,23 @@ function InlineList({ items, tone = "default" }: { items: string[]; tone?: "defa
   );
 }
 
+function SauceGrid({ items }: { items: string[] }) {
+  return (
+    <div className="mt-1 grid grid-cols-2 gap-3">
+      {items.map((item) => (
+        <div
+          key={item}
+          className="rounded-2xl border border-[#8bf4ff]/28 bg-[linear-gradient(180deg,rgba(139,244,255,0.14),rgba(0,0,0,0.56))] px-4 py-4 text-center shadow-[0_12px_28px_rgba(0,0,0,0.36),inset_0_1px_0_rgba(255,255,255,0.06)]"
+        >
+          <p className="font-body text-[0.95rem] font-black uppercase leading-[1.2] tracking-[0.08em] text-white">
+            {item}
+          </p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function BunsMegaMenuSlide() {
   const [index, setIndex] = useState(0);
 
@@ -237,16 +254,14 @@ export default function BunsMegaMenuSlide() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -18, scale: 1.015 }}
               transition={{ duration: 0.75, ease: "easeInOut" }}
-              className="mx-auto flex w-full max-w-[38rem] flex-col gap-4"
+              className="mx-auto flex w-full max-w-[38rem] -translate-y-[3.5vh] flex-col gap-3.5"
             >
               <LabelBlock
                 label="DON'T EAT IT DRY"
                 accent="cyan"
                 sublabel="+1€ EACH"
               >
-                <p className="font-body text-[0.95rem] font-black uppercase leading-[1.35] tracking-[0.1em] text-white">
-                  {SAUCES.join(" • ")}
-                </p>
+                <SauceGrid items={SAUCES} />
               </LabelBlock>
 
               <div className="grid gap-3 sm:grid-cols-2">
@@ -263,10 +278,10 @@ export default function BunsMegaMenuSlide() {
                   <InlineList items={DRINKS} />
                 </LabelBlock>
                 <LabelBlock label="DESSERT" accent="gold">
-                  <p className="font-display text-[1.9rem] font-black uppercase leading-[0.95] text-white">
+                  <p className="font-display text-[2.25rem] font-black uppercase leading-[0.92] text-white">
                     FROZEN BUNANA
                   </p>
-                  <p className="mt-3 font-display text-[3rem] font-black leading-none text-[#ffd166]">
+                  <p className="mt-3 font-display text-[3.55rem] font-black leading-none text-[#ffd166]">
                     3.00€
                   </p>
                 </LabelBlock>
