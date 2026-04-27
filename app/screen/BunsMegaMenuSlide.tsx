@@ -79,11 +79,11 @@ function SectionCard({
 
 function MenuList({ items }: { items: string[] }) {
   return (
-    <div className="grid gap-2.5">
+    <div className="grid gap-2">
       {items.map((item) => (
         <div
           key={item}
-          className="rounded-xl border border-white/8 bg-black/35 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
+          className="rounded-xl border border-white/8 bg-black/35 px-4 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
         >
           <p className="font-body text-[0.95rem] font-bold uppercase tracking-[0.1em] text-white">
             {item}
@@ -117,9 +117,9 @@ export default function BunsMegaMenuSlide() {
         </div>
       </div>
 
-      <section className="relative z-10 mx-auto grid min-h-dvh w-full max-w-[96rem] grid-rows-[auto_auto] gap-6 px-6 py-20 sm:px-8 xl:px-12">
+      <section className="relative z-10 mx-auto grid min-h-dvh w-full max-w-[96rem] grid-rows-[auto_auto] gap-5 px-6 py-14 sm:px-8 sm:py-16 xl:px-12">
         <div className="flex justify-center">
-          <div className="rounded-full border border-[#ffd166]/24 bg-black/45 px-5 py-2.5 text-center backdrop-blur-sm">
+          <div className="rounded-full border border-[#ffd166]/24 bg-black/45 px-5 py-2 text-center backdrop-blur-sm">
             <p className="font-body text-[0.68rem] font-black uppercase tracking-[0.3em] text-[#ffd166]">
               Smash buns served with
             </p>
@@ -129,8 +129,8 @@ export default function BunsMegaMenuSlide() {
           </div>
         </div>
 
-        <div className="grid min-h-0 gap-6 xl:grid-cols-[1.05fr_1.3fr_1.05fr]">
-          <div className="grid gap-5 self-center">
+        <div className="grid min-h-0 gap-5 xl:grid-cols-[1.05fr_1.3fr_1.05fr]">
+          <div className="grid gap-4 self-start xl:pt-8">
             {LEFT_MENU_ITEMS.map((item) => (
               <SectionCard
                 key={item.title}
@@ -145,7 +145,7 @@ export default function BunsMegaMenuSlide() {
           <motion.div
             animate={{ y: [0, -4, 0] }}
             transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-            className="flex min-h-0 items-center justify-center"
+            className="flex min-h-0 items-start justify-center xl:-translate-y-[14vh]"
           >
             <div className="w-full rounded-[2rem] border border-[#ffd166]/28 bg-[linear-gradient(180deg,rgba(255,209,102,0.14),rgba(0,0,0,0.72))] px-7 py-8 text-center shadow-[0_0_32px_rgba(255,209,102,0.12),0_28px_64px_rgba(0,0,0,0.62)]">
               <p className="font-body text-[0.82rem] font-black uppercase tracking-[0.42em] text-[#ffd166]">
@@ -175,7 +175,7 @@ export default function BunsMegaMenuSlide() {
             </div>
           </motion.div>
 
-          <div className="grid gap-5 self-center">
+          <div className="grid gap-4 self-start xl:pt-8">
             <SectionCard title={RIGHT_MENU_ITEM.title} subtitle={RIGHT_MENU_ITEM.price}>
               <MenuList items={RIGHT_MENU_ITEM.ingredients} />
             </SectionCard>
