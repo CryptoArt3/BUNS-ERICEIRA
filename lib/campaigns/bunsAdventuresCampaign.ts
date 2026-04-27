@@ -94,6 +94,14 @@ export const bunsAdventuresCampaign = {
       videoSrc: withVideoVersion("/videos/buns-episode-09.mp4"),
       linkedUrl: BUNS_ADVENTURES_INSTAGRAM_URL,
     },
+    {
+      id: "episode-10",
+      number: "10",
+      title: "Parque de Sta Marta",
+      overlayLabel: "Episódio 10 — Parque de Sta Marta",
+      videoSrc: withVideoVersion("/videos/buns-episode-10.mp4"),
+      linkedUrl: BUNS_ADVENTURES_INSTAGRAM_URL,
+    },
   ] satisfies BunsAdventuresEpisode[],
 } as const;
 
