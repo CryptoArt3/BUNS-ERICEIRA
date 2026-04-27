@@ -1,42 +1,34 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
+import { useEffect, useMemo, useState } from "react";
 
-const LEFT_MENU_ITEMS = [
+const BURGER_CARDS = [
   {
     title: "CLASSIC BUN MENU",
     price: "12.90€",
-    ingredients: ["Ketchup", "Mustard", "Onion", "Pickles"],
+    ingredients: "Ketchup • Mustard • Onion • Pickles",
+    tone: "gold" as const,
   },
   {
     title: "EPIC BUN MENU",
     price: "13.90€",
-    ingredients: ["Buns Special Sauce", "Caramelized Onion", "Jalapeños"],
+    ingredients: "Buns Special Sauce • Caramelized Onion • Jalapeños",
+    tone: "gold" as const,
   },
-];
-
-const RIGHT_MENU_ITEM = {
-  title: "VEGGIE BUN MENU",
-  price: "14.90€",
-  ingredients: ["Buns Special Sauce", "120G Veggie Patty", "Onion", "Iceberg Lettuce"],
-};
-
-const CHICKEN_MENU_ITEM = {
-  title: "CHICKEN BUN MENU",
-  price: "13.90€",
-  burgerOnly: "Burger only 9.90€",
-  ingredients: [
-    "Buns Special Sauce",
-    "Caramelized Onion",
-    "Iceberg Lettuce",
-    "Pickles",
-  ],
-};
-
-const SMASH_BURGER_BASE_NOTE = [
-  "Brioche bun",
-  "Double 70G beef patty",
-  "Double American cheese",
+  {
+    title: "VEGGIE BUN MENU",
+    price: "14.90€",
+    ingredients: "Buns Special Sauce • 120G Veggie Patty • Onion • Iceberg Lettuce",
+    tone: "neutral" as const,
+  },
+  {
+    title: "CHICKEN BUN MENU",
+    price: "13.90€",
+    subtitle: "Burger only 9.90€",
+    ingredients: "Buns Special Sauce • Caramelized Onion • Iceberg Lettuce • Pickles",
+    tone: "neutral" as const,
+  },
 ];
 
 const EXTRAS = ["Beef Patty +2€", "American Cheese +1€", "Bacon +2€"];
@@ -44,57 +36,119 @@ const SAUCES = ["Buns Special Sauce", "Garlic Mayo", "Spicy Mayo", "Smoky BBQ"];
 const SIDES = ["Regular Fries 2.50€", "Sweet Potato Fries 2.50€"];
 const DRINKS = ["Water 50CL 1.50€", "Soda 2.50€", "Beer 20CL/33CL 1.50€ / 2.00€"];
 
-function SectionCard({
+const INTERNAL_SLIDES = [
+  { id: "burgers", durationMs: 10000 },
+  { id: "extras", durationMs: 10000 },
+] as const;
+
+function CompactCard({
   title,
-  accent = "gold",
-  children,
+  price,
+  ingredients,
   subtitle,
+  tone = "neutral",
 }: {
   title: string;
-  accent?: "gold" | "cyan";
+  price: string;
+  ingredients: string;
   subtitle?: string;
-  children: React.ReactNode;
+  tone?: "gold" | "neutral";
 }) {
-  const accentClasses =
-    accent === "cyan"
-      ? "border-[#00f0ff]/28 bg-[linear-gradient(180deg,rgba(0,240,255,0.12),rgba(0,0,0,0.7))] shadow-[0_0_24px_rgba(0,240,255,0.12),0_18px_42px_rgba(0,0,0,0.55)]"
-      : "border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(0,0,0,0.7))] shadow-[0_18px_42px_rgba(0,0,0,0.55)]";
-
-  const titleClasses = accent === "cyan" ? "text-[#00f0ff]" : "text-[#ffd166]";
+  const toneClasses =
+    tone === "gold"
+      ? "border-[#ffd166]/24 bg-[linear-gradient(180deg,rgba(255,209,102,0.08),rgba(0,0,0,0.68))]"
+      : "border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(0,0,0,0.68))]";
 
   return (
-    <div className={`rounded-[1.5rem] border px-5 py-4 ${accentClasses}`}>
-      <p className={`font-body text-[0.72rem] font-black uppercase tracking-[0.34em] ${titleClasses}`}>
-        {title}
-      </p>
-      {subtitle ? (
-        <p className="mt-2 font-body text-[0.82rem] font-semibold uppercase tracking-[0.14em] text-white/72">
-          {subtitle}
+    <div className={`rounded-[1.2rem] border px-4 py-4 shadow-[0_14px_32px_rgba(0,0,0,0.4)] ${toneClasses}`}>
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0 text-left">
+          <p className="font-body text-[0.92rem] font-black uppercase tracking-[0.12em] text-white">
+            {title}
+          </p>
+          {subtitle ? (
+            <p className="mt-1 font-body text-[0.7rem] font-black uppercase tracking-[0.14em] text-[#00f0ff]">
+              {subtitle}
+            </p>
+          ) : null}
+        </div>
+        <p className="shrink-0 font-display text-[1.5rem] font-black leading-none text-[#ffd166]">
+          {price}
         </p>
-      ) : null}
-      <div className="mt-4">{children}</div>
+      </div>
+      <p className="mt-3 text-left font-body text-[0.8rem] font-semibold uppercase leading-[1.35] tracking-[0.08em] text-white/78">
+        {ingredients}
+      </p>
     </div>
   );
 }
 
-function MenuList({ items }: { items: string[] }) {
+function LabelBlock({
+  label,
+  children,
+  accent = "gold",
+  sublabel,
+}: {
+  label: string;
+  children: React.ReactNode;
+  accent?: "gold" | "cyan";
+  sublabel?: string;
+}) {
+  const labelColor = accent === "cyan" ? "text-[#8bf4ff]" : "text-[#ffd166]";
+  const borderColor = accent === "cyan" ? "border-[#8bf4ff]/24" : "border-white/10";
+  const background =
+    accent === "cyan"
+      ? "bg-[linear-gradient(180deg,rgba(139,244,255,0.1),rgba(0,0,0,0.72))]"
+      : "bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(0,0,0,0.72))]";
+
   return (
-    <div className="grid gap-2">
+    <div className={`rounded-[1.35rem] border px-4 py-4 shadow-[0_16px_36px_rgba(0,0,0,0.44)] ${borderColor} ${background}`}>
+      <p className={`font-body text-[0.72rem] font-black uppercase tracking-[0.3em] ${labelColor}`}>
+        {label}
+      </p>
+      {sublabel ? (
+        <p className="mt-2 font-body text-[0.92rem] font-black uppercase tracking-[0.14em] text-white">
+          {sublabel}
+        </p>
+      ) : null}
+      <div className="mt-3">{children}</div>
+    </div>
+  );
+}
+
+function InlineList({ items, tone = "default" }: { items: string[]; tone?: "default" | "cyan" }) {
+  return (
+    <div className="flex flex-col gap-2">
       {items.map((item) => (
-        <div
+        <p
           key={item}
-          className="rounded-xl border border-white/8 bg-black/35 px-4 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
+          className={`font-body text-[0.86rem] font-bold uppercase leading-[1.25] tracking-[0.08em] ${
+            tone === "cyan" ? "text-white" : "text-white/88"
+          }`}
         >
-          <p className="font-body text-[0.95rem] font-bold uppercase tracking-[0.1em] text-white">
-            {item}
-          </p>
-        </div>
+          {item}
+        </p>
       ))}
     </div>
   );
 }
 
 export default function BunsMegaMenuSlide() {
+  const [index, setIndex] = useState(0);
+
+  const currentSlide = useMemo(
+    () => INTERNAL_SLIDES[index] ?? INTERNAL_SLIDES[0],
+    [index]
+  );
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      setIndex((current) => (current + 1) % INTERNAL_SLIDES.length);
+    }, currentSlide.durationMs);
+
+    return () => window.clearTimeout(timeout);
+  }, [currentSlide.durationMs, currentSlide.id]);
+
   return (
     <div className="relative h-dvh w-full overflow-hidden bg-[#040303] text-white">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,209,102,0.18),transparent_26%),radial-gradient(circle_at_bottom,rgba(0,240,255,0.08),transparent_34%),linear-gradient(180deg,#050404_0%,#090603_48%,#020201_100%)]" />
@@ -117,106 +171,109 @@ export default function BunsMegaMenuSlide() {
         </div>
       </div>
 
-      <section className="relative z-10 mx-auto grid min-h-dvh w-full max-w-[96rem] grid-rows-[auto_auto] gap-5 px-6 py-14 sm:px-8 sm:py-16 xl:px-12">
-        <div className="flex justify-center">
-          <div className="rounded-full border border-[#ffd166]/24 bg-black/45 px-5 py-2 text-center backdrop-blur-sm">
-            <p className="font-body text-[0.68rem] font-black uppercase tracking-[0.3em] text-[#ffd166]">
-              Smash buns served with
-            </p>
-            <p className="mt-1 font-body text-[0.84rem] font-semibold uppercase tracking-[0.12em] text-white/86">
-              {SMASH_BURGER_BASE_NOTE.join(" • ")}
-            </p>
-          </div>
+      <div className="absolute right-6 top-6 z-10 sm:right-10 sm:top-10">
+        <div className="rounded-full border border-white/10 bg-black/35 px-4 py-2 backdrop-blur-sm">
+          <span className="font-body text-[0.68rem] font-black uppercase tracking-[0.28em] text-white/72">
+            {index + 1} / {INTERNAL_SLIDES.length}
+          </span>
         </div>
+      </div>
 
-        <div className="grid min-h-0 gap-5 xl:grid-cols-[1.05fr_1.3fr_1.05fr]">
-          <div className="grid gap-4 self-start xl:pt-8">
-            {LEFT_MENU_ITEMS.map((item) => (
-              <SectionCard
-                key={item.title}
-                title={item.title}
-                subtitle={item.price}
-              >
-                <MenuList items={item.ingredients} />
-              </SectionCard>
-            ))}
-          </div>
-
-          <motion.div
-            animate={{ y: [0, -4, 0] }}
-            transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-            className="flex min-h-0 items-start justify-center xl:-translate-y-[14vh]"
-          >
-            <div className="w-full rounded-[2rem] border border-[#ffd166]/28 bg-[linear-gradient(180deg,rgba(255,209,102,0.14),rgba(0,0,0,0.72))] px-7 py-8 text-center shadow-[0_0_32px_rgba(255,209,102,0.12),0_28px_64px_rgba(0,0,0,0.62)]">
-              <p className="font-body text-[0.82rem] font-black uppercase tracking-[0.42em] text-[#ffd166]">
-                MOST ORDERED TODAY
-              </p>
-              <h1 className="mt-5 font-display text-[clamp(3.8rem,7.2vw,7.2rem)] font-black uppercase leading-[0.88] tracking-[0.05em] text-[#ffd166] [text-shadow:0_0_50px_rgba(255,209,102,0.4),0_10px_34px_rgba(0,0,0,0.8)]">
-                BACON BUN MENU
-              </h1>
-              <div className="mt-7 rounded-[1.75rem] border border-[#ffd166]/26 bg-black/28 px-8 py-5 shadow-[inset_0_1px_0_rgba(255,209,102,0.08)]">
-                <p className="font-display text-[clamp(4.8rem,9vw,8.8rem)] font-black leading-none text-white">
+      <section className="relative z-10 flex min-h-dvh w-full items-center justify-center px-5 py-16 sm:px-7 sm:py-18">
+        <AnimatePresence mode="wait">
+          {currentSlide.id === "burgers" ? (
+            <motion.div
+              key="burgers"
+              initial={{ opacity: 0, y: 18, scale: 0.985 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -18, scale: 1.015 }}
+              transition={{ duration: 0.75, ease: "easeInOut" }}
+              className="mx-auto flex w-full max-w-[38rem] flex-col gap-4"
+            >
+              <div className="rounded-[1.8rem] border border-[#ffd166]/28 bg-[linear-gradient(180deg,rgba(255,209,102,0.14),rgba(0,0,0,0.72))] px-5 py-5 text-center shadow-[0_0_32px_rgba(255,209,102,0.12),0_24px_54px_rgba(0,0,0,0.58)]">
+                <p className="font-body text-[0.72rem] font-black uppercase tracking-[0.34em] text-[#ffd166]">
+                  MOST ORDERED TODAY
+                </p>
+                <h1 className="mt-4 font-display text-[clamp(2.9rem,7vw,5.25rem)] font-black uppercase leading-[0.88] tracking-[0.05em] text-[#ffd166] [text-shadow:0_0_46px_rgba(255,209,102,0.34),0_10px_30px_rgba(0,0,0,0.75)]">
+                  BACON BUN MENU
+                </h1>
+                <p className="mt-4 font-display text-[clamp(3.6rem,8vw,6rem)] font-black leading-none text-white">
                   13.90€
                 </p>
+                <p className="mx-auto mt-4 inline-flex rounded-full border border-[#8bf4ff]/22 bg-[#8bf4ff]/10 px-4 py-2 font-body text-[0.82rem] font-black uppercase tracking-[0.16em] text-[#8bf4ff]">
+                  INCLUDES FRIES + DRINK
+                </p>
+                <p className="mt-4 font-body text-[0.84rem] font-semibold uppercase leading-[1.35] tracking-[0.08em] text-white/84">
+                  Buns Special Sauce • Crispy Onion • Crispy Bacon • Iceberg Lettuce
+                </p>
               </div>
-              <p className="mt-6 rounded-full border border-[#00f0ff]/26 bg-[#00f0ff]/10 px-5 py-2 font-body text-[clamp(0.9rem,1.45vw,1.18rem)] font-black uppercase tracking-[0.18em] text-[#00f0ff]">
-                INCLUDES FRIES + DRINK
-              </p>
-              <div className="mt-7 grid gap-3">
-                <MenuList
-                  items={[
-                    "Buns Special Sauce",
-                    "Crispy Onion",
-                    "Crispy Bacon",
-                    "Iceberg Lettuce",
-                  ]}
-                />
+
+              <div className="rounded-[1.35rem] border border-[#ffd166]/20 bg-black/30 px-4 py-3 text-center shadow-[0_12px_28px_rgba(0,0,0,0.36)]">
+                <p className="font-body text-[0.66rem] font-black uppercase tracking-[0.26em] text-[#ffd166]">
+                  SMASH BUNS
+                </p>
+                <p className="mt-1 font-body text-[0.82rem] font-semibold uppercase leading-[1.35] tracking-[0.08em] text-white/84">
+                  Brioche bun • Double 70G beef patty • Double American cheese
+                </p>
               </div>
-            </div>
-          </motion.div>
 
-          <div className="grid gap-4 self-start xl:pt-8">
-            <SectionCard title={RIGHT_MENU_ITEM.title} subtitle={RIGHT_MENU_ITEM.price}>
-              <MenuList items={RIGHT_MENU_ITEM.ingredients} />
-            </SectionCard>
-            <SectionCard title={CHICKEN_MENU_ITEM.title} subtitle={CHICKEN_MENU_ITEM.price}>
-              <p className="mb-3 font-body text-[0.78rem] font-black uppercase tracking-[0.18em] text-[#00f0ff]">
-                {CHICKEN_MENU_ITEM.burgerOnly}
-              </p>
-              <MenuList items={CHICKEN_MENU_ITEM.ingredients} />
-            </SectionCard>
-          </div>
-        </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {BURGER_CARDS.map((card) => (
+                  <CompactCard
+                    key={card.title}
+                    title={card.title}
+                    price={card.price}
+                    ingredients={card.ingredients}
+                    subtitle={card.subtitle}
+                    tone={card.tone}
+                  />
+                ))}
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="extras"
+              initial={{ opacity: 0, y: 18, scale: 0.985 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -18, scale: 1.015 }}
+              transition={{ duration: 0.75, ease: "easeInOut" }}
+              className="mx-auto flex w-full max-w-[38rem] flex-col gap-4"
+            >
+              <LabelBlock
+                label="DON'T EAT IT DRY"
+                accent="cyan"
+                sublabel="+1€ EACH"
+              >
+                <p className="font-body text-[0.95rem] font-black uppercase leading-[1.35] tracking-[0.1em] text-white">
+                  {SAUCES.join(" • ")}
+                </p>
+              </LabelBlock>
 
-        <div className="grid gap-4 xl:grid-cols-[1fr_1.15fr_1fr_1.2fr_auto]">
-          <SectionCard title="EXTRAS">
-            <MenuList items={EXTRAS} />
-          </SectionCard>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <LabelBlock label="EXTRAS">
+                  <InlineList items={EXTRAS} />
+                </LabelBlock>
+                <LabelBlock label="SIDES">
+                  <InlineList items={SIDES} />
+                </LabelBlock>
+              </div>
 
-          <SectionCard title="DON'T EAT IT DRY" accent="cyan" subtitle="+1€ EACH">
-            <MenuList items={SAUCES} />
-          </SectionCard>
-
-          <SectionCard title="SIDES">
-            <MenuList items={SIDES} />
-          </SectionCard>
-
-          <SectionCard title="DRINKS">
-            <MenuList items={DRINKS} />
-          </SectionCard>
-
-          <div className="rounded-[1.5rem] border border-[#ffd166]/28 bg-[linear-gradient(180deg,rgba(255,209,102,0.14),rgba(0,0,0,0.72))] px-5 py-4 text-center shadow-[0_0_24px_rgba(255,209,102,0.1),0_18px_42px_rgba(0,0,0,0.55)] xl:min-w-[14rem]">
-            <p className="font-body text-[0.72rem] font-black uppercase tracking-[0.34em] text-[#ffd166]">
-              DESSERT
-            </p>
-            <p className="mt-5 font-display text-[2rem] font-black uppercase leading-[0.95] text-white">
-              FROZEN BUNANA
-            </p>
-            <p className="mt-4 font-display text-[3.25rem] font-black leading-none text-[#ffd166]">
-              3.00€
-            </p>
-          </div>
-        </div>
+              <div className="grid gap-3 sm:grid-cols-[1.35fr_0.9fr]">
+                <LabelBlock label="DRINKS">
+                  <InlineList items={DRINKS} />
+                </LabelBlock>
+                <LabelBlock label="DESSERT" accent="gold">
+                  <p className="font-display text-[1.9rem] font-black uppercase leading-[0.95] text-white">
+                    FROZEN BUNANA
+                  </p>
+                  <p className="mt-3 font-display text-[3rem] font-black leading-none text-[#ffd166]">
+                    3.00€
+                  </p>
+                </LabelBlock>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </section>
     </div>
   );
