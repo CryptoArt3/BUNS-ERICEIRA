@@ -102,6 +102,22 @@ export const bunsAdventuresCampaign = {
       videoSrc: withVideoVersion("/videos/buns-episode-10.mp4"),
       linkedUrl: BUNS_ADVENTURES_INSTAGRAM_URL,
     },
+    {
+      id: "episode-11",
+      number: "11",
+      title: "Furnas",
+      overlayLabel: "Episódio 11 — Furnas",
+      videoSrc: withVideoVersion("/videos/buns-episode-11.mp4"),
+      linkedUrl: BUNS_ADVENTURES_INSTAGRAM_URL,
+    },
+    {
+      id: "episode-12",
+      number: "12",
+      title: "Fontes",
+      overlayLabel: "Episódio 12 — Fontes",
+      videoSrc: withVideoVersion("/videos/buns-episode-12.mp4"),
+      linkedUrl: BUNS_ADVENTURES_INSTAGRAM_URL,
+    },
   ] satisfies BunsAdventuresEpisode[],
 } as const;
 
