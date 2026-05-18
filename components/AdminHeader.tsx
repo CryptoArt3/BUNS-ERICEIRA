@@ -50,6 +50,9 @@ export default function AdminHeader() {
             <a className={isActive("/admin/orders")} href="/admin/orders">
               Pedidos
             </a>
+            <a className={isActive("/admin/kitchen")} href="/admin/kitchen">
+              👨‍🍳 Kitchen
+            </a>
             <a className={isActive("/admin/ping")} href="/admin/ping">
               Ping
             </a>

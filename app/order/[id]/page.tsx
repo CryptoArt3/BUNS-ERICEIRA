@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase/client'
 import {
+  getFlowStepIndex,
   getOrderStatusLabel,
   getOrderStatusTone,
   isActiveOrder,
@@ -41,57 +42,21 @@ type TrackedOrder = {
 }
 
 /* ─── Timeline ───────────────────────────────────────────── */
-type TimelineStep = {
-  status: OrderStatus
-  takeawayLabel: string
-  deliveryLabel: string
-  takeawaySub: string
-  deliverySub: string
-}
+type TimelineStep = { status: OrderStatus; label: string; sub: string }
 
-const TIMELINE: TimelineStep[] = [
-  {
-    status: 'pending',
-    takeawayLabel: 'Pedido recebido',
-    deliveryLabel: 'Pedido recebido',
-    takeawaySub: 'O teu pedido chegou à BUNS',
-    deliverySub: 'O teu pedido chegou à BUNS',
-  },
-  {
-    status: 'preparing',
-    takeawayLabel: 'Em preparação',
-    deliveryLabel: 'Em preparação',
-    takeawaySub: 'A equipa está na chapa 🔥',
-    deliverySub: 'A equipa está na chapa 🔥',
-  },
-  {
-    status: 'ready',
-    takeawayLabel: 'Pronto para levantar',
-    deliveryLabel: 'Pronto',
-    takeawaySub: 'Dirige-te ao balcão — está quente!',
-    deliverySub: 'Pronto para recolha pelo estafeta',
-  },
-  {
-    status: 'delivering',
-    takeawayLabel: 'Levantado',
-    deliveryLabel: 'A caminho',
-    takeawaySub: 'Bom proveito! 🤙',
-    deliverySub: 'O teu pedido está a caminho',
-  },
-  {
-    status: 'done',
-    takeawayLabel: 'Levantado',
-    deliveryLabel: 'Entregue',
-    takeawaySub: 'Bom proveito! 🤙',
-    deliverySub: 'Bom proveito! 🤙',
-  },
+const TAKEAWAY_STEPS: TimelineStep[] = [
+  { status: 'pending',   label: 'Pedido recebido',     sub: 'O teu pedido chegou à BUNS' },
+  { status: 'preparing', label: 'Em preparação',        sub: 'A equipa está na chapa 🔥' },
+  { status: 'ready',     label: 'Pronto para levantar', sub: 'Dirige-te ao balcão — está quente!' },
+  { status: 'done',      label: 'Levantado',            sub: 'Bom proveito! 🤙' },
 ]
 
-const PROGRESS_ORDER: OrderStatus[] = ['pending', 'preparing', 'ready', 'delivering', 'done']
-
-function statusIndex(s: OrderStatus) {
-  return PROGRESS_ORDER.indexOf(s)
-}
+const DELIVERY_STEPS: TimelineStep[] = [
+  { status: 'pending',    label: 'Pedido recebido', sub: 'O teu pedido chegou à BUNS' },
+  { status: 'preparing',  label: 'Em preparação',   sub: 'A equipa está na chapa 🔥' },
+  { status: 'delivering', label: 'A caminho',       sub: 'O teu pedido está a caminho' },
+  { status: 'done',       label: 'Entregue',        sub: 'Bom proveito! 🤙' },
+]
 
 /* ─── Helpers ────────────────────────────────────────────── */
 function currency(x: number) {
@@ -163,7 +128,8 @@ function Timeline({ order }: { order: TrackedOrder }) {
   }
 
   const isTakeaway = isTakeawayOrder(order.order_type)
-  const currentIdx = statusIndex(order.status)
+  const steps = isTakeaway ? TAKEAWAY_STEPS : DELIVERY_STEPS
+  const currentIdx = getFlowStepIndex(order.status, order.order_type)
 
   return (
     <div className="card p-5">
@@ -171,13 +137,11 @@ function Timeline({ order }: { order: TrackedOrder }) {
         Estado do pedido
       </h2>
       <ol className="space-y-0" aria-label="Progresso do pedido">
-        {TIMELINE.map((step, i) => {
+        {steps.map((step, i) => {
           const isPast   = currentIdx > i
           const isActive = currentIdx === i
           const isFuture = currentIdx < i
-          const isLast   = i === TIMELINE.length - 1
-          const label    = isTakeaway ? step.takeawayLabel : step.deliveryLabel
-          const sub      = isTakeaway ? step.takeawaySub   : step.deliverySub
+          const isLast   = i === steps.length - 1
 
           return (
             <li key={step.status} className="flex gap-4">
@@ -185,9 +149,9 @@ function Timeline({ order }: { order: TrackedOrder }) {
               <div className="flex flex-col items-center shrink-0">
                 <div
                   className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all duration-500
-                    ${isPast   ? 'bg-buns-yellow/20 border-buns-yellow/50 text-buns-yellow'                   : ''}
-                    ${isActive ? 'bg-buns-yellow border-buns-yellow text-black animate-pulse'                  : ''}
-                    ${isFuture ? 'bg-white/5 border-white/15 text-white/30'                                   : ''}`}
+                    ${isPast   ? 'bg-buns-yellow/20 border-buns-yellow/50 text-buns-yellow' : ''}
+                    ${isActive ? 'bg-buns-yellow border-buns-yellow text-black animate-pulse' : ''}
+                    ${isFuture ? 'bg-white/5 border-white/15 text-white/30' : ''}`}
                   aria-current={isActive ? 'step' : undefined}
                 >
                   {isPast ? '✓' : i + 1}
@@ -202,13 +166,11 @@ function Timeline({ order }: { order: TrackedOrder }) {
 
               {/* text */}
               <div className={`${isLast ? '' : 'pb-6'} pt-0.5`}>
-                <p className={`text-sm font-semibold leading-tight
-                  ${isFuture ? 'text-white/30' : 'text-white'}`}>
-                  {label}
+                <p className={`text-sm font-semibold leading-tight ${isFuture ? 'text-white/30' : 'text-white'}`}>
+                  {step.label}
                 </p>
-                <p className={`text-xs mt-0.5
-                  ${isFuture ? 'text-white/20' : 'text-white/55'}`}>
-                  {sub}
+                <p className={`text-xs mt-0.5 ${isFuture ? 'text-white/20' : 'text-white/55'}`}>
+                  {step.sub}
                 </p>
               </div>
             </li>

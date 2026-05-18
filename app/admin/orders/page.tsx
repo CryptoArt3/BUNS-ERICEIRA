@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 import { useOrderSounds } from '@/components/admin/useOrderSounds';
 
@@ -301,6 +302,12 @@ export default function AdminOrdersPage() {
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <h1 className="text-3xl font-display">Pedidos (Admin)</h1>
         <div className="flex items-center gap-2 flex-wrap">
+          <Link
+            href="/admin/kitchen"
+            className="btn btn-ghost flex items-center gap-1.5 font-bold border border-buns-yellow/30 text-buns-yellow hover:bg-buns-yellow/10"
+          >
+            👨‍🍳 Kitchen Mode
+          </Link>
           <button
             onClick={toggleSound}
             className={`btn ${soundEnabled ? 'btn-primary' : 'btn-ghost'}`}

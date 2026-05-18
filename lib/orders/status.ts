@@ -15,6 +15,34 @@ export const ACTIVE_ORDER_STATUSES: OrderStatus[] = [
 
 export const CLOSED_ORDER_STATUSES: OrderStatus[] = ['done', 'cancelled']
 
+export const TAKEAWAY_FLOW: OrderStatus[] = ['pending', 'preparing', 'ready', 'done']
+export const DELIVERY_FLOW: OrderStatus[] = ['pending', 'preparing', 'delivering', 'done']
+
+/**
+ * Returns the step index within the order-type-specific flow.
+ * Used to drive the customer-facing timeline (no duplicate labels).
+ *
+ * Takeaway: pending(0) → preparing(1) → ready(2) → done(3)
+ * Delivery: pending(0) → preparing(1) → delivering(2) → done(3)
+ *
+ * Edge cases:
+ *  - takeaway + delivering → mapped to done (3): order was collected
+ *  - delivery + ready     → mapped to preparing (1): food ready, awaiting pickup
+ */
+export function getFlowStepIndex(status: OrderStatus, orderType: string): number {
+  const isTakeaway = (orderType ?? '').toUpperCase() === 'TAKEAWAY'
+  if (isTakeaway) {
+    const map: Partial<Record<OrderStatus, number>> = {
+      pending: 0, preparing: 1, ready: 2, delivering: 3, done: 3,
+    }
+    return map[status] ?? -1
+  }
+  const map: Partial<Record<OrderStatus, number>> = {
+    pending: 0, preparing: 1, ready: 1, delivering: 2, done: 3,
+  }
+  return map[status] ?? -1
+}
+
 export function isActiveOrder(status: OrderStatus): boolean {
   return (ACTIVE_ORDER_STATUSES as string[]).includes(status)
 }
