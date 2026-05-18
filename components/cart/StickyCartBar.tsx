@@ -16,7 +16,7 @@ export default function StickyCartBar() {
   const count = useMemo(() => items.reduce((n, it) => n + it.qty, 0), [items])
   const subtotal = useMemo(() => items.reduce((acc, it) => acc + it.price * it.qty, 0), [items])
 
-  if (path.startsWith('/screen')) return null
+  if (path.startsWith('/screen') || path.startsWith('/admin')) return null
 
   // só mostra em mobile e quando há itens
   if (count === 0) return null

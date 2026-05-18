@@ -21,7 +21,7 @@ export const Header = () => {
   const router = useRouter()
   const { cart } = useCart()
 
-  if (path.startsWith('/screen')) {
+  if (path.startsWith('/screen') || path.startsWith('/admin')) {
     return null
   }
 

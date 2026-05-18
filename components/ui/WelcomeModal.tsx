@@ -54,7 +54,7 @@ export default function WelcomeModal() {
     return () => window.removeEventListener('keydown', onKey)
   }, [open, close])
 
-  if (!mounted || path.startsWith('/screen')) return null
+  if (!mounted || path.startsWith('/screen') || path.startsWith('/admin')) return null
 
   return (
     <AnimatePresence>

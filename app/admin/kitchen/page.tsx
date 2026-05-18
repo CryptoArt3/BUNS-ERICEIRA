@@ -369,11 +369,25 @@ export default function KitchenPage() {
   const fetchOrders = useCallback(async () => {
     const { data, error } = await supabase
       .from('orders')
-      .select('id, created_at, name, phone, zone, order_type, items, total, status, acknowledged, note, order_note, obs')
+      .select('*')
       .in('status', ['pending', 'preparing', 'ready', 'delivering'])
       .order('created_at', { ascending: true })
 
-    if (!error && data) setOrders(data as unknown as KitchenOrder[])
+    if (error) {
+      console.error('[KITCHEN] query error', error)
+      setErrMsg(error.message)
+    } else {
+      const orders = (data ?? []) as unknown as KitchenOrder[]
+      console.log('[KITCHEN] loaded orders count', orders.length)
+      console.log(
+        '[KITCHEN] active orders by status',
+        orders.reduce<Record<string, number>>((acc, o) => {
+          acc[o.status] = (acc[o.status] ?? 0) + 1
+          return acc
+        }, {})
+      )
+      setOrders(orders)
+    }
     setLoading(false)
   }, [])
 
@@ -457,7 +471,7 @@ export default function KitchenPage() {
     () => orders.some((o) => o.status === 'pending' && !o.acknowledged),
     [orders]
   )
-  const { soundEnabled, soundBlocked, toggleSound } = useOrderSounds(hasAlerts)
+  const { soundEnabled, soundBlocked, toggleSound, alarmActive } = useOrderSounds(hasAlerts)
 
   /* ── update status ── */
   const handleAction = useCallback(async (id: string, status: OrderStatus) => {
@@ -518,12 +532,15 @@ export default function KitchenPage() {
           )}
 
           {soundBlocked && (
-            <button
-              onClick={toggleSound}
-              className="px-3 py-2 rounded-xl bg-red-500 text-white text-sm font-black animate-pulse"
-            >
-              🔇 Ativar som
-            </button>
+            <span className="text-red-300 text-sm font-bold animate-pulse">
+              🔇 Som bloqueado — clica Ativar som
+            </span>
+          )}
+
+          {alarmActive && (
+            <span className="px-3 py-1.5 rounded-xl bg-red-600 text-white text-sm font-black animate-pulse">
+              🔔 Alarme ativo
+            </span>
           )}
 
           <button
