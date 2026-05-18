@@ -28,9 +28,8 @@ export default function AdminGuard({ children }: { children: React.ReactNode }) 
 
       const isAdmin = !!email && ADMIN_EMAILS.includes(email)
       if (!isAdmin) {
-        // envia para login com ?next= para voltar ao admin depois de entrar
         const next = encodeURIComponent(pathname || '/admin/orders')
-        router.replace(`/login?next=${next}`)
+        router.replace(`/admin/login?next=${next}`)
         setAllowed(false)
         setLoading(false)
         return
@@ -49,7 +48,7 @@ export default function AdminGuard({ children }: { children: React.ReactNode }) 
       const isAdmin = !!email && ADMIN_EMAILS.includes(email)
       if (!isAdmin) {
         const next = encodeURIComponent(pathname || '/admin/orders')
-        router.replace(`/login?next=${next}`)
+        router.replace(`/admin/login?next=${next}`)
         setAllowed(false)
       } else {
         setAllowed(true)

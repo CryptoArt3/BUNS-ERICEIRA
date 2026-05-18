@@ -121,7 +121,7 @@ export default function CheckoutPage() {
 
       clear()
       localStorage.removeItem('cart')
-      router.push(`/obrigado?order=${data.id}`)
+      router.push(`/order/${data.id}`)
     } catch (e: any) {
       setErr(e?.message ?? 'Falha ao enviar o pedido.')
     } finally {
@@ -156,6 +156,13 @@ export default function CheckoutPage() {
           <Link href="/login?next=/checkout" className="btn btn-primary ml-3 inline-block">
             Iniciar sessão
           </Link>
+        </div>
+      )}
+
+      {items.length === 0 && (
+        <div className="card p-6 max-w-3xl mx-auto flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <p className="text-white/80 flex-1">O teu carrinho está vazio. Adiciona produtos antes de continuar.</p>
+          <Link href="/menu" className="btn btn-primary shrink-0">Ver Menu</Link>
         </div>
       )}
 
@@ -246,7 +253,7 @@ export default function CheckoutPage() {
 
         {err && <div className="rounded-xl bg-red-900/40 border border-red-500/30 text-red-200 p-3">{err}</div>}
 
-        <button type="submit" disabled={loading} className="btn btn-primary w-full sm:w-auto disabled:opacity-60">
+        <button type="submit" disabled={loading || items.length === 0} className="btn btn-primary w-full sm:w-auto disabled:opacity-60">
           {loading ? 'A enviar…' : 'Confirmar pedido'}
         </button>
 

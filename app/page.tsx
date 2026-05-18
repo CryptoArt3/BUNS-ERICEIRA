@@ -345,14 +345,17 @@ function OperatingHours() {
 
   // aberto 11:00–22:59
   const isOpen = useMemo(() => {
-    const parts = new Intl.DateTimeFormat('en-GB', {
-      hour: 'numeric',
-      minute: 'numeric',
-      hour12: false,
-      timeZone: tz,
-    }).formatToParts(now)
-    const h = Number(parts.find((p) => p.type === 'hour')?.value ?? '0')
-    return h >= 11 && h < 23
+    try {
+      const hourStr = new Intl.DateTimeFormat('en-GB', {
+        hour: '2-digit',
+        hour12: false,
+        timeZone: tz,
+      }).format(now)
+      const h = parseInt(hourStr, 10)
+      return !isNaN(h) && h >= 11 && h < 23
+    } catch {
+      return false
+    }
   }, [now])
 
   return (

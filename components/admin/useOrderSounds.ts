@@ -1,84 +1,107 @@
 'use client'
 
-import { useEffect, useMemo, useRef } from 'react'
-import { supabase } from '@/lib/supabase/client'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
-type Options = {
-  enabled: boolean
-}
+const SOUND_KEY = 'buns_admin_sound'
+const REPEAT_MS = 8000
 
-function makeBeep(frequency = 880, duration = 0.15) {
+function tryBeep(): boolean {
   try {
-    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)()
+    const Ctx = window.AudioContext || (window as any).webkitAudioContext
+    const ctx = new Ctx()
     const osc = ctx.createOscillator()
     const gain = ctx.createGain()
     osc.type = 'sine'
-    osc.frequency.value = frequency
+    osc.frequency.value = 880
     gain.gain.setValueAtTime(0.001, ctx.currentTime)
-    gain.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + 0.02)
-    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration)
+    gain.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + 0.05)
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.5)
     osc.connect(gain).connect(ctx.destination)
     osc.start()
-    osc.stop(ctx.currentTime + duration)
-  } catch {}
+    osc.stop(ctx.currentTime + 0.5)
+    return true
+  } catch {
+    return false
+  }
 }
 
-function play(src: string, fallbackFreq?: number) {
-  const a = new Audio()
-  a.src = src
-  a.play().catch(() => {
-    if (fallbackFreq) makeBeep(fallbackFreq)
-  })
-}
+export function useOrderSounds(hasAlerts: boolean) {
+  const [soundEnabled, setSoundEnabled] = useState(false)
+  const [soundBlocked, setSoundBlocked] = useState(false)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-export function useOrderSounds({ enabled }: Options) {
-  // Momento em que a página montou — evita tocar ao carregar pedidos antigos
-  const startTs = useRef<number>(Date.now())
-
-  // Pré-resolve paths de som
-  const sounds = useMemo(
-    () => ({
-      newOrder: '/sounds/new-order.mp3',
-      preparing: '/sounds/preparing.mp3',
-      delivered: '/sounds/delivered.mp3',
-    }),
-    []
-  )
-
+  // Load persisted preference
   useEffect(() => {
-    if (!enabled) return
+    const saved = localStorage.getItem(SOUND_KEY)
+    if (saved === '1') setSoundEnabled(true)
+  }, [])
 
-    const channel = supabase
-      .channel('orders-sound')
-      // Novo pedido
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'orders' },
-        (payload) => {
-          const created = new Date((payload.new as any)?.created_at ?? Date.now()).getTime()
-          if (created >= startTs.current - 1500) {
-            play(sounds.newOrder, 880) // fallback beep
-          }
-        }
-      )
-      // Mudanças de estado
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'orders' },
-        (payload) => {
-          const oldStatus = (payload.old as any)?.status
-          const newStatus = (payload.new as any)?.status
-          if (oldStatus === newStatus) return
-          if (newStatus === 'preparing') play(sounds.preparing, 660)
-          if (newStatus === 'delivered') play(sounds.delivered, 520)
-        }
-      )
-      .subscribe((status) => {
-        if (status !== 'SUBSCRIBED') return
-      })
-
-    return () => {
-      supabase.removeChannel(channel)
+  const playAlert = useCallback(async () => {
+    // Try HTML Audio first
+    try {
+      const a = new Audio('/sounds/new-order.wav')
+      await a.play()
+      setSoundBlocked(false)
+      return
+    } catch {}
+    // Fallback to WebAudio beep
+    if (tryBeep()) {
+      setSoundBlocked(false)
+      return
     }
-  }, [enabled, sounds])
+    // Both blocked — disable sound and show banner
+    setSoundBlocked(true)
+    setSoundEnabled(false)
+    localStorage.setItem(SOUND_KEY, '0')
+  }, [])
+
+  // Keep ref up to date without triggering the interval effect
+  const playAlertRef = useRef(playAlert)
+  useEffect(() => { playAlertRef.current = playAlert }, [playAlert])
+
+  // Start/stop the repeating alert based on alert state
+  useEffect(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current)
+      intervalRef.current = null
+    }
+    if (soundEnabled && hasAlerts) {
+      playAlertRef.current()
+      intervalRef.current = setInterval(() => playAlertRef.current(), REPEAT_MS)
+    }
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+        intervalRef.current = null
+      }
+    }
+  }, [soundEnabled, hasAlerts])
+
+  const toggleSound = useCallback(async () => {
+    if (soundEnabled) {
+      setSoundEnabled(false)
+      localStorage.setItem(SOUND_KEY, '0')
+      return
+    }
+    // Arm the audio context with this user gesture (silent, just to unlock)
+    let armed = false
+    try {
+      const a = new Audio('/sounds/new-order.wav')
+      a.volume = 0
+      await a.play()
+      a.pause()
+      armed = true
+      setSoundBlocked(false)
+    } catch {
+      armed = tryBeep()
+      if (armed) setSoundBlocked(false)
+      else setSoundBlocked(true)
+    }
+    if (!armed) return
+    setSoundEnabled(true)
+    localStorage.setItem(SOUND_KEY, '1')
+    // The useEffect above will fire and play immediately if hasAlerts is true
+  }, [soundEnabled])
+
+  return { soundEnabled, soundBlocked, toggleSound }
 }

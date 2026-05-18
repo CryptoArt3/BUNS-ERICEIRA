@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
+import { useOrderSounds } from '@/components/admin/useOrderSounds';
 
 /* ================== Tipos ================== */
 type ItemOptions = {
@@ -16,9 +17,9 @@ type Item = {
   name: string;
   qty: number;
   price: number;
-  note?: string | null;       // nota do item
+  note?: string | null;
   variant?: string | null;
-  options?: ItemOptions;      // nota pode vir aqui também
+  options?: ItemOptions;
 };
 
 type Order = {
@@ -36,7 +37,6 @@ type Order = {
   payment_method: 'cash' | 'mbway' | 'card';
   status: 'pending' | 'preparing' | 'delivering' | 'done';
   acknowledged: boolean;
-  // alguns setups guardam a nota geral aqui com nomes diferentes:
   note?: string | null;
   order_note?: string | null;
   obs?: string | null;
@@ -52,8 +52,8 @@ export default function AdminOrdersPage() {
   const [errMsg, setErrMsg] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | Order['status']>('all');
 
-  // para destacar o último que entrou
-  const [newId, setNewId] = useState<string | null>(null);
+  // IDs de pedidos novos que chegaram via realtime — usados para animação de shake
+  const [newIds, setNewIds] = useState<Set<string>>(new Set());
 
   // refs de cartões para scroll
   const cardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
@@ -92,32 +92,47 @@ export default function AdminOrdersPage() {
         lastEventAt.current = Date.now();
         const row = p.new as any;
 
-        setOrders((prev) => {
-          if (p.eventType === 'INSERT') {
-            if (row.status === 'pending' && !row.acknowledged) {
-              setNewId(row.id);
-              setTimeout(() => scrollToOrder(row.id), 50);
-              setTimeout(() => setNewId(null), 10000);
-            }
+        if (p.eventType === 'INSERT') {
+          if (row.status === 'pending' && !row.acknowledged) {
+            // Add to shaking set, scroll to it, remove shake after animation
+            setNewIds((prev) => new Set([...prev, row.id]));
+            setTimeout(() => scrollToOrder(row.id), 50);
+            setTimeout(() => {
+              setNewIds((prev) => {
+                const next = new Set(prev);
+                next.delete(row.id);
+                return next;
+              });
+            }, 8000);
+          }
+          setOrders((prev) => {
             if (prev.find((o) => o.id === row.id)) return prev;
             return [row as Order, ...prev];
-          }
+          });
+          return;
+        }
 
-          if (p.eventType === 'UPDATE') {
-            const updated = prev.map((o) => (o.id === row.id ? (row as Order) : o));
-            if (newId === row.id && (row.acknowledged || row.status !== 'pending')) {
-              setNewId(null);
-            }
-            return updated;
+        if (p.eventType === 'UPDATE') {
+          if (row.acknowledged || row.status !== 'pending') {
+            setNewIds((prev) => {
+              const next = new Set(prev);
+              next.delete(row.id);
+              return next;
+            });
           }
+          setOrders((prev) => prev.map((o) => (o.id === row.id ? (row as Order) : o)));
+          return;
+        }
 
-          if (p.eventType === 'DELETE') {
-            if (newId === row?.id) setNewId(null);
-            return prev.filter((o) => o.id !== row?.id);
-          }
-
-          return prev;
-        });
+        if (p.eventType === 'DELETE') {
+          const oldRow = p.old as any;
+          setNewIds((prev) => {
+            const next = new Set(prev);
+            next.delete(oldRow?.id);
+            return next;
+          });
+          setOrders((prev) => prev.filter((o) => o.id !== oldRow?.id));
+        }
       }
     );
 
@@ -156,12 +171,22 @@ export default function AdminOrdersPage() {
     };
   }, []);
 
+  /* ---- sound (any unacknowledged pending order triggers the alarm) ---- */
+  const hasAlerts = useMemo(
+    () => orders.some((o) => o.status === 'pending' && !o.acknowledged),
+    [orders]
+  );
+  const { soundEnabled, soundBlocked, toggleSound } = useOrderSounds(hasAlerts);
+
   /* ---- ações ---- */
   const updateStatus = async (id: string, status: Order['status']) => {
     try {
       setSavingId(id);
       setErrMsg(null);
-      const { error } = await supabase.from('orders').update({ status }).eq('id', id);
+      const patch: Record<string, unknown> = { status };
+      // Moving out of pending acknowledges automatically
+      if (status !== 'pending') patch.acknowledged = true;
+      const { error } = await supabase.from('orders').update(patch).eq('id', id);
       if (error) throw error;
       await fetchOrders();
     } catch (e: any) {
@@ -181,7 +206,11 @@ export default function AdminOrdersPage() {
         .update({ acknowledged: true })
         .eq('id', id);
       if (error) throw error;
-      setNewId(null); // remove o destaque imediatamente
+      setNewIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
       await fetchOrders();
     } catch (e: any) {
       console.error(e);
@@ -221,7 +250,6 @@ export default function AdminOrdersPage() {
     </button>
   );
 
-  /* ---- helpers de notas ---- */
   const getOrderLevelNote = (o: Order): string | null => {
     return (o.note || o.order_note || o.obs || '')?.toString()?.trim() || null;
   };
@@ -269,12 +297,20 @@ export default function AdminOrdersPage() {
   /* ---- render ---- */
   return (
     <main className="container mx-auto px-4 py-8 text-white">
+      {/* Header */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <h1 className="text-3xl font-display">Pedidos (Admin)</h1>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={toggleSound}
+            className={`btn ${soundEnabled ? 'btn-primary' : 'btn-ghost'}`}
+            aria-pressed={soundEnabled}
+          >
+            {soundEnabled ? '🔊 Som ativo' : '🔈 Ativar som'}
+          </button>
           <button
             className="btn btn-ghost"
-            onClick={() => setNewId(null)}
+            onClick={() => setNewIds(new Set())}
             title="Remove o destaque visual atual"
           >
             🔕 Fechar destaque
@@ -282,8 +318,23 @@ export default function AdminOrdersPage() {
         </div>
       </div>
 
+      {/* Sound blocked banner */}
+      {soundBlocked && (
+        <div className="mt-3 flex items-center gap-3 rounded-xl bg-red-500/20 border border-red-500/40 px-4 py-3 text-red-200 flex-wrap">
+          <span className="text-sm font-medium flex-1">
+            🔇 Som bloqueado pelo browser — clica em <strong>Ativar Som</strong> para receber alertas de áudio.
+          </span>
+          <button
+            onClick={toggleSound}
+            className="px-4 py-2 rounded-lg bg-buns-yellow text-black text-sm font-black shrink-0"
+          >
+            🔊 Ativar Som
+          </button>
+        </div>
+      )}
+
       {/* filtros */}
-      <div className="flex gap-2 mt-2">
+      <div className="flex gap-2 mt-4 flex-wrap">
         <button
           onClick={() => setFilter('all')}
           className={`btn ${filter === 'all' ? 'btn-primary' : 'btn-ghost'}`}
@@ -315,18 +366,36 @@ export default function AdminOrdersPage() {
       <div className="grid gap-4 mt-6">
         {filtered.map((o) => {
           const orderNote = getOrderLevelNote(o);
-          const isNewHighlight =
-            newId === o.id || (o.status === 'pending' && !o.acknowledged);
           const isAttention = o.status === 'pending' && !o.acknowledged;
+          const isShaking = newIds.has(o.id);
 
           return (
             <div
               key={o.id}
               ref={setCardRef(o.id)}
-              className={`card p-5 border border-white/10 transition relative
-                ${isNewHighlight ? 'ring-4 ring-buns-yellow/60 shadow-[0_0_40px_rgba(255,214,10,0.35)] animate-pulse' : ''}
+              className={`card p-5 border transition-shadow relative
+                ${isAttention
+                  ? 'border-red-500/50 ring-4 ring-red-500/50 shadow-[0_0_48px_rgba(239,68,68,0.3)]'
+                  : 'border-white/10'}
+                ${isShaking ? 'animate-[shake_0.6s_ease]' : ''}
                 ${isAttention ? 'pb-28' : ''}`}
             >
+              {/* NEW ORDER badge + timestamp */}
+              {isAttention && (
+                <div className="flex items-center gap-3 mb-3 flex-wrap">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-500 text-white text-sm font-black tracking-wide animate-pulse shadow-[0_0_16px_rgba(239,68,68,0.7)]">
+                    🔔 NOVO PEDIDO
+                  </span>
+                  <time className="text-buns-yellow text-base font-bold tabular-nums">
+                    {new Date(o.created_at).toLocaleTimeString('pt-PT', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      second: '2-digit',
+                    })}
+                  </time>
+                </div>
+              )}
+
               <div className="flex items-center justify-between flex-wrap gap-3">
                 <div>
                   <h2 className="text-xl font-semibold">
@@ -336,9 +405,11 @@ export default function AdminOrdersPage() {
                     {o.address} — {o.order_type === 'takeaway' ? 'Levantamento' : o.zone}
                   </p>
                 </div>
-                <span className="text-sm text-white/60">
-                  {new Date(o.created_at).toLocaleString()}
-                </span>
+                {!isAttention && (
+                  <time className="text-sm text-white/60 tabular-nums">
+                    {new Date(o.created_at).toLocaleString('pt-PT')}
+                  </time>
+                )}
               </div>
 
               <div className="flex items-center gap-2 mt-3 text-sm text-white/70 flex-wrap">
@@ -357,11 +428,6 @@ export default function AdminOrdersPage() {
                 <span className="px-3 py-1 rounded-full bg-white/10 border border-white/10">
                   {o.items?.length || 0} item(s)
                 </span>
-                {o.status === 'pending' && !o.acknowledged && (
-                  <span className="px-3 py-1 rounded-full bg-red-500/20 border border-red-500/30 text-red-200">
-                    Alarme ativo
-                  </span>
-                )}
               </div>
 
               {o.items?.length > 0 && (
@@ -380,7 +446,6 @@ export default function AdminOrdersPage() {
                 </ul>
               )}
 
-              {/* NOTA GERAL DO PEDIDO */}
               {orderNote && (
                 <div className="mt-3 rounded-xl border px-4 py-3 text-base bg-orange-500/15 border-orange-500/30 text-orange-200">
                   🧾 <span className="font-semibold">Nota do pedido:</span> {orderNote}
@@ -401,7 +466,7 @@ export default function AdminOrdersPage() {
                     active={o.status === 'preparing'}
                     onClick={() => updateStatus(o.id, 'preparing')}
                   >
-                    Preparar
+                    Em preparação
                   </StatusBtn>
                   <StatusBtn
                     disabled={savingId === o.id}
@@ -419,15 +484,12 @@ export default function AdminOrdersPage() {
                   </StatusBtn>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  {/* <-- Botão pequeno foi REMOVIDO para não confundir --> */}
-                  <div className="text-buns-yellow font-bold text-lg">
-                    Total: €{o.total.toFixed(2)}
-                  </div>
+                <div className="text-buns-yellow font-bold text-lg">
+                  Total: €{o.total.toFixed(2)}
                 </div>
               </div>
 
-              {/* BOTÃO XXL FIXO — super visível (apenas quando pending e não lido) */}
+              {/* Acknowledge button — only when pending and unread */}
               {isAttention && (
                 <div className="pointer-events-none">
                   <div className="absolute inset-x-0 bottom-0 px-4 pb-4">
@@ -439,10 +501,11 @@ export default function AdminOrdersPage() {
                                  shadow-[0_12px_32px_rgba(255,214,10,0.35)]
                                  border-4 border-black/20
                                  animate-[wiggle_1.2s_ease-in-out_infinite]
-                                 hover:scale-[1.01] transition"
-                      title="Marcar como visto"
+                                 hover:scale-[1.01] transition
+                                 disabled:opacity-60"
+                      title="Aceitar pedido e parar alarme"
                     >
-                      👀 MARCAR COMO VISTO
+                      👀 ACEITAR PEDIDO
                     </button>
                   </div>
                 </div>
@@ -452,15 +515,26 @@ export default function AdminOrdersPage() {
         })}
       </div>
 
-      {/* animação global para o botão XXL */}
       <style jsx global>{`
         @keyframes wiggle {
           0%, 100% { transform: translateX(0) rotate(0deg); }
-          15%      { transform: translateX(-2px) rotate(-0.4deg); }
-          30%      { transform: translateX(2px) rotate(0.4deg); }
-          45%      { transform: translateX(-2px) rotate(-0.3deg); }
-          60%      { transform: translateX(2px) rotate(0.3deg); }
-          75%      { transform: translateX(-1px) rotate(-0.2deg); }
+          15%       { transform: translateX(-2px) rotate(-0.4deg); }
+          30%       { transform: translateX(2px) rotate(0.4deg); }
+          45%       { transform: translateX(-2px) rotate(-0.3deg); }
+          60%       { transform: translateX(2px) rotate(0.3deg); }
+          75%       { transform: translateX(-1px) rotate(-0.2deg); }
+        }
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          10%       { transform: translateX(-10px); }
+          20%       { transform: translateX(10px); }
+          30%       { transform: translateX(-10px); }
+          40%       { transform: translateX(10px); }
+          50%       { transform: translateX(-5px); }
+          60%       { transform: translateX(5px); }
+          70%       { transform: translateX(-3px); }
+          80%       { transform: translateX(3px); }
+          90%       { transform: translateX(-1px); }
         }
       `}</style>
     </main>

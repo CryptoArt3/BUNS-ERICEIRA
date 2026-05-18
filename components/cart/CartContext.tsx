@@ -67,13 +67,16 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const add: CartContextType['add'] = (item) => {
     setCart((prev) => {
       const qty = item.qty ?? 1;
-      const idx = prev.items.findIndex((it) => it.id === item.id);
+      // Composite line key: same product + same variant → merge qty.
+      // Different variants (e.g. burger vs menu) → separate cart lines.
+      const lineId = item.variant ? `${item.id}:${item.variant}` : item.id;
+      const idx = prev.items.findIndex((it) => it.id === lineId);
       if (idx >= 0) {
         const clone = [...prev.items];
         clone[idx] = { ...clone[idx], qty: clone[idx].qty + qty };
         return { items: clone };
       }
-      return { items: [...prev.items, { ...item, qty }] };
+      return { items: [...prev.items, { ...item, id: lineId, qty }] };
     });
   };
 
