@@ -35,14 +35,14 @@ type Order = {
   delivery_fee: number;
   total: number;
   payment_method: 'cash' | 'mbway' | 'card';
-  status: 'pending' | 'preparing' | 'delivering' | 'done';
+  status: 'pending' | 'preparing' | 'ready' | 'delivering' | 'done';
   acknowledged: boolean;
   note?: string | null;
   order_note?: string | null;
   obs?: string | null;
 };
 
-const STATUSES: Order['status'][] = ['pending', 'preparing', 'delivering', 'done'];
+const STATUSES: Order['status'][] = ['pending', 'preparing', 'ready', 'delivering', 'done'];
 
 /* ================== Página ================== */
 export default function AdminOrdersPage() {
@@ -351,6 +351,8 @@ export default function AdminOrdersPage() {
               ? 'Pendentes'
               : s === 'preparing'
               ? 'Em prep.'
+              : s === 'ready'
+              ? 'Prontos'
               : s === 'delivering'
               ? 'A caminho'
               : 'Entregues'}{' '}
@@ -414,13 +416,20 @@ export default function AdminOrdersPage() {
 
               <div className="flex items-center gap-2 mt-3 text-sm text-white/70 flex-wrap">
                 <span
-                  className={`px-3 py-1 rounded-full border capitalize ${
+                  className={`px-3 py-1 rounded-full border ${
                     o.status === 'pending'
                       ? 'bg-buns-yellow/15 border-buns-yellow/40 text-buns-yellow'
+                      : o.status === 'ready'
+                      ? 'bg-teal-400/15 border-teal-400/40 text-teal-300'
                       : 'bg-white/10 border-white/10 text-white/80'
                   }`}
                 >
-                  {o.status}
+                  {o.status === 'pending'    ? 'Pendente'
+                    : o.status === 'preparing'  ? 'Em preparação'
+                    : o.status === 'ready'       ? 'Pronto'
+                    : o.status === 'delivering'  ? 'A caminho'
+                    : o.status === 'done'        ? 'Entregue'
+                    : o.status}
                 </span>
                 <span className="px-3 py-1 rounded-full bg-white/10 border border-white/10">
                   {(o.order_type || 'delivery').toUpperCase()}
@@ -467,6 +476,13 @@ export default function AdminOrdersPage() {
                     onClick={() => updateStatus(o.id, 'preparing')}
                   >
                     Em preparação
+                  </StatusBtn>
+                  <StatusBtn
+                    disabled={savingId === o.id}
+                    active={o.status === 'ready'}
+                    onClick={() => updateStatus(o.id, 'ready')}
+                  >
+                    Pronto
                   </StatusBtn>
                   <StatusBtn
                     disabled={savingId === o.id}

@@ -3,6 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase/client'
+import {
+  getOrderStatusLabel,
+  getOrderStatusTone,
+  isActiveOrder,
+  type OrderStatus,
+} from '@/lib/orders/status'
 
 /* ─── Store config ───────────────────────────────────────── */
 // Fill in the restaurant phone to show the "call" button, or leave empty to hide it.
@@ -10,7 +16,6 @@ const STORE_PHONE = ''
 const STORE_ADDRESS = 'Calçada da Baleia 29A, Ericeira'
 
 /* ─── Types ──────────────────────────────────────────────── */
-type OrderStatus = 'pending' | 'preparing' | 'delivering' | 'done' | 'cancelled'
 
 type OrderItem = {
   id: string
@@ -33,18 +38,6 @@ type TrackedOrder = {
   total: number
   payment_method: string
   created_at: string
-}
-
-/* ─── Status config ──────────────────────────────────────── */
-const STATUS_STYLE: Record<
-  OrderStatus,
-  { emoji: string; color: string; ring: string; bg: string }
-> = {
-  pending:    { emoji: '🎯', color: 'text-buns-yellow',  ring: 'ring-buns-yellow/40',  bg: 'bg-buns-yellow/8'  },
-  preparing:  { emoji: '👨‍🍳', color: 'text-orange-400',  ring: 'ring-orange-400/40',  bg: 'bg-orange-400/8'   },
-  delivering: { emoji: '🍔', color: 'text-teal-400',     ring: 'ring-teal-400/40',     bg: 'bg-teal-400/8'     },
-  done:       { emoji: '✅', color: 'text-green-400',    ring: 'ring-green-400/40',    bg: 'bg-green-400/8'    },
-  cancelled:  { emoji: '❌', color: 'text-red-400',      ring: 'ring-red-400/40',      bg: 'bg-red-400/8'      },
 }
 
 /* ─── Timeline ───────────────────────────────────────────── */
@@ -72,10 +65,17 @@ const TIMELINE: TimelineStep[] = [
     deliverySub: 'A equipa está na chapa 🔥',
   },
   {
-    status: 'delivering',
+    status: 'ready',
     takeawayLabel: 'Pronto para levantar',
-    deliveryLabel: 'A caminho',
+    deliveryLabel: 'Pronto',
     takeawaySub: 'Dirige-te ao balcão — está quente!',
+    deliverySub: 'Pronto para recolha pelo estafeta',
+  },
+  {
+    status: 'delivering',
+    takeawayLabel: 'Levantado',
+    deliveryLabel: 'A caminho',
+    takeawaySub: 'Bom proveito! 🤙',
     deliverySub: 'O teu pedido está a caminho',
   },
   {
@@ -87,7 +87,7 @@ const TIMELINE: TimelineStep[] = [
   },
 ]
 
-const PROGRESS_ORDER: OrderStatus[] = ['pending', 'preparing', 'delivering', 'done']
+const PROGRESS_ORDER: OrderStatus[] = ['pending', 'preparing', 'ready', 'delivering', 'done']
 
 function statusIndex(s: OrderStatus) {
   return PROGRESS_ORDER.indexOf(s)
@@ -118,21 +118,15 @@ function SkeletonCard() {
 }
 
 function StatusCard({ order }: { order: TrackedOrder }) {
-  const style = STATUS_STYLE[order.status] ?? STATUS_STYLE.pending
+  const tone = getOrderStatusTone(order.status)
   const isTakeaway = isTakeawayOrder(order.order_type)
-  const isActive = order.status !== 'done' && order.status !== 'cancelled'
-
-  const statusLabel: Record<OrderStatus, string> = {
-    pending:    'Pedido recebido',
-    preparing:  'Em preparação',
-    delivering: isTakeaway ? 'Pronto para levantar' : 'A caminho',
-    done:       isTakeaway ? 'Levantado' : 'Entregue',
-    cancelled:  'Cancelado',
-  }
+  const active = isActiveOrder(order.status)
+  const label = getOrderStatusLabel(order.status, order.order_type)
 
   const statusSub: Record<OrderStatus, string> = {
     pending:    'A equipa vai aceitar em breve',
     preparing:  'O teu smash burger está na chapa 🔥',
+    ready:      isTakeaway ? 'Dirige-te ao balcão para levantares' : 'Pronto para recolha',
     delivering: isTakeaway ? 'Dirige-te ao balcão para levantares' : 'O pedido está a caminho',
     done:       'Obrigado! Bom proveito 🤙',
     cancelled:  'Contacta a BUNS para mais informação',
@@ -140,17 +134,17 @@ function StatusCard({ order }: { order: TrackedOrder }) {
 
   return (
     <div
-      className={`card p-6 sm:p-8 ring-2 ${style.ring} ${style.bg}
+      className={`card p-6 sm:p-8 ring-2 ${tone.ring} ${tone.bg}
         flex flex-col items-center text-center gap-3
-        ${isActive ? 'animate-pulse' : ''}`}
+        ${active ? 'animate-pulse' : ''}`}
       style={{ animationDuration: '2.5s' }}
     >
-      <span className="text-5xl sm:text-6xl" role="img" aria-label={statusLabel[order.status]}>
-        {style.emoji}
+      <span className="text-5xl sm:text-6xl" role="img" aria-label={label}>
+        {tone.emoji}
       </span>
       <div>
-        <p className={`text-xl sm:text-2xl font-bold ${style.color}`}>
-          {statusLabel[order.status]}
+        <p className={`text-xl sm:text-2xl font-bold ${tone.color}`}>
+          {label}
         </p>
         <p className="text-white/60 text-sm mt-1">{statusSub[order.status]}</p>
       </div>
@@ -312,7 +306,7 @@ export default function OrderTrackingPage({ params }: { params: { id: string } }
   }
 
   const isTakeaway = isTakeawayOrder(order.order_type)
-  const isActive = order.status !== 'done' && order.status !== 'cancelled'
+  const isActive = isActiveOrder(order.status)
 
   return (
     <main className="mx-auto max-w-lg px-4 pt-8 pb-28 space-y-4">
@@ -334,13 +328,16 @@ export default function OrderTrackingPage({ params }: { params: { id: string } }
       {/* ── Big status card ── */}
       <StatusCard order={order} />
 
-      {/* ── "Don't close" notice ── */}
+      {/* ── "You can close" reassurance ── */}
       {isActive && (
-        <div className="flex items-center gap-3 rounded-xl border border-buns-yellow/20 bg-buns-yellow/5 px-4 py-3">
-          <span className="text-xl shrink-0">📱</span>
-          <p className="text-sm text-white/80">
-            <strong className="text-buns-yellow">Não feches esta página</strong>{' '}
-            — o estado atualiza automaticamente.
+        <div className="flex items-center gap-3 rounded-xl border border-white/15 bg-white/5 px-4 py-3">
+          <span className="text-xl shrink-0">✅</span>
+          <p className="text-sm text-white/75">
+            Podes fechar esta página — o pedido fica guardado na{' '}
+            <Link href="/account" className="text-buns-yellow underline underline-offset-2 font-medium">
+              tua conta
+            </Link>
+            .
           </p>
         </div>
       )}
@@ -449,6 +446,9 @@ export default function OrderTrackingPage({ params }: { params: { id: string } }
             📞 Ligar para a BUNS
           </a>
         )}
+        <Link href="/account" className="btn btn-ghost w-full">
+          Ver na minha conta
+        </Link>
         <Link href="/menu" className="btn btn-primary w-full">
           Voltar ao menu
         </Link>
