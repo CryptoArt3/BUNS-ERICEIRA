@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import type { Route } from 'next'
 import { supabase } from '@/lib/supabase/client'
 
 export default function LoginPage() {
@@ -11,12 +12,13 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [sessionEmail, setSessionEmail] = useState<string | null>(null)
   // Resolved after mount to avoid SSR mismatch
-  const [nextPath, setNextPath] = useState('/checkout')
+  const [nextPath, setNextPath] = useState<Route>('/checkout')
 
   // Read ?next= from URL (client-only, no Suspense needed)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
-    setNextPath(params.get('next') || '/checkout')
+    const raw = params.get('next')
+    setNextPath((raw?.startsWith('/') ? raw : '/checkout') as Route)
   }, [])
 
   // Check existing session

@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import type { Route } from 'next'
 import { supabase } from '@/lib/supabase/client'
 
 export default function AuthCallbackPage() {
@@ -13,7 +14,8 @@ export default function AuthCallbackPage() {
     const redirect = () => {
       if (done) return
       done = true
-      const next = localStorage.getItem('buns_auth_next') || '/account'
+      const saved = localStorage.getItem('buns_auth_next')
+      const next = (saved?.startsWith('/') ? saved : '/account') as Route
       localStorage.removeItem('buns_auth_next')
       router.replace(next)
     }
