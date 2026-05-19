@@ -212,16 +212,30 @@ export default function CheckoutPage() {
 
         {/* Empty cart notice */}
         {items.length === 0 && (
-          <div className="bg-white border-2 border-black rounded-2xl p-6 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <p className="text-black/70 flex-1">
-              O teu carrinho está vazio. Adiciona produtos antes de continuar.
-            </p>
-            <Link
-              href="/menu"
-              className="shrink-0 px-4 py-2 bg-black text-buns-yellow font-black text-sm rounded-xl uppercase tracking-wide"
-            >
-              Ver Menu
-            </Link>
+          <div className="bg-white border-2 border-black rounded-2xl overflow-hidden">
+            <div className="h-[6px] bg-buns-yellow" />
+            <div className="p-6 space-y-3">
+              <p className="text-black font-black text-lg leading-tight">
+                O teu carrinho está vazio.
+              </p>
+              <p className="text-black/55 text-sm leading-snug">
+                Volta ao menu para escolher os teus BUNS.
+              </p>
+              <div className="flex gap-3 pt-1">
+                <Link
+                  href="/menu"
+                  className="px-4 py-2.5 bg-black text-buns-yellow font-black text-sm rounded-xl uppercase tracking-wide active:scale-95 transition"
+                >
+                  Ver Menu
+                </Link>
+                <Link
+                  href="/cart"
+                  className="px-4 py-2.5 bg-white border-2 border-black text-black font-black text-sm rounded-xl uppercase tracking-wide active:scale-95 transition"
+                >
+                  Carrinho
+                </Link>
+              </div>
+            </div>
           </div>
         )}
 

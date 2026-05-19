@@ -10,31 +10,37 @@ export default function LoginPage() {
   const [err, setErr] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [sessionEmail, setSessionEmail] = useState<string | null>(null)
+  // Resolved after mount to avoid SSR mismatch
+  const [nextPath, setNextPath] = useState('/checkout')
 
-  // origem do site: em prod vem da env, em dev usa o origin do browser
+  // Read ?next= from URL (client-only, no Suspense needed)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    setNextPath(params.get('next') || '/checkout')
+  }, [])
+
+  // Check existing session
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setSessionEmail(data.session?.user?.email ?? null)
+    })
+  }, [])
+
   const siteUrl =
     process.env.NEXT_PUBLIC_SITE_URL ||
     (typeof window !== 'undefined' ? window.location.origin : '')
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      const em = data.session?.user?.email ?? null
-      setSessionEmail(em)
-    })
-  }, [])
 
   async function handleSend(e: React.FormEvent) {
     e.preventDefault()
     setErr(null)
     setLoading(true)
     try {
-      // para onde o utilizador vai aterrar depois de clicar no Magic Link
-      // se não tiveres /account, troca por '/'
-      const redirectTo = `${siteUrl}/account`
+      // Persist intended destination so /auth/callback can redirect there
+      localStorage.setItem('buns_auth_next', nextPath)
 
       const { error } = await supabase.auth.signInWithOtp({
         email: email.trim(),
-        options: { emailRedirectTo: redirectTo },
+        options: { emailRedirectTo: `${siteUrl}/auth/callback` },
       })
       if (error) throw error
       setSent(true)
@@ -51,48 +57,147 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="container mx-auto px-4 py-8 max-w-md">
-      <h1 className="text-4xl font-display mb-2">Entrar</h1>
-      <p className="text-white/70 mb-6">Recebe um link mágico no teu email.</p>
+    <main className="min-h-full w-full max-w-[100vw] overflow-x-hidden bg-buns-cream">
 
-      {sessionEmail ? (
-        <div className="space-y-4">
-          <div className="rounded-xl p-4 border border-white/10 bg-white/5">
-            Já tens sessão iniciada como <strong>{sessionEmail}</strong>.
+      {/* ── Hero strip ─────────────────────────────────────── */}
+      <div className="bg-black px-4 sm:px-6 pt-8 pb-7 border-b-4 border-buns-yellow">
+        <div className="max-w-screen-xl mx-auto">
+          <div className="inline-flex items-center gap-1.5 bg-buns-yellow text-black text-[11px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg mb-5">
+            🔑 Acesso à conta
           </div>
-          <div className="flex gap-3">
-            <Link className="btn btn-primary" href="/account">
-              Ir para a minha conta
-            </Link>
-            <button className="btn btn-ghost" onClick={handleSignOut}>
-              Sair
-            </button>
-          </div>
+          <h1
+            className="font-display text-white uppercase leading-none tracking-tight"
+            style={{ fontSize: 'clamp(2.8rem, 10vw, 5.5rem)' }}
+          >
+            BUNS<br />
+            <span className="text-buns-yellow">Login</span>
+          </h1>
         </div>
-      ) : sent ? (
-        <div className="rounded-xl p-4 border border-white/10 bg-white/5">
-          Verifica o teu email e clica no link para entrar.
-        </div>
-      ) : (
-        <form onSubmit={handleSend} className="space-y-4">
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="o.teu@email.com"
-            className="w-full rounded-xl bg-white/5 border border-white/10 p-3"
-          />
-          {err && (
-            <div className="rounded-xl bg-red-900/40 border border-red-500/30 text-red-200 p-3">
-              {err}
+      </div>
+
+      {/* ── Body ───────────────────────────────────────────── */}
+      <div className="max-w-md mx-auto px-4 pt-10 pb-24">
+
+        {/* ── Already logged in ── */}
+        {sessionEmail ? (
+          <div className="space-y-4">
+            <div className="bg-white border-2 border-black rounded-2xl overflow-hidden">
+              <div className="h-[6px] bg-buns-yellow" />
+              <div className="p-5">
+                <p className="text-[11px] font-black uppercase tracking-widest text-black/35 mb-1">
+                  Sessão ativa
+                </p>
+                <p className="text-black font-black text-lg break-all">{sessionEmail}</p>
+              </div>
             </div>
-          )}
-          <button disabled={loading} className="btn btn-primary w-full">
-            {loading ? 'A enviar…' : 'Enviar link'}
-          </button>
-        </form>
-      )}
+            <div className="flex gap-3">
+              <Link
+                href={nextPath}
+                className="flex-1 py-4 bg-black text-buns-yellow font-black text-sm uppercase tracking-wide rounded-xl text-center active:scale-[0.98] transition"
+              >
+                Continuar →
+              </Link>
+              <button
+                onClick={handleSignOut}
+                className="px-5 py-4 bg-white border-2 border-black text-black font-black text-sm uppercase tracking-wide rounded-xl hover:bg-buns-cream transition active:scale-[0.98]"
+              >
+                Sair
+              </button>
+            </div>
+          </div>
+
+        /* ── Email sent ── */
+        ) : sent ? (
+          <div className="bg-white border-2 border-black rounded-2xl overflow-hidden">
+            <div className="h-[6px] bg-buns-yellow" />
+            <div className="p-8 text-center space-y-4">
+              <span className="text-5xl block">📬</span>
+              <p
+                className="font-display uppercase text-black leading-none"
+                style={{ fontSize: 'clamp(1.5rem, 5vw, 2rem)' }}
+              >
+                Verifica o email
+              </p>
+              <p className="text-black/55 text-sm leading-relaxed">
+                Enviámos um link para <strong className="text-black">{email}</strong>.
+                <br />
+                Clica no link para entrar — o teu carrinho está guardado.
+              </p>
+              <button
+                onClick={() => setSent(false)}
+                className="text-xs text-black/35 underline underline-offset-2 mt-2"
+              >
+                Usar outro email
+              </button>
+            </div>
+          </div>
+
+        /* ── Login form ── */
+        ) : (
+          <div className="space-y-6">
+
+            {/* heading */}
+            <div>
+              <p
+                className="font-display uppercase text-black leading-tight mb-2"
+                style={{ fontSize: 'clamp(1.4rem, 4vw, 1.9rem)' }}
+              >
+                Entra para finalizar<br />o teu pedido
+              </p>
+              <p className="text-black/50 text-sm leading-snug">
+                Guardamos o teu carrinho enquanto confirmas o email.
+              </p>
+            </div>
+
+            {/* form */}
+            <form onSubmit={handleSend} className="space-y-3">
+              <label className="flex flex-col gap-1.5">
+                <span className="text-[11px] font-black uppercase tracking-widest text-black/40">
+                  Email
+                </span>
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="o.teu@email.com"
+                  className="w-full rounded-xl bg-white border-2 border-black/20 focus:border-black px-4 py-3 text-black placeholder:text-black/30 outline-none font-medium transition text-base"
+                />
+              </label>
+
+              {err && (
+                <div className="bg-white border-2 border-red-400 rounded-xl px-4 py-3 text-red-600 text-sm font-medium">
+                  {err}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-4 bg-black text-buns-yellow font-black text-base uppercase tracking-wide rounded-xl border-2 border-black active:scale-[0.98] transition disabled:opacity-50"
+              >
+                {loading ? 'A enviar…' : 'Enviar link mágico →'}
+              </button>
+            </form>
+
+            <p className="text-xs text-black/30 text-center leading-relaxed">
+              Sem password. Receberás um link seguro no teu email.
+            </p>
+
+            {/* Skip login — only when coming from cart/checkout */}
+            {(nextPath === '/checkout' || nextPath === '/cart') && (
+              <div className="text-center pt-1">
+                <Link
+                  href={nextPath}
+                  className="text-sm text-black/35 underline underline-offset-2 hover:text-black/60 transition"
+                >
+                  Continuar sem conta →
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </main>
   )
 }
