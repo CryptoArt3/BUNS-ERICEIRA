@@ -1,28 +1,30 @@
 'use client'
 
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { Product } from './data'
 import { useCart } from '@/components/cart/CartContext'
-import { Check } from 'lucide-react'
+
+/* Category accent colours — kept as JS map to avoid Tailwind purge issues */
+const ACCENT: Record<string, string> = {
+  burgers:  '#FFD400',
+  extras:   '#FB923C',
+  bebidas:  '#38BDF8',
+  molhos:   '#F87171',
+  bunanas:  '#F472B6',
+  kids:     '#34D399',
+}
 
 export default function ProductCard({ product }: { product: Product }) {
   const { add } = useCart()
 
   const hasMenu = typeof product.menuPrice === 'number'
   const [variant, setVariant] = useState<'burger' | 'menu'>(hasMenu ? 'menu' : 'burger')
-
   const [added, setAdded] = useState(false)
-  const cardRef = useRef<HTMLDivElement>(null)
 
   const price = useMemo(
     () => (variant === 'menu' && hasMenu ? product.menuPrice! : product.price),
     [variant, hasMenu, product.price, product.menuPrice]
   )
-
-  const canTilt =
-    typeof window !== 'undefined' &&
-    typeof window.matchMedia === 'function' &&
-    window.matchMedia('(pointer: fine)').matches
 
   function handleAdd() {
     const name = variant === 'menu' && hasMenu ? `${product.name} — Menu` : product.name
@@ -37,136 +39,129 @@ export default function ProductCard({ product }: { product: Product }) {
     window.setTimeout(() => setAdded(false), 900)
   }
 
-  function handleMove(e: React.MouseEvent) {
-    if (!canTilt) return
-    const el = cardRef.current
-    if (!el) return
-    const r = el.getBoundingClientRect()
-    const px = (e.clientX - r.left) / r.width
-    const py = (e.clientY - r.top) / r.height
-    const rx = (py - 0.5) * 6
-    const ry = (px - 0.5) * -6
-    el.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg)`
-  }
-  function handleLeave() {
-    if (!canTilt) return
-    const el = cardRef.current
-    if (!el) return
-    el.style.transform = `rotateX(0deg) rotateY(0deg)`
-  }
+  const accent = ACCENT[product.category] ?? '#FFD400'
+  const isBurger = product.category === 'burgers'
 
   return (
-    <div
-      ref={cardRef}
-      onMouseMove={handleMove}
-      onMouseLeave={handleLeave}
-      className="group relative rounded-3xl border border-white/10 bg-white/5 p-4 sm:p-5 shadow-buns transition-transform will-change-transform overflow-hidden max-w-[100vw]"
-    >
-      {/* efeito glow */}
-      <div
-        className="pointer-events-none absolute -inset-px rounded-3xl opacity-0 blur-md transition group-hover:opacity-100"
-        style={{ background: 'radial-gradient(600px 120px at 10% -10%, rgba(255,212,0,.25), transparent 60%)' }}
-      />
+    <div className="relative bg-white border-2 border-black rounded-2xl overflow-hidden flex flex-col group">
 
-      {/* imagem com proporção estável */}
-      <div className="mb-3 overflow-hidden rounded-2xl border border-white/10 bg-black/30">
-        {product.image ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={product.image}
-            alt={product.name}
-            className="block w-full max-w-full aspect-[16/9] object-cover md:aspect-[3/1]"
-          />
-        ) : (
-          <div className="w-full aspect-[16/9] bg-gradient-to-br from-white/10 to-white/0" />
+      {/* Top accent stripe */}
+      <div className="h-[6px] w-full shrink-0" style={{ background: accent }} />
+
+      <div className="p-5 flex flex-col flex-1 gap-0">
+
+        {/* Tag badges */}
+        {product.tags && product.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            {product.tags.includes('bestseller') && (
+              <span className="bg-buns-yellow text-black text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider">
+                👑 Mais pedido
+              </span>
+            )}
+            {product.tags.includes('spicy') && (
+              <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider">
+                🔥 Picante
+              </span>
+            )}
+            {product.tags.includes('veg') && (
+              <span className="bg-green-500 text-white text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider">
+                🌱 Veggie
+              </span>
+            )}
+            {product.tags.includes('new') && (
+              <span className="bg-blue-500 text-white text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider">
+                ✨ Novo
+              </span>
+            )}
+          </div>
         )}
-      </div>
 
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h3 className="font-display text-lg sm:text-xl">{product.name}</h3>
-          {product.description && (
-            <p className="mt-1 text-sm sm:text-[15px] text-white/75 leading-snug">
-              {product.description}
-            </p>
-          )}
-          <div className="mt-2 flex gap-2">
-            {product.tags?.includes('veg') && (
-              <span className="inline-block rounded-full bg-emerald-500/20 px-2 py-0.5 text-xs text-emerald-200">
-                Veggie
-              </span>
-            )}
-            {product.tags?.includes('spicy') && (
-              <span className="inline-block rounded-full bg-red-500/20 px-2 py-0.5 text-xs text-red-200">
-                Picante
-              </span>
-            )}
-          </div>
-        </div>
+        {/* Product name — BIG poster typography */}
+        <h3
+          className="font-display uppercase leading-none text-black mb-0"
+          style={{ fontSize: isBurger ? 'clamp(1.5rem, 4vw, 2rem)' : 'clamp(1.2rem, 3vw, 1.5rem)' }}
+        >
+          {product.name}
+        </h3>
 
-        <div className="text-right shrink-0">
-          <div className="font-display text-lg sm:text-xl text-buns-yellow transition-all">
-            {price.toFixed(2)} €
-          </div>
+        {/* Ingredients list */}
+        {product.ingredients && product.ingredients.length > 0 && (
+          <ul className="mt-3 mb-4 space-y-1 flex-1">
+            {product.ingredients.map((ing) => (
+              <li key={ing} className="text-sm text-black/55 flex gap-2 leading-snug">
+                <span className="text-black/30 shrink-0">•</span>
+                <span>{ing}</span>
+              </li>
+            ))}
+          </ul>
+        )}
 
-          {hasMenu && (
-            <div
+        {/* Description (non-burger items without ingredients) */}
+        {product.description && !product.ingredients && (
+          <p className="mt-2 mb-4 text-sm text-black/55 leading-snug flex-1">
+            {product.description}
+          </p>
+        )}
+
+        {/* Spacer when no body content */}
+        {!product.ingredients && !product.description && <div className="flex-1 mt-2" />}
+
+        {/* Burger/Menu variant toggle */}
+        {hasMenu && (
+          <div className="flex gap-1 mb-4 bg-black/[0.06] rounded-xl p-1">
+            <button
+              onClick={() => setVariant('burger')}
+              aria-pressed={variant === 'burger'}
               className={[
-                'mt-2 grid grid-cols-2 gap-1 rounded-xl p-1 text-sm',
-                'bg-black/50 border border-white/10',
-                variant === 'menu' ? 'ring-2 ring-[rgba(255,212,0,.45)]' : '',
+                'flex-1 py-2 rounded-lg text-sm font-black transition-all',
+                variant === 'burger'
+                  ? 'bg-black text-buns-yellow shadow-sm'
+                  : 'text-black/50 hover:text-black',
               ].join(' ')}
             >
-              <button
-                onClick={() => setVariant('burger')}
-                aria-pressed={variant === 'burger'}
-                className={[
-                  'rounded-lg px-3 py-2 transition',
-                  variant === 'burger' ? 'bg-white/10 ring-1 ring-white/20' : 'hover:bg-white/5',
-                ].join(' ')}
-              >
-                Burger
-              </button>
+              Burger
+            </button>
+            <button
+              onClick={() => setVariant('menu')}
+              aria-pressed={variant === 'menu'}
+              className={[
+                'flex-1 py-2 rounded-lg text-sm font-black transition-all relative',
+                variant === 'menu'
+                  ? 'bg-buns-yellow text-black shadow-sm'
+                  : 'text-black/50 hover:text-black',
+              ].join(' ')}
+            >
+              + Menu
+              {variant === 'menu' && (
+                <span className="absolute -top-2 -right-1 text-[9px] bg-black text-buns-yellow px-1.5 py-0.5 rounded-full leading-none font-black">
+                  BATATA + BEBIDA
+                </span>
+              )}
+            </button>
+          </div>
+        )}
 
-              <button
-                onClick={() => setVariant('menu')}
-                aria-pressed={variant === 'menu'}
-                className={[
-                  'rounded-lg px-3 py-2 transition relative',
-                  variant === 'menu'
-                    ? 'bg-buns-yellow text-black font-semibold shadow-[0_0_12px_rgba(255,212,0,.35)]'
-                    : 'hover:bg-white/5',
-                ].join(' ')}
-              >
-                Menu
-                {variant === 'menu' && (
-                  <span className="absolute -top-2 -right-2 text-[10px] px-2 py-0.5 rounded-full bg-black/70 text-buns-yellow">
-                    🔥 Popular
-                  </span>
-                )}
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="mt-4">
-        <button
-          onClick={handleAdd}
-          className={[
-            'btn btn-primary w-full py-3 text-base active:scale-[0.99] transition',
-            added ? 'ring-4 ring-[rgba(255,212,0,.35)] animate-pulse' : '',
-          ].join(' ')}
-          aria-live="polite"
-        >
-          {added ? (
-            <span className="inline-flex items-center gap-2">
-              <Check className="w-5 h-5" /> Adicionado!
+        {/* Price + Add button */}
+        <div className="flex items-center justify-between gap-3 mt-auto pt-1">
+          <div className="leading-none">
+            <span className="font-display text-black" style={{ fontSize: 'clamp(1.4rem, 4vw, 1.75rem)' }}>
+              {price.toFixed(2).replace('.', ',')}€
             </span>
-          ) : (
-            'Adicionar'
-          )}
-        </button>
+          </div>
+
+          <button
+            onClick={handleAdd}
+            aria-live="polite"
+            className={[
+              'font-black text-sm px-4 py-2.5 rounded-xl border-2 transition-all active:scale-95',
+              added
+                ? 'bg-green-500 border-green-500 text-white'
+                : 'bg-black border-black text-buns-yellow hover:bg-neutral-800',
+            ].join(' ')}
+          >
+            {added ? '✓ OK!' : '+ Adicionar'}
+          </button>
+        </div>
       </div>
     </div>
   )

@@ -3,11 +3,11 @@
 /* ---------- Tipos ---------- */
 export type CategoryId =
   | 'burgers'
-  | 'batatas'
-  | 'bebidas'
   | 'extras'
+  | 'bebidas'
   | 'molhos'
-  | 'sobremesas'
+  | 'bunanas'
+  | 'kids'
 
 export type Product = {
   id: string
@@ -17,13 +17,11 @@ export type Product = {
   menuPrice?: number
   image?: string
   category: CategoryId
-  /** etiquetas para badges opcionais */
-  tags?: Array<'veg' | 'spicy' | 'new' | 'limited'>
-  /** Ingredientes “default” do hambúrguer que o cliente pode tirar */
+  tags?: Array<'veg' | 'spicy' | 'new' | 'limited' | 'bestseller'>
   ingredients?: string[]
 }
 
-/* ---------- Opções globais para “Menu” ---------- */
+/* ---------- Opções globais para "Menu" ---------- */
 export const FRIES_OPTIONS = [
   'Batata Normal',
   'Batata Doce',
@@ -43,235 +41,270 @@ export const DRINK_OPTIONS = [
 
 /* ---------- Categorias ---------- */
 export const CATEGORIES: { id: CategoryId; label: string; emoji: string }[] = [
-  { id: 'burgers',    label: 'Burgers',    emoji: '🍔' },
-  { id: 'batatas',    label: 'Batatas',    emoji: '🍟' },
-  { id: 'bebidas',    label: 'Bebidas',    emoji: '🥤' },
-  { id: 'extras',     label: 'Extras',     emoji: '➕' },
-  { id: 'molhos',     label: 'Molhos',     emoji: '🧂' },
-  { id: 'sobremesas', label: 'Sobremesas', emoji: '🍌' },
+  { id: 'burgers',  label: 'Burgers',  emoji: '🍔' },
+  { id: 'extras',   label: 'Extras',   emoji: '🍟' },
+  { id: 'bebidas',  label: 'Bebidas',  emoji: '🥤' },
+  { id: 'molhos',   label: 'Molhos',   emoji: '🧂' },
+  { id: 'bunanas',  label: 'Bunanas',  emoji: '🍌' },
+  { id: 'kids',     label: 'Kids',     emoji: '🧸' },
 ]
 
 /* ---------- Produtos ---------- */
 export const PRODUCTS: Product[] = [
-  // Burgers
+
+  // ─── Burgers ─────────────────────────────────────────────
   {
     id: 'classic-bun',
     name: 'Classic Bun',
-    description: 'Ketchup, mostarda, cebola e pickles.',
-    price: 8.90,
-    menuPrice: 12.90,
-    image: '/menu/classic.png',
+    price: 9.90,
+    menuPrice: 13.90,
     category: 'burgers',
-    ingredients: ['Ketchup', 'Mostarda', 'Cebola', 'Pickles'],
+    ingredients: ['Queijo americano', 'Ketchup', 'Mostarda', 'Cebola', 'Pickles'],
   },
   {
     id: 'bacon-bun',
     name: 'Bacon Bun',
-    description: 'BUNS molho especial, cebola frita, bacon e alface iceberg.',
     price: 9.90,
     menuPrice: 13.90,
-    image: '/menu/bacon.png',
     category: 'burgers',
-    ingredients: ['Molho especial', 'Cebola frita', 'Bacon', 'Alface iceberg'],
+    tags: ['bestseller'],
+    ingredients: ['BUNS molho especial', 'Cebola frita', 'Bacon', 'Alface iceberg'],
   },
   {
     id: 'epic-bun',
     name: 'Epic Bun',
-    description: 'BUNS molho especial, cebola caramelizada e jalapeños.',
     price: 9.90,
     menuPrice: 13.90,
-    image: '/menu/epic.png',
     category: 'burgers',
-    tags: ['spicy'],        // 🔥 picante
-    ingredients: ['Molho especial', 'Cebola caramelizada', 'Jalapeños'],
+    tags: ['spicy'],
+    ingredients: ['BUNS molho especial', 'Cebola caramelizada', 'Jalapeños'],
   },
   {
     id: 'veggie-bun',
     name: 'Veggie Bun',
-    description: 'BUNS molho especial, Beyond Meat, cebola e alface iceberg.',
     price: 10.90,
     menuPrice: 14.90,
-    image: '/menu/veggie.png',
     category: 'burgers',
-    tags: ['veg'],          // 🌱 veggie
-    ingredients: ['Molho especial', 'Beyond Meat', 'Cebola', 'Alface iceberg'],
+    tags: ['veg'],
+    ingredients: ['BUNS molho especial', 'Beyond Meat', 'Cebola', 'Alface iceberg'],
+  },
+  {
+    id: 'chicken-bun',
+    name: 'Chicken Bun',
+    price: 9.90,
+    menuPrice: 13.90,
+    category: 'burgers',
+    tags: ['new'],
+    ingredients: ['Frango crocante', 'Coleslaw', 'Mayo de alho', 'Pickles'],
   },
 
-  // Batatas
+  // ─── Extras ──────────────────────────────────────────────
   {
     id: 'batata-normal',
     name: 'Batata Normal',
-    price: 2.50,
-    image: '/menu/batata-normal.png',
-    category: 'batatas',
+    price: 3.00,
+    category: 'extras',
   },
   {
     id: 'batata-doce',
     name: 'Batata Doce',
-    price: 2.50,
-    image: '/menu/batata-doce.png',
-    category: 'batatas',
+    price: 3.50,
+    category: 'extras',
+  },
+  {
+    id: 'extra-carne',
+    name: 'Extra Beef',
+    price: 2.80,
+    category: 'extras',
+  },
+  {
+    id: 'extra-queijo',
+    name: 'Extra Cheese',
+    price: 1.20,
+    category: 'extras',
+  },
+  {
+    id: 'extra-bacon',
+    name: 'Extra Bacon',
+    price: 2.80,
+    category: 'extras',
+  },
+  {
+    id: 'extra-molho',
+    name: 'Extra Molho',
+    price: 1.10,
+    category: 'extras',
   },
 
-  // Bebidas
+  // ─── Bebidas ─────────────────────────────────────────────
   {
     id: 'agua-50',
     name: 'Água 50cl',
-    price: 1.50,
-    image: '/menu/agua.png',
+    price: 1.60,
     category: 'bebidas',
   },
   {
     id: 'soda-20',
-    name: 'Super Bock 33CL',
-    price: 2.00,
-    image: '/menu/super-bock-33cl.png',
+    name: 'Super Bock 33cl',
+    price: 2.50,
     category: 'bebidas',
   },
   {
     id: 'soda-31',
-    name: 'Água gás Pedras',
-    price: 2.50,
-    image: '/menu/agua-gas.png',
+    name: 'Água Gás Pedras',
+    price: 2.70,
     category: 'bebidas',
   },
   {
     id: 'soda-33',
     name: 'Coca-Cola 33cl',
-    price: 2.50,
-    image: '/menu/coca-cola.png',
+    price: 2.70,
     category: 'bebidas',
   },
   {
     id: 'soda-34',
-    name: '7up 33cl',
-    price: 2.50,
-    image: '/menu/7up.png',
+    name: '7UP 33cl',
+    price: 2.70,
     category: 'bebidas',
   },
   {
     id: 'soda-35',
     name: 'Ice Tea Manga 33cl',
-    price: 2.50,
-    image: '/menu/ice-tea-manga.png',
+    price: 2.70,
     category: 'bebidas',
   },
   {
     id: 'soda-36',
-    name: 'Ice Tea limão 33cl',
-    price: 2.50,
-    image: '/menu/ice-tea-limao.png',
+    name: 'Ice Tea Limão 33cl',
+    price: 2.70,
     category: 'bebidas',
   },
   {
     id: 'soda-37',
-    name: 'Ice Tea Pessego 33cl',
-    price: 2.50,
-    image: '/menu/ice-tea-pessego.png',
+    name: 'Ice Tea Pêssego 33cl',
+    price: 2.70,
     category: 'bebidas',
   },
   {
     id: 'soda-38',
-    name: 'Coca-Cola 0 33cl',
-    price: 2.50,
-    image: '/menu/coca-cola-0.png',
+    name: 'Coca-Cola Zero 33cl',
+    price: 2.70,
     category: 'bebidas',
   },
   {
     id: 'hidromel',
     name: 'Hidromel',
     price: 3.50,
-    image: '/menu/hidromel.png',
     category: 'bebidas',
   },
   {
     id: 'cafe',
     name: 'Café',
     price: 1.00,
-    image: '/menu/cafe.png',
     category: 'bebidas',
   },
 
-  // Extras
-  {
-    id: 'extra-carne',
-    name: 'Carne Extra',
-    price: 2.00,
-    image: '/menu/extra-carne.png',
-    category: 'extras',
-  },
-  {
-    id: 'extra-queijo',
-    name: 'Queijo Americano',
-    price: 1.00,
-    image: '/menu/extra-queijo.png',
-    category: 'extras',
-  },
-  {
-    id: 'extra-bacon',
-    name: 'Bacon Extra',
-    price: 2.00,
-    image: '/menu/extra-bacon.png',
-    category: 'extras',
-  },
-
-  // Molhos
+  // ─── Molhos ──────────────────────────────────────────────
   {
     id: 'molho-especial',
     name: 'BUNS Molho Especial',
-    price: 1.00,
-    image: '/menu/molho-especial.png',
+    price: 1.10,
     category: 'molhos',
   },
   {
     id: 'molho-alho',
     name: 'Mayo de Alho',
-    price: 1.00,
-    image: '/menu/molho-alho.png',
+    price: 1.10,
     category: 'molhos',
   },
   {
     id: 'molho-picante',
     name: 'Mayo Picante',
-    price: 1.00,
-    image: '/menu/molho-picante.png',
+    price: 1.10,
     category: 'molhos',
+    tags: ['spicy'],
   },
   {
     id: 'molho-bbq',
     name: 'Molho BBQ',
-    price: 1.00,
-    image: '/menu/molho-bbq.png',
+    price: 1.10,
     category: 'molhos',
   },
+  {
+    id: 'molho-pack-3',
+    name: 'Pack 3 Molhos',
+    price: 2.50,
+    category: 'molhos',
+    description: 'Escolhe 3 molhos à tua escolha.',
+  },
+  {
+    id: 'molho-pack-5',
+    name: 'Pack 5 Molhos',
+    price: 4.00,
+    category: 'molhos',
+    description: 'Escolhe 5 molhos à tua escolha.',
+  },
 
-  // Sobremesa
+  // ─── Bunanas ─────────────────────────────────────────────
   {
     id: 'frozen-bunana',
-    name: 'Bunana Classic Bun',
+    name: 'Buns Milk Simple',
+    description: 'Banana congelada com cobertura de chocolate de leite.',
     price: 3.00,
-    image: '/menu/frozen-bunana-classic.png',
-    category: 'sobremesas',
+    category: 'bunanas',
   },
   {
     id: 'frozen-bunana2',
-    name: 'Buns White Dream',
+    name: 'Buns White Simple',
+    description: 'Banana congelada com cobertura de chocolate branco.',
     price: 3.00,
-    image: '/menu/white-dream.png',
-    category: 'sobremesas',
+    category: 'bunanas',
   },
   {
     id: 'frozen-bunana3',
-    name: 'Buns Dark Oreo',
-    price: 3.00,
-    image: '/menu/dark-oreo.png',
-    category: 'sobremesas',
+    name: 'Dark Oreo',
+    description: 'Banana congelada, chocolate negro e Oreo.',
+    price: 3.50,
+    category: 'bunanas',
   },
   {
     id: 'frozen-bunana4',
-    name: 'Buns Cookie Bomb',
-    price: 3.00,
-    image: '/menu/cookie-bomb.png',
-    category: 'sobremesas',
+    name: 'Cookie Bomb',
+    description: 'Banana congelada, cookie crocante e caramelo.',
+    price: 3.50,
+    category: 'bunanas',
   },
+  {
+    id: 'bunana-pack-3',
+    name: 'Pack 3 Bunanas',
+    price: 9.90,
+    category: 'bunanas',
+    description: 'Escolhe 3 bunanas à tua escolha.',
+  },
+  {
+    id: 'bunana-pack-5',
+    name: 'Pack 5 Bunanas',
+    price: 15.90,
+    category: 'bunanas',
+    description: 'Escolhe 5 bunanas à tua escolha.',
+  },
+
+  // ─── Kids ────────────────────────────────────────────────
+  {
+    id: 'kids-bun',
+    name: 'Kids Bun Menu',
+    price: 12.00,
+    category: 'kids',
+    description: 'Smash burger kids + batata + bebida. Perfeito para os mais novos.',
+    ingredients: ['Queijo americano', 'Ketchup', 'Mostarda'],
+  },
+  {
+    id: 'happy-bun',
+    name: 'Happy Bun Menu',
+    price: 13.90,
+    category: 'kids',
+    description: 'Smash burger kids especial + batata + bebida + bunana.',
+    ingredients: ['Queijo americano', 'BUNS molho especial', 'Cebola'],
+  },
+
 ]

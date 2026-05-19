@@ -3,12 +3,23 @@
 import { useMemo, useRef, useState, useEffect } from 'react'
 import ProductCard from './ProductCard'
 import { PRODUCTS, CATEGORIES } from './data'
-import type { Product } from './data'
+import type { Product, CategoryId } from './data'
 
-type CategoryId = 'all' | (typeof CATEGORIES)[number]['id']
+type FilterId = 'all' | CategoryId
+
+/* Category badge pill colours matching ProductCard ACCENT map */
+const PILL_ACTIVE: Record<string, { bg: string; text: string }> = {
+  all:      { bg: '#111111', text: '#FFD400' },
+  burgers:  { bg: '#111111', text: '#FFD400' },
+  extras:   { bg: '#FB923C', text: '#000000' },
+  bebidas:  { bg: '#38BDF8', text: '#000000' },
+  molhos:   { bg: '#F87171', text: '#000000' },
+  bunanas:  { bg: '#F472B6', text: '#000000' },
+  kids:     { bg: '#34D399', text: '#000000' },
+}
 
 export default function MenuGrid() {
-  const [filter, setFilter] = useState<CategoryId>('all')
+  const [filter, setFilter] = useState<FilterId>('all')
   const chipsRef = useRef<HTMLDivElement>(null)
 
   const visible: Product[] = useMemo(() => {
@@ -16,6 +27,7 @@ export default function MenuGrid() {
     return PRODUCTS.filter((p) => p.category === filter)
   }, [filter])
 
+  /* Auto-scroll selected pill into view */
   useEffect(() => {
     const el = chipsRef.current
     if (!el) return
@@ -27,57 +39,78 @@ export default function MenuGrid() {
 
   return (
     <section className="w-full max-w-[100vw] overflow-x-hidden">
-      {/* Tabs (stick abaixo do header 64px) */}
-      <div className="sticky top-[64px] z-20 bg-black/60 backdrop-blur-sm border-b border-white/10">
+
+      {/* Sticky category pills bar */}
+      <div className="sticky top-[64px] z-20 bg-buns-cream border-b-2 border-black/10">
         <div
           ref={chipsRef}
           className="ios-hscroll no-scrollbar flex gap-2 px-4 py-3 overflow-x-auto"
         >
-          <Chip active={filter === 'all'} onClick={() => setFilter('all')} data-active={filter === 'all'}>
+          <CategoryPill
+            active={filter === 'all'}
+            activeStyle={PILL_ACTIVE.all}
+            onClick={() => setFilter('all')}
+            data-active={filter === 'all'}
+          >
             🍔 Tudo
-          </Chip>
+          </CategoryPill>
 
           {CATEGORIES.map((c) => (
-            <Chip
+            <CategoryPill
               key={c.id}
               active={filter === c.id}
-              onClick={() => setFilter(c.id as CategoryId)}
+              activeStyle={PILL_ACTIVE[c.id] ?? PILL_ACTIVE.all}
+              onClick={() => setFilter(c.id as FilterId)}
               data-active={filter === c.id}
             >
               {c.emoji} {c.label}
-            </Chip>
+            </CategoryPill>
           ))}
         </div>
       </div>
 
-      {/* Grelha */}
-      <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+      {/* Product grid */}
+      <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {visible.map((p) => (
           <ProductCard key={p.id} product={p} />
         ))}
       </div>
 
       {visible.length === 0 && (
-        <div className="text-white/60 p-6 text-center">Sem produtos nesta categoria.</div>
+        <div className="text-black/40 p-8 text-center font-black uppercase tracking-wide">
+          Sem produtos nesta categoria.
+        </div>
       )}
 
+      {/* Bottom spacer for mobile sticky cart bar */}
       <div className="h-20 md:h-0" />
     </section>
   )
 }
 
-function Chip(
-  { children, active, onClick, ...rest }:
-  { children: React.ReactNode, active?: boolean, onClick?: () => void } & React.HTMLAttributes<HTMLButtonElement>
-) {
+/* ─── CategoryPill ────────────────────────────────────────── */
+function CategoryPill({
+  children,
+  active,
+  activeStyle,
+  onClick,
+  ...rest
+}: {
+  children: React.ReactNode
+  active?: boolean
+  activeStyle: { bg: string; text: string }
+  onClick?: () => void
+} & React.HTMLAttributes<HTMLButtonElement>) {
   return (
     <button
       type="button"
       onClick={onClick}
+      style={active ? { background: activeStyle.bg, color: activeStyle.text, borderColor: activeStyle.bg } : undefined}
       className={[
-        'px-3 py-2 rounded-full text-sm transition shrink-0',
-        'border border-white/15 bg-white/5 hover:bg-white/10',
-        active ? 'ring-1 ring-white/30 text-buns-yellow' : 'text-white/80',
+        'px-4 py-2 rounded-xl text-sm font-black transition-all shrink-0 uppercase tracking-wide border-2',
+        active
+          ? 'shadow-sm scale-[1.03]'
+          : 'bg-white text-black border-black/20 hover:border-black/50',
       ].join(' ')}
       aria-pressed={active ? 'true' : 'false'}
       {...rest}
