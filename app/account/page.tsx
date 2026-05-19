@@ -44,7 +44,7 @@ function formatDate(iso: string) {
 
 function itemSummary(items: OrderItem[] | null): string {
   if (!items || items.length === 0) return ''
-  const shown = items.slice(0, 2).map((it) => `${it.name} × ${it.qty}`).join(', ')
+  const shown = items.slice(0, 2).map((it) => `${it.name} ×${it.qty}`).join(', ')
   const extra = items.length - 2
   return extra > 0 ? `${shown} e mais ${extra}` : shown
 }
@@ -54,8 +54,8 @@ function waitText(order: Order): string {
   switch (order.status) {
     case 'pending':    return 'A aguardar confirmação...'
     case 'preparing':  return '~10–15 min'
-    case 'ready':      return 'Vai buscar ao balcão! 🏃'
-    case 'delivering': return isTakeaway ? 'Vai buscar ao balcão 🏃' : 'A caminho...'
+    case 'ready':      return 'Vai buscar ao balcão!'
+    case 'delivering': return isTakeaway ? 'Vai buscar ao balcão!' : 'A caminho...'
     default:           return ''
   }
 }
@@ -68,48 +68,48 @@ function ActiveOrderCard({ order }: { order: Order }) {
   const summary = itemSummary(order.items)
 
   return (
-    <article className={`card border ${tone.border} ${tone.bg} p-5 space-y-3`}>
-      {/* top row */}
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <span
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full
-              text-xs font-semibold border ${tone.badge}`}
-          >
-            {tone.emoji}&nbsp;{label}
+    <article className="bg-white border-2 border-black rounded-2xl overflow-hidden">
+      <div className="h-[6px] bg-buns-yellow" />
+      <div className="p-5 space-y-4">
+
+        {/* Status sticker + total */}
+        <div className="flex items-start justify-between gap-3">
+          <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wide border ${tone.badge}`}>
+            {tone.emoji} {label}
           </span>
-          <p className="mt-2 font-display text-white text-base leading-none">
+          <span className="text-black font-black text-xl tabular-nums shrink-0">
+            {currency(order.total)}
+          </span>
+        </div>
+
+        {/* Order ID + time */}
+        <div>
+          <p className="font-display text-black uppercase leading-none text-2xl">
             #{order.id.slice(0, 8).toUpperCase()}
           </p>
-          <p className="text-white/40 text-xs tabular-nums mt-0.5">
-            {formatTime(order.created_at)}
-          </p>
+          <p className="text-black/40 text-xs tabular-nums mt-1">{formatTime(order.created_at)}</p>
         </div>
-        <p className="text-buns-yellow font-bold text-lg tabular-nums shrink-0">
-          {currency(order.total)}
-        </p>
+
+        {/* Item summary */}
+        {summary && (
+          <p className="text-sm text-black/55 leading-snug">{summary}</p>
+        )}
+
+        {/* Wait estimate */}
+        {wait && (
+          <p className="text-xs text-black/45 flex items-center gap-1.5">
+            <span>⏱</span><span>{wait}</span>
+          </p>
+        )}
+
+        {/* CTA */}
+        <Link
+          href={`/order/${order.id}`}
+          className="block w-full py-3 bg-black text-buns-yellow font-black text-sm uppercase tracking-wide rounded-xl text-center active:scale-[0.98] transition"
+        >
+          Ver estado do pedido →
+        </Link>
       </div>
-
-      {/* item summary */}
-      {summary && (
-        <p className="text-sm text-white/60 leading-snug">{summary}</p>
-      )}
-
-      {/* estimated wait */}
-      {wait && (
-        <p className="text-xs text-white/45 flex items-center gap-1.5">
-          <span>⏱</span>
-          <span>{wait}</span>
-        </p>
-      )}
-
-      {/* CTA */}
-      <Link
-        href={`/order/${order.id}`}
-        className="btn btn-primary w-full mt-1"
-      >
-        Ver estado do pedido →
-      </Link>
     </article>
   )
 }
@@ -121,29 +121,34 @@ function HistoryRow({ order }: { order: Order }) {
   const summary = itemSummary(order.items)
 
   return (
-    <li className={`card border ${tone.border} p-4 flex items-center gap-3`}>
-      <span className="text-xl shrink-0" aria-hidden="true">{tone.emoji}</span>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-sm font-semibold text-white/75">
-            #{order.id.slice(0, 8).toUpperCase()}
-          </span>
-          <span className="text-white/25 text-xs">·</span>
-          <span className="text-white/40 text-xs tabular-nums">
-            {formatDate(order.created_at)} {formatTime(order.created_at)}
-          </span>
+    <li className="bg-white border-2 border-black/10 rounded-2xl overflow-hidden">
+      <div className="p-4">
+        {/* Mobile: stacked; Desktop: horizontal */}
+        <div className="flex items-start gap-3">
+          <span className="text-2xl shrink-0 mt-0.5" aria-hidden="true">{tone.emoji}</span>
+          <div className="flex-1 min-w-0 space-y-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-black text-black text-sm">
+                #{order.id.slice(0, 8).toUpperCase()}
+              </span>
+              <span className="text-black/30 text-xs">·</span>
+              <span className="text-black/45 text-xs tabular-nums">
+                {formatDate(order.created_at)} {formatTime(order.created_at)}
+              </span>
+            </div>
+            {summary && (
+              <p className="text-xs text-black/45 leading-snug break-words">{summary}</p>
+            )}
+            <div className="flex items-center justify-between gap-2 pt-1">
+              <span className={`text-[11px] px-2.5 py-1 rounded-lg border font-black uppercase tracking-wide ${tone.badge}`}>
+                {label}
+              </span>
+              <span className="text-black font-black text-sm tabular-nums shrink-0">
+                {currency(order.total)}
+              </span>
+            </div>
+          </div>
         </div>
-        {summary && (
-          <p className="text-xs text-white/35 mt-0.5 truncate">{summary}</p>
-        )}
-      </div>
-      <div className="text-right shrink-0 space-y-1">
-        <p className="text-sm font-semibold text-white/60 tabular-nums">
-          {currency(order.total)}
-        </p>
-        <span className={`text-[11px] px-2 py-0.5 rounded-full border ${tone.badge} inline-block`}>
-          {label}
-        </span>
       </div>
     </li>
   )
@@ -154,10 +159,10 @@ function Skeleton() {
   return (
     <div className="space-y-4">
       {[1, 2].map((n) => (
-        <div key={n} className="card p-5 space-y-3 animate-pulse">
-          <div className="h-5 bg-white/10 rounded w-28" />
-          <div className="h-4 bg-white/10 rounded w-40" />
-          <div className="h-10 bg-white/10 rounded-xl" />
+        <div key={n} className="bg-white border-2 border-black/10 rounded-2xl p-5 space-y-3 animate-pulse">
+          <div className="h-6 bg-black/8 rounded-lg w-28" />
+          <div className="h-8 bg-black/8 rounded-lg w-40" />
+          <div className="h-10 bg-black/8 rounded-xl" />
         </div>
       ))}
     </div>
@@ -198,7 +203,6 @@ export default function AccountPage() {
       setOrders((data ?? []) as unknown as Order[])
       setLoading(false)
 
-      // Realtime: re-fetch on any change to this user's orders
       sub = supabase
         .channel('orders_account')
         .on(
@@ -232,9 +236,15 @@ export default function AccountPage() {
   /* ── Loading */
   if (loading) {
     return (
-      <main className="mx-auto max-w-2xl px-4 py-8 pb-24 md:pb-8 space-y-6 overflow-x-hidden">
-        <div className="h-8 bg-white/10 rounded animate-pulse w-48" />
-        <Skeleton />
+      <main className="w-full max-w-full overflow-x-hidden bg-buns-cream min-h-full">
+        <div className="bg-black px-4 sm:px-6 pt-8 pb-7 border-b-4 border-buns-yellow">
+          <div className="max-w-screen-xl mx-auto">
+            <div className="h-12 bg-white/10 rounded-xl animate-pulse w-48" />
+          </div>
+        </div>
+        <div className="max-w-2xl mx-auto px-4 pt-6 pb-32 space-y-4">
+          <Skeleton />
+        </div>
       </main>
     )
   }
@@ -242,78 +252,120 @@ export default function AccountPage() {
   /* ── Error / not logged in */
   if (err) {
     return (
-      <main className="mx-auto max-w-2xl px-4 py-8 pb-24 md:pb-8 space-y-4 overflow-x-hidden">
-        <p className="text-red-300">{err}</p>
-        <Link className="btn btn-primary" href="/login">Entrar</Link>
+      <main className="w-full max-w-full overflow-x-hidden bg-buns-cream min-h-full">
+        <div className="bg-black px-4 sm:px-6 pt-8 pb-7 border-b-4 border-buns-yellow">
+          <div className="max-w-screen-xl mx-auto">
+            <h1 className="font-display text-white uppercase leading-none tracking-tight"
+                style={{ fontSize: 'clamp(2.8rem, 10vw, 5.5rem)' }}>
+              BUNS<br /><span className="text-buns-yellow">Conta</span>
+            </h1>
+          </div>
+        </div>
+        <div className="max-w-2xl mx-auto px-4 pt-6 pb-32 space-y-4">
+          <div className="bg-white border-2 border-black rounded-2xl overflow-hidden">
+            <div className="h-[6px] bg-buns-yellow" />
+            <div className="p-6 space-y-4">
+              <p className="text-black font-black text-lg">{err}</p>
+              <Link
+                href="/login"
+                className="inline-block px-6 py-3 bg-black text-buns-yellow font-black text-sm uppercase tracking-wide rounded-xl"
+              >
+                Entrar
+              </Link>
+            </div>
+          </div>
+        </div>
       </main>
     )
   }
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-8 pb-24 md:pb-8 space-y-8 overflow-x-hidden">
+    <main className="w-full max-w-full overflow-x-hidden bg-buns-cream min-h-full">
 
-      {/* ── Header ── */}
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-4xl font-display">A minha conta</h1>
+      {/* ── Hero strip ─────────────────────────────────────── */}
+      <div className="bg-black px-4 sm:px-6 pt-8 pb-7 border-b-4 border-buns-yellow">
+        <div className="max-w-screen-xl mx-auto">
+          <div className="inline-flex items-center gap-1.5 bg-buns-yellow text-black text-[11px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg mb-5">
+            👤 A minha conta
+          </div>
+          <h1
+            className="font-display text-white uppercase leading-none tracking-tight"
+            style={{ fontSize: 'clamp(2.8rem, 10vw, 5.5rem)' }}
+          >
+            BUNS<br />
+            <span className="text-buns-yellow">Conta</span>
+          </h1>
           {userEmail && (
-            <p className="text-white/45 text-sm mt-1">{userEmail}</p>
+            <p className="mt-3 text-white/40 text-sm font-medium break-all">{userEmail}</p>
           )}
-        </div>
-        <div className="flex gap-2 shrink-0">
-          <Link href="/menu" className="btn btn-ghost">Novo pedido</Link>
-          <button onClick={handleSignOut} className="btn btn-ghost">Sair</button>
         </div>
       </div>
 
-      {/* ── Active orders ── */}
-      <section aria-labelledby="active-heading">
-        <h2
-          id="active-heading"
-          className="text-[11px] font-semibold text-white/40 uppercase tracking-[0.18em] mb-3"
-        >
-          Pedidos ativos
-        </h2>
+      {/* ── Body ───────────────────────────────────────────── */}
+      <div className="max-w-2xl mx-auto px-4 pt-6 pb-32 space-y-8">
 
-        {active.length === 0 ? (
-          <div className="card border border-white/10 p-6 flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
-            <span className="text-3xl shrink-0" aria-hidden="true">🍔</span>
-            <div className="flex-1">
-              <p className="font-semibold text-white/80">Sem pedidos ativos de momento</p>
-              <p className="text-white/45 text-sm mt-0.5">
-                Os teus pedidos em curso aparecem aqui em tempo real.
-              </p>
-            </div>
-            <Link href="/menu" className="btn btn-primary shrink-0">
-              Fazer novo pedido
-            </Link>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {active.map((o) => (
-              <ActiveOrderCard key={o.id} order={o} />
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* ── History ── */}
-      {history.length > 0 && (
-        <section aria-labelledby="history-heading">
-          <h2
-            id="history-heading"
-            className="text-[11px] font-semibold text-white/40 uppercase tracking-[0.18em] mb-3"
+        {/* ── Header actions ── */}
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Link
+            href="/menu"
+            className="flex-1 py-3 bg-black text-buns-yellow font-black text-sm uppercase tracking-wide rounded-xl text-center active:scale-[0.98] transition"
           >
-            Histórico
-          </h2>
-          <ul className="space-y-2">
-            {history.map((o) => (
-              <HistoryRow key={o.id} order={o} />
-            ))}
-          </ul>
-        </section>
-      )}
+            Novo pedido
+          </Link>
+          <button
+            onClick={handleSignOut}
+            className="flex-1 py-3 bg-white border-2 border-black text-black font-black text-sm uppercase tracking-wide rounded-xl active:scale-[0.98] transition"
+          >
+            Sair
+          </button>
+        </div>
 
+        {/* ── Active orders ── */}
+        <section>
+          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-black/35 mb-3">
+            Pedidos ativos
+          </p>
+
+          {active.length === 0 ? (
+            <div className="bg-white border-2 border-black/10 rounded-2xl p-6 flex flex-col items-center text-center gap-3">
+              <span className="text-4xl" aria-hidden="true">🍔</span>
+              <div>
+                <p className="font-black text-black text-base">Sem pedidos ativos</p>
+                <p className="text-black/45 text-sm mt-0.5">
+                  Os teus pedidos em curso aparecem aqui.
+                </p>
+              </div>
+              <Link
+                href="/menu"
+                className="w-full py-3 bg-black text-buns-yellow font-black text-sm uppercase tracking-wide rounded-xl text-center active:scale-[0.98] transition"
+              >
+                Fazer novo pedido
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {active.map((o) => (
+                <ActiveOrderCard key={o.id} order={o} />
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* ── History ── */}
+        {history.length > 0 && (
+          <section>
+            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-black/35 mb-3">
+              Histórico
+            </p>
+            <ul className="space-y-2">
+              {history.map((o) => (
+                <HistoryRow key={o.id} order={o} />
+              ))}
+            </ul>
+          </section>
+        )}
+
+      </div>
     </main>
   )
 }
