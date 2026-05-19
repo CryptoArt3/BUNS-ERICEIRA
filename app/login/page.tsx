@@ -34,7 +34,9 @@ export default function LoginPage() {
     setLoading(true)
     try {
       localStorage.setItem('buns_auth_next', nextPath || '/checkout')
-      localStorage.setItem('buns_pending_cart_backup', localStorage.getItem('cart') || '[]')
+      const cartRaw = localStorage.getItem('cart')
+      localStorage.setItem('buns_pending_cart_backup', cartRaw ?? JSON.stringify({ items: [] }))
+      console.log('[AUTH CART] backup saved', cartRaw)
 
       const { error } = await supabase.auth.signInWithOtp({
         email: email.trim(),

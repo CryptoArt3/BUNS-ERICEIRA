@@ -12,15 +12,37 @@ export default function AuthCallbackPage() {
     let done = false
 
     const restoreCartIfEmpty = () => {
-      const current = localStorage.getItem('cart')
-      const isEmpty = !current || current === '[]' || current === 'null'
-      if (isEmpty) {
-        const backup = localStorage.getItem('buns_pending_cart_backup')
-        if (backup && backup !== '[]') {
-          localStorage.setItem('cart', backup)
+      try {
+        const current = localStorage.getItem('cart')
+        let cartIsEmpty = true
+        if (current) {
+          try {
+            const parsed = JSON.parse(current)
+            cartIsEmpty = !Array.isArray(parsed?.items) || parsed.items.length === 0
+          } catch { cartIsEmpty = true }
         }
+
+        if (cartIsEmpty) {
+          const backup = localStorage.getItem('buns_pending_cart_backup')
+          if (backup) {
+            try {
+              const parsed = JSON.parse(backup)
+              if (Array.isArray(parsed?.items) && parsed.items.length > 0) {
+                localStorage.setItem('cart', backup)
+                console.log('[AUTH CART] restored', backup)
+              } else {
+                console.log('[AUTH CART] no restore needed (backup empty)')
+              }
+            } catch { console.log('[AUTH CART] no restore needed (backup parse error)') }
+          } else {
+            console.log('[AUTH CART] no restore needed (no backup)')
+          }
+        } else {
+          console.log('[AUTH CART] no restore needed (cart has items)')
+        }
+      } finally {
+        localStorage.removeItem('buns_pending_cart_backup')
       }
-      localStorage.removeItem('buns_pending_cart_backup')
     }
 
     const redirect = () => {
