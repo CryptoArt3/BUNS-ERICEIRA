@@ -105,7 +105,14 @@ export const PRODUCTS: Product[] = [
     menuPrice: 13.90,
     category: 'burgers',
     tags: ['new'],
-    ingredients: ['Frango crocante', 'Coleslaw', 'Mayo de alho', 'Pickles'],
+    ingredients: [
+      'Molho da casa',
+      'Pickles',
+      'Alface',
+      'Cebola caramelizada',
+      '2 chicken patties',
+      'Queijo americano',
+    ],
   },
 
   // ─── Kids ────────────────────────────────────────────────
@@ -114,16 +121,27 @@ export const PRODUCTS: Product[] = [
     name: 'Kids Bun Menu',
     price: 12.00,
     category: 'kids',
-    description: 'Smash burger kids + batata + bebida. Perfeito para os mais novos.',
-    ingredients: ['Queijo americano', 'Ketchup', 'Mostarda'],
+    ingredients: [
+      'Bun',
+      'Double Smash Beef',
+      'Queijo americano',
+      'Capri-Sun',
+      'BUNS Mascot',
+    ],
   },
   {
     id: 'happy-bun',
     name: 'Happy Bun Menu',
     price: 13.90,
     category: 'kids',
-    description: 'Smash burger kids especial + batata + bebida + bunana.',
-    ingredients: ['Queijo americano', 'BUNS molho especial', 'Cebola'],
+    ingredients: [
+      'Bun',
+      'Double Smash Beef',
+      'Queijo americano',
+      'Capri-Sun',
+      'BUNS Mascot',
+      'Frozen Banana',
+    ],
   },
 
   // ─── Batatas ─────────────────────────────────────────────
@@ -140,32 +158,7 @@ export const PRODUCTS: Product[] = [
     category: 'batatas',
   },
 
-  // ─── Molhos ──────────────────────────────────────────────
-  {
-    id: 'molho-especial',
-    name: 'BUNS Molho Especial',
-    price: 1.10,
-    category: 'molhos',
-  },
-  {
-    id: 'molho-alho',
-    name: 'Mayo de Alho',
-    price: 1.10,
-    category: 'molhos',
-  },
-  {
-    id: 'molho-picante',
-    name: 'Mayo Picante',
-    price: 1.10,
-    category: 'molhos',
-    tags: ['spicy'],
-  },
-  {
-    id: 'molho-bbq',
-    name: 'Molho BBQ',
-    price: 1.10,
-    category: 'molhos',
-  },
+  // ─── Molhos — packs first, then individual ────────────────
   {
     id: 'molho-pack-3',
     name: 'Pack 3 Molhos',
@@ -179,6 +172,85 @@ export const PRODUCTS: Product[] = [
     price: 4.00,
     category: 'molhos',
     description: 'Escolhe 5 molhos à tua escolha.',
+  },
+  {
+    id: 'molho-especial',
+    name: 'Molho Especial BUNS',
+    price: 1.10,
+    category: 'molhos',
+  },
+  {
+    id: 'molho-alho',
+    name: 'Maionese de Alho',
+    price: 1.10,
+    category: 'molhos',
+  },
+  {
+    id: 'molho-picante',
+    name: 'Maionese Picante',
+    price: 1.10,
+    category: 'molhos',
+    tags: ['spicy'],
+  },
+  {
+    id: 'molho-bbq',
+    name: 'Molho BBQ',
+    price: 1.10,
+    category: 'molhos',
+  },
+  {
+    id: 'molho-ketchup',
+    name: 'Ketchup',
+    price: 1.10,
+    category: 'molhos',
+  },
+  {
+    id: 'molho-maionese',
+    name: 'Maionese',
+    price: 1.10,
+    category: 'molhos',
+  },
+  {
+    id: 'molho-mostarda',
+    name: 'Mostarda',
+    price: 1.10,
+    category: 'molhos',
+  },
+  {
+    id: 'molho-doritos',
+    name: 'Maionese Doritos',
+    price: 1.10,
+    category: 'molhos',
+  },
+  {
+    id: 'molho-queijo-cheddar',
+    name: 'Queijo Cheddar Líquido',
+    price: 1.10,
+    category: 'molhos',
+  },
+  {
+    id: 'molho-guacamole',
+    name: 'Guacamole',
+    price: 1.10,
+    category: 'molhos',
+  },
+  {
+    id: 'molho-ranchera',
+    name: 'Ranchera',
+    price: 1.10,
+    category: 'molhos',
+  },
+  {
+    id: 'molho-cocktail',
+    name: 'Molho Cocktail',
+    price: 1.10,
+    category: 'molhos',
+  },
+  {
+    id: 'molho-francesinha',
+    name: 'Molho Francesinha',
+    price: 1.10,
+    category: 'molhos',
   },
 
   // ─── Extras ──────────────────────────────────────────────
@@ -201,35 +273,7 @@ export const PRODUCTS: Product[] = [
     category: 'extras',
   },
 
-  // ─── Bunanas ─────────────────────────────────────────────
-  {
-    id: 'frozen-bunana',
-    name: 'Buns Milk Simple',
-    description: 'Banana congelada com cobertura de chocolate de leite.',
-    price: 3.00,
-    category: 'bunanas',
-  },
-  {
-    id: 'frozen-bunana2',
-    name: 'Buns White Simple',
-    description: 'Banana congelada com cobertura de chocolate branco.',
-    price: 3.00,
-    category: 'bunanas',
-  },
-  {
-    id: 'frozen-bunana3',
-    name: 'Dark Oreo',
-    description: 'Banana congelada, chocolate negro e Oreo.',
-    price: 3.50,
-    category: 'bunanas',
-  },
-  {
-    id: 'frozen-bunana4',
-    name: 'Cookie Bomb',
-    description: 'Banana congelada, cookie crocante e caramelo.',
-    price: 3.50,
-    category: 'bunanas',
-  },
+  // ─── Bunanas — packs first, then individual ───────────────
   {
     id: 'bunana-pack-3',
     name: 'Pack 3 Bunanas',
@@ -243,6 +287,76 @@ export const PRODUCTS: Product[] = [
     price: 15.90,
     category: 'bunanas',
     description: 'Escolhe 5 bunanas à tua escolha.',
+  },
+  {
+    id: 'frozen-bunana',
+    name: 'Buns Milk Simple',
+    price: 3.00,
+    category: 'bunanas',
+    ingredients: ['Chocolate de leite'],
+  },
+  {
+    id: 'frozen-bunana2',
+    name: 'Buns White Simple',
+    price: 3.00,
+    category: 'bunanas',
+    ingredients: ['Chocolate branco'],
+  },
+  {
+    id: 'bunana-white-oreo',
+    name: 'Buns White Oreo',
+    price: 3.50,
+    category: 'bunanas',
+    ingredients: ['Chocolate branco', 'Oreo triturado', 'Molho de avelã'],
+  },
+  {
+    id: 'frozen-bunana3',
+    name: 'Buns Dark Oreo',
+    price: 3.50,
+    category: 'bunanas',
+    ingredients: ['Chocolate de leite', 'Oreo triturado', 'Molho de avelã'],
+  },
+  {
+    id: 'bunana-white-sprinkles',
+    name: 'Buns White Sprinkles',
+    price: 3.50,
+    category: 'bunanas',
+    ingredients: ['Chocolate branco', 'Granulado colorido'],
+  },
+  {
+    id: 'bunana-milk-peanut',
+    name: 'Buns Milk Peanut',
+    price: 3.50,
+    category: 'bunanas',
+    ingredients: ['Chocolate de leite', 'Amendoim torrado salgado'],
+  },
+  {
+    id: 'frozen-bunana4',
+    name: 'Buns Cookie Bomb',
+    price: 3.50,
+    category: 'bunanas',
+    ingredients: ['Chocolate branco', 'Biscoito triturado', 'Caramelo salgado'],
+  },
+  {
+    id: 'bunana-white-dream',
+    name: 'Buns White Dream',
+    price: 3.50,
+    category: 'bunanas',
+    ingredients: ['Chocolate branco', 'Pistachio', 'Coulis de framboesa'],
+  },
+  {
+    id: 'bunana-classic',
+    name: 'Buns Classic',
+    price: 3.50,
+    category: 'bunanas',
+    ingredients: ['Chocolate de leite', 'Amendoim torrado salgado', 'Doce de leite'],
+  },
+  {
+    id: 'bunana-milk-caramel',
+    name: 'Buns Milk Caramel',
+    price: 3.50,
+    category: 'bunanas',
+    ingredients: ['Chocolate de leite', 'Biscoito Lotus', 'Caramelo salgado'],
   },
 
   // ─── BUNS Bar ────────────────────────────────────────────
@@ -261,16 +375,16 @@ export const PRODUCTS: Product[] = [
     category: 'buns-bar',
   },
   {
+    // Coca-Cola + Zero grouped with variant buttons; soda-33 ID preserved
     id: 'soda-33',
-    name: 'Coca-Cola 33cl',
+    name: 'Coca-Cola',
     price: 2.70,
     category: 'buns-bar',
-  },
-  {
-    id: 'soda-38',
-    name: 'Coca-Cola Zero 33cl',
-    price: 2.70,
-    category: 'buns-bar',
+    description: '33cl.',
+    variants: [
+      { id: 'original', label: 'Coca-Cola'      },
+      { id: 'zero',     label: 'Coca-Cola Zero' },
+    ],
   },
   {
     id: 'soda-34',
@@ -290,12 +404,6 @@ export const PRODUCTS: Product[] = [
       { id: 'manga',   label: 'Manga'   },
       { id: 'pessego', label: 'Pêssego' },
     ],
-  },
-  {
-    id: 'cafe',
-    name: 'Café',
-    price: 1.00,
-    category: 'buns-bar',
   },
 
   // Draft beer
@@ -322,7 +430,6 @@ export const PRODUCTS: Product[] = [
     ],
   },
   {
-    // soda-20 repurposed to Sagres can (same price point, same category)
     id: 'soda-20',
     name: 'Sagres Lata 33cl',
     price: 2.50,
@@ -350,16 +457,16 @@ export const PRODUCTS: Product[] = [
     category: 'buns-bar',
     description: 'Ready to drink 33cl.',
     variants: [
-      { id: 'mojito',          label: 'Mojito Classic'    },
-      { id: 'blue-lagoon',     label: 'Blue Lagoon'       },
-      { id: 'margarita',       label: 'Margarita'         },
-      { id: 'cosmopolitan',    label: 'Cosmopolitan'      },
-      { id: 'sex-on-beach',    label: 'Sex on the Beach'  },
-      { id: 'tommy-collins',   label: 'Tommy Collins'     },
-      { id: 'tquila-sunrise',  label: 'T-Quila Sunrise'   },
-      { id: 'cuba-libre',      label: 'Cuba Libre'        },
-      { id: 'pina-colada',     label: 'Piña Colada'       },
-      { id: 'lemon-spritz',    label: 'Lemon Spritz'      },
+      { id: 'mojito',         label: 'Mojito Classic'   },
+      { id: 'blue-lagoon',    label: 'Blue Lagoon'      },
+      { id: 'margarita',      label: 'Margarita'        },
+      { id: 'cosmopolitan',   label: 'Cosmopolitan'     },
+      { id: 'sex-on-beach',   label: 'Sex on the Beach' },
+      { id: 'tommy-collins',  label: 'Tommy Collins'    },
+      { id: 'tquila-sunrise', label: 'T-Quila Sunrise'  },
+      { id: 'cuba-libre',     label: 'Cuba Libre'       },
+      { id: 'pina-colada',    label: 'Piña Colada'      },
+      { id: 'lemon-spritz',   label: 'Lemon Spritz'     },
     ],
   },
   {

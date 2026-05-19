@@ -22,17 +22,6 @@ const PILL_ACTIVE: Record<string, { bg: string; text: string }> = {
   'buns-bar': { bg: '#818CF8', text: '#000000' },
 }
 
-/*
- * Sticky top offset:
- *   Desktop  (md+): header h-16 = 64 px
- *   Mobile   (<md): header h-16 (64) + extra-links row (~52 px) = 116 px
- *
- * The header shows a second row of external links only on mobile,
- * so the pill bar needs a larger top offset there to avoid overlapping cards.
- */
-const STICKY_TOP_MOBILE  = 'top-[116px]'
-const STICKY_TOP_DESKTOP = 'md:top-16'
-
 export default function MenuGrid() {
   const [filter, setFilter] = useState<FilterId>('all')
   const chipsRef = useRef<HTMLDivElement>(null)
@@ -53,10 +42,10 @@ export default function MenuGrid() {
   }, [filter])
 
   return (
-    <section className="w-full max-w-[100vw] overflow-x-hidden">
+    <section className="w-full">
 
-      {/* Sticky category pill bar */}
-      <div className={`sticky ${STICKY_TOP_MOBILE} ${STICKY_TOP_DESKTOP} z-20 bg-buns-cream border-b-2 border-black/10`}>
+      {/* Category pill bar — not sticky; sits in normal document flow */}
+      <div className="bg-buns-cream border-b-2 border-black/10">
         <div
           ref={chipsRef}
           className="ios-hscroll no-scrollbar flex gap-2 px-4 py-3 overflow-x-auto"
@@ -84,8 +73,8 @@ export default function MenuGrid() {
         </div>
       </div>
 
-      {/* Product grid — pt-5 keeps a visible gap below the sticky bar */}
-      <div className="pt-5 pb-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {/* Product grid — mt-5 mobile (20 px) / mt-8 desktop (32 px) below pill bar */}
+      <div className="mt-5 md:mt-8 pb-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {visible.map((p) => (
           <ProductCard key={p.id} product={p} />
         ))}
