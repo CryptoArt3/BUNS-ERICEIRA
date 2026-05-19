@@ -3,11 +3,18 @@
 /* ---------- Tipos ---------- */
 export type CategoryId =
   | 'burgers'
-  | 'extras'
-  | 'bebidas'
-  | 'molhos'
-  | 'bunanas'
   | 'kids'
+  | 'batatas'
+  | 'molhos'
+  | 'extras'
+  | 'bunanas'
+  | 'buns-bar'
+
+export type ProductVariant = {
+  id: string      // deterministic suffix: product.id + '-' + variant.id
+  label: string   // shown as button label
+  price?: number  // overrides base price when set
+}
 
 export type Product = {
   id: string
@@ -19,6 +26,8 @@ export type Product = {
   category: CategoryId
   tags?: Array<'veg' | 'spicy' | 'new' | 'limited' | 'bestseller'>
   ingredients?: string[]
+  /** option variants (size, flavour, etc.) — first is auto-selected default */
+  variants?: ProductVariant[]
 }
 
 /* ---------- Opções globais para "Menu" ---------- */
@@ -39,14 +48,15 @@ export const DRINK_OPTIONS = [
   'Água com gás',
 ] as const
 
-/* ---------- Categorias ---------- */
+/* ---------- Categorias (display order) ---------- */
 export const CATEGORIES: { id: CategoryId; label: string; emoji: string }[] = [
-  { id: 'burgers',  label: 'Burgers',  emoji: '🍔' },
-  { id: 'extras',   label: 'Extras',   emoji: '🍟' },
-  { id: 'bebidas',  label: 'Bebidas',  emoji: '🥤' },
-  { id: 'molhos',   label: 'Molhos',   emoji: '🧂' },
-  { id: 'bunanas',  label: 'Bunanas',  emoji: '🍌' },
-  { id: 'kids',     label: 'Kids',     emoji: '🧸' },
+  { id: 'burgers',  label: 'Burgers',   emoji: '🍔' },
+  { id: 'kids',     label: 'Kids',      emoji: '🧸' },
+  { id: 'batatas',  label: 'Batatas',   emoji: '🍟' },
+  { id: 'molhos',   label: 'Molhos',    emoji: '🧂' },
+  { id: 'extras',   label: 'Extras',    emoji: '➕' },
+  { id: 'bunanas',  label: 'Bunanas',   emoji: '🍌' },
+  { id: 'buns-bar', label: 'BUNS Bar',  emoji: '🍺' },
 ]
 
 /* ---------- Produtos ---------- */
@@ -98,110 +108,36 @@ export const PRODUCTS: Product[] = [
     ingredients: ['Frango crocante', 'Coleslaw', 'Mayo de alho', 'Pickles'],
   },
 
-  // ─── Extras ──────────────────────────────────────────────
+  // ─── Kids ────────────────────────────────────────────────
+  {
+    id: 'kids-bun',
+    name: 'Kids Bun Menu',
+    price: 12.00,
+    category: 'kids',
+    description: 'Smash burger kids + batata + bebida. Perfeito para os mais novos.',
+    ingredients: ['Queijo americano', 'Ketchup', 'Mostarda'],
+  },
+  {
+    id: 'happy-bun',
+    name: 'Happy Bun Menu',
+    price: 13.90,
+    category: 'kids',
+    description: 'Smash burger kids especial + batata + bebida + bunana.',
+    ingredients: ['Queijo americano', 'BUNS molho especial', 'Cebola'],
+  },
+
+  // ─── Batatas ─────────────────────────────────────────────
   {
     id: 'batata-normal',
     name: 'Batata Normal',
     price: 3.00,
-    category: 'extras',
+    category: 'batatas',
   },
   {
     id: 'batata-doce',
     name: 'Batata Doce',
     price: 3.50,
-    category: 'extras',
-  },
-  {
-    id: 'extra-carne',
-    name: 'Extra Beef',
-    price: 2.80,
-    category: 'extras',
-  },
-  {
-    id: 'extra-queijo',
-    name: 'Extra Cheese',
-    price: 1.20,
-    category: 'extras',
-  },
-  {
-    id: 'extra-bacon',
-    name: 'Extra Bacon',
-    price: 2.80,
-    category: 'extras',
-  },
-  {
-    id: 'extra-molho',
-    name: 'Extra Molho',
-    price: 1.10,
-    category: 'extras',
-  },
-
-  // ─── Bebidas ─────────────────────────────────────────────
-  {
-    id: 'agua-50',
-    name: 'Água 50cl',
-    price: 1.60,
-    category: 'bebidas',
-  },
-  {
-    id: 'soda-20',
-    name: 'Super Bock 33cl',
-    price: 2.50,
-    category: 'bebidas',
-  },
-  {
-    id: 'soda-31',
-    name: 'Água Gás Pedras',
-    price: 2.70,
-    category: 'bebidas',
-  },
-  {
-    id: 'soda-33',
-    name: 'Coca-Cola 33cl',
-    price: 2.70,
-    category: 'bebidas',
-  },
-  {
-    id: 'soda-34',
-    name: '7UP 33cl',
-    price: 2.70,
-    category: 'bebidas',
-  },
-  {
-    id: 'soda-35',
-    name: 'Ice Tea Manga 33cl',
-    price: 2.70,
-    category: 'bebidas',
-  },
-  {
-    id: 'soda-36',
-    name: 'Ice Tea Limão 33cl',
-    price: 2.70,
-    category: 'bebidas',
-  },
-  {
-    id: 'soda-37',
-    name: 'Ice Tea Pêssego 33cl',
-    price: 2.70,
-    category: 'bebidas',
-  },
-  {
-    id: 'soda-38',
-    name: 'Coca-Cola Zero 33cl',
-    price: 2.70,
-    category: 'bebidas',
-  },
-  {
-    id: 'hidromel',
-    name: 'Hidromel',
-    price: 3.50,
-    category: 'bebidas',
-  },
-  {
-    id: 'cafe',
-    name: 'Café',
-    price: 1.00,
-    category: 'bebidas',
+    category: 'batatas',
   },
 
   // ─── Molhos ──────────────────────────────────────────────
@@ -243,6 +179,26 @@ export const PRODUCTS: Product[] = [
     price: 4.00,
     category: 'molhos',
     description: 'Escolhe 5 molhos à tua escolha.',
+  },
+
+  // ─── Extras ──────────────────────────────────────────────
+  {
+    id: 'extra-carne',
+    name: 'Extra Beef',
+    price: 2.80,
+    category: 'extras',
+  },
+  {
+    id: 'extra-queijo',
+    name: 'Extra Cheese',
+    price: 1.20,
+    category: 'extras',
+  },
+  {
+    id: 'extra-bacon',
+    name: 'Extra Bacon',
+    price: 2.80,
+    category: 'extras',
   },
 
   // ─── Bunanas ─────────────────────────────────────────────
@@ -289,22 +245,198 @@ export const PRODUCTS: Product[] = [
     description: 'Escolhe 5 bunanas à tua escolha.',
   },
 
-  // ─── Kids ────────────────────────────────────────────────
+  // ─── BUNS Bar ────────────────────────────────────────────
+
+  // Soft drinks & water
   {
-    id: 'kids-bun',
-    name: 'Kids Bun Menu',
-    price: 12.00,
-    category: 'kids',
-    description: 'Smash burger kids + batata + bebida. Perfeito para os mais novos.',
-    ingredients: ['Queijo americano', 'Ketchup', 'Mostarda'],
+    id: 'agua-50',
+    name: 'Água 50cl',
+    price: 1.60,
+    category: 'buns-bar',
   },
   {
-    id: 'happy-bun',
-    name: 'Happy Bun Menu',
-    price: 13.90,
-    category: 'kids',
-    description: 'Smash burger kids especial + batata + bebida + bunana.',
-    ingredients: ['Queijo americano', 'BUNS molho especial', 'Cebola'],
+    id: 'soda-31',
+    name: 'Água Gás Pedras',
+    price: 2.70,
+    category: 'buns-bar',
+  },
+  {
+    id: 'soda-33',
+    name: 'Coca-Cola 33cl',
+    price: 2.70,
+    category: 'buns-bar',
+  },
+  {
+    id: 'soda-38',
+    name: 'Coca-Cola Zero 33cl',
+    price: 2.70,
+    category: 'buns-bar',
+  },
+  {
+    id: 'soda-34',
+    name: '7UP 33cl',
+    price: 2.70,
+    category: 'buns-bar',
+  },
+  {
+    // Consolidated Ice Tea — 3 flavours, same price
+    id: 'ice-tea',
+    name: 'Ice Tea',
+    price: 2.70,
+    category: 'buns-bar',
+    description: '33cl.',
+    variants: [
+      { id: 'limao',   label: 'Limão'   },
+      { id: 'manga',   label: 'Manga'   },
+      { id: 'pessego', label: 'Pêssego' },
+    ],
+  },
+  {
+    id: 'cafe',
+    name: 'Café',
+    price: 1.00,
+    category: 'buns-bar',
+  },
+
+  // Draft beer
+  {
+    id: 'superbock-draft',
+    name: 'Super Bock',
+    description: 'Cerveja de pressão.',
+    price: 2.50,
+    category: 'buns-bar',
+    variants: [
+      { id: '25cl', label: '25cl', price: 2.50 },
+      { id: '50cl', label: '50cl', price: 4.50 },
+    ],
+  },
+  {
+    id: 'heineken-draft',
+    name: 'Heineken',
+    description: 'Cerveja de pressão.',
+    price: 2.50,
+    category: 'buns-bar',
+    variants: [
+      { id: '25cl', label: '25cl', price: 2.50 },
+      { id: '50cl', label: '50cl', price: 4.50 },
+    ],
+  },
+  {
+    // soda-20 repurposed to Sagres can (same price point, same category)
+    id: 'soda-20',
+    name: 'Sagres Lata 33cl',
+    price: 2.50,
+    category: 'buns-bar',
+  },
+
+  // Draft Bomb
+  {
+    id: 'draft-bomb',
+    name: 'Draft Bomb',
+    description: 'Cerveja de pressão + shot.',
+    price: 3.00,
+    category: 'buns-bar',
+    variants: [
+      { id: '25cl', label: '25cl', price: 3.00 },
+      { id: '50cl', label: '50cl', price: 5.00 },
+    ],
+  },
+
+  // Ready to drink / cans
+  {
+    id: 'lecoq-cocktail',
+    name: 'Le Coq Cocktail',
+    price: 4.00,
+    category: 'buns-bar',
+    description: 'Ready to drink 33cl.',
+    variants: [
+      { id: 'mojito',          label: 'Mojito Classic'    },
+      { id: 'blue-lagoon',     label: 'Blue Lagoon'       },
+      { id: 'margarita',       label: 'Margarita'         },
+      { id: 'cosmopolitan',    label: 'Cosmopolitan'      },
+      { id: 'sex-on-beach',    label: 'Sex on the Beach'  },
+      { id: 'tommy-collins',   label: 'Tommy Collins'     },
+      { id: 'tquila-sunrise',  label: 'T-Quila Sunrise'   },
+      { id: 'cuba-libre',      label: 'Cuba Libre'        },
+      { id: 'pina-colada',     label: 'Piña Colada'       },
+      { id: 'lemon-spritz',    label: 'Lemon Spritz'      },
+    ],
+  },
+  {
+    id: 'hidromel',
+    name: 'Hidromel',
+    price: 4.50,
+    category: 'buns-bar',
+  },
+  {
+    id: 'gazela-branco',
+    name: 'Gazela Vinho Branco',
+    price: 3.00,
+    category: 'buns-bar',
+    description: '250ml.',
+  },
+  {
+    id: 'gazela-rose',
+    name: 'Gazela Vinho Rosé',
+    price: 3.00,
+    category: 'buns-bar',
+    description: '250ml.',
+  },
+  {
+    id: 'foxtale-gin',
+    name: 'Foxtale Gin Tonic',
+    price: 3.50,
+    category: 'buns-bar',
+    description: '250ml.',
+  },
+  {
+    id: 'bombay-gin',
+    name: 'Bombay Sapphire Gin Tonic',
+    price: 4.50,
+    category: 'buns-bar',
+    description: '250ml.',
+  },
+  {
+    id: 'jd-cola',
+    name: "Jack Daniel's Cola",
+    price: 4.00,
+    category: 'buns-bar',
+    description: '330ml.',
+  },
+  {
+    id: 'martini-fiero',
+    name: 'Martini Fiero Tonic',
+    price: 3.50,
+    category: 'buns-bar',
+    description: '250ml.',
+  },
+  {
+    id: 'eristoff-vodka',
+    name: 'Eristoff Vodka',
+    price: 6.50,
+    category: 'buns-bar',
+    description: '500ml.',
+    variants: [
+      { id: 'maracuja', label: 'Maracujá' },
+      { id: 'limao',    label: 'Limão'    },
+      { id: 'laranja',  label: 'Laranja'  },
+    ],
+  },
+
+  // BUNS Night combos
+  {
+    id: 'buns-night',
+    name: 'BUNS Night',
+    price: 18.90,
+    category: 'buns-bar',
+    description: 'Burger + Batata + Bebida. A noite começa aqui.',
+  },
+  {
+    id: 'bomb-night',
+    name: 'Bomb Night',
+    price: 6.50,
+    category: 'buns-bar',
+    description: 'Draft Bomb 25cl + Batata Normal.',
   },
 
 ]

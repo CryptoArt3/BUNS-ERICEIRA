@@ -7,16 +7,31 @@ import type { Product, CategoryId } from './data'
 
 type FilterId = 'all' | CategoryId
 
-/* Category badge pill colours matching ProductCard ACCENT map */
+/*
+ * Active pill colours match ProductCard ACCENT map.
+ * Keys use the same CategoryId strings.
+ */
 const PILL_ACTIVE: Record<string, { bg: string; text: string }> = {
-  all:      { bg: '#111111', text: '#FFD400' },
-  burgers:  { bg: '#111111', text: '#FFD400' },
-  extras:   { bg: '#FB923C', text: '#000000' },
-  bebidas:  { bg: '#38BDF8', text: '#000000' },
-  molhos:   { bg: '#F87171', text: '#000000' },
-  bunanas:  { bg: '#F472B6', text: '#000000' },
-  kids:     { bg: '#34D399', text: '#000000' },
+  all:        { bg: '#111111', text: '#FFD400' },
+  burgers:    { bg: '#111111', text: '#FFD400' },
+  kids:       { bg: '#34D399', text: '#000000' },
+  batatas:    { bg: '#FB923C', text: '#000000' },
+  molhos:     { bg: '#F87171', text: '#000000' },
+  extras:     { bg: '#525252', text: '#FFFFFF' },
+  bunanas:    { bg: '#F472B6', text: '#000000' },
+  'buns-bar': { bg: '#818CF8', text: '#000000' },
 }
+
+/*
+ * Sticky top offset:
+ *   Desktop  (md+): header h-16 = 64 px
+ *   Mobile   (<md): header h-16 (64) + extra-links row (~52 px) = 116 px
+ *
+ * The header shows a second row of external links only on mobile,
+ * so the pill bar needs a larger top offset there to avoid overlapping cards.
+ */
+const STICKY_TOP_MOBILE  = 'top-[116px]'
+const STICKY_TOP_DESKTOP = 'md:top-16'
 
 export default function MenuGrid() {
   const [filter, setFilter] = useState<FilterId>('all')
@@ -27,7 +42,7 @@ export default function MenuGrid() {
     return PRODUCTS.filter((p) => p.category === filter)
   }, [filter])
 
-  /* Auto-scroll selected pill into view */
+  /* Auto-scroll selected pill into view within the pill bar */
   useEffect(() => {
     const el = chipsRef.current
     if (!el) return
@@ -40,8 +55,8 @@ export default function MenuGrid() {
   return (
     <section className="w-full max-w-[100vw] overflow-x-hidden">
 
-      {/* Sticky category pills bar */}
-      <div className="sticky top-[64px] z-20 bg-buns-cream border-b-2 border-black/10">
+      {/* Sticky category pill bar */}
+      <div className={`sticky ${STICKY_TOP_MOBILE} ${STICKY_TOP_DESKTOP} z-20 bg-buns-cream border-b-2 border-black/10`}>
         <div
           ref={chipsRef}
           className="ios-hscroll no-scrollbar flex gap-2 px-4 py-3 overflow-x-auto"
@@ -69,8 +84,8 @@ export default function MenuGrid() {
         </div>
       </div>
 
-      {/* Product grid */}
-      <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {/* Product grid — pt-5 keeps a visible gap below the sticky bar */}
+      <div className="pt-5 pb-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {visible.map((p) => (
           <ProductCard key={p.id} product={p} />
         ))}
@@ -105,7 +120,11 @@ function CategoryPill({
     <button
       type="button"
       onClick={onClick}
-      style={active ? { background: activeStyle.bg, color: activeStyle.text, borderColor: activeStyle.bg } : undefined}
+      style={
+        active
+          ? { background: activeStyle.bg, color: activeStyle.text, borderColor: activeStyle.bg }
+          : undefined
+      }
       className={[
         'px-4 py-2 rounded-xl text-sm font-black transition-all shrink-0 uppercase tracking-wide border-2',
         active
