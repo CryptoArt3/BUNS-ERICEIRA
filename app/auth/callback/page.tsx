@@ -11,11 +11,24 @@ export default function AuthCallbackPage() {
   useEffect(() => {
     let done = false
 
+    const restoreCartIfEmpty = () => {
+      const current = localStorage.getItem('cart')
+      const isEmpty = !current || current === '[]' || current === 'null'
+      if (isEmpty) {
+        const backup = localStorage.getItem('buns_pending_cart_backup')
+        if (backup && backup !== '[]') {
+          localStorage.setItem('cart', backup)
+        }
+      }
+      localStorage.removeItem('buns_pending_cart_backup')
+    }
+
     const redirect = () => {
       if (done) return
       done = true
+      restoreCartIfEmpty()
       const saved = localStorage.getItem('buns_auth_next')
-      const next = (saved?.startsWith('/') ? saved : '/account') as Route
+      const next = (saved?.startsWith('/') ? saved : '/checkout') as Route
       localStorage.removeItem('buns_auth_next')
       router.replace(next)
     }

@@ -28,21 +28,17 @@ export default function LoginPage() {
     })
   }, [])
 
-  const siteUrl =
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    (typeof window !== 'undefined' ? window.location.origin : '')
-
   async function handleSend(e: React.FormEvent) {
     e.preventDefault()
     setErr(null)
     setLoading(true)
     try {
-      // Persist intended destination so /auth/callback can redirect there
-      localStorage.setItem('buns_auth_next', nextPath)
+      localStorage.setItem('buns_auth_next', nextPath || '/checkout')
+      localStorage.setItem('buns_pending_cart_backup', localStorage.getItem('cart') || '[]')
 
       const { error } = await supabase.auth.signInWithOtp({
         email: email.trim(),
-        options: { emailRedirectTo: `${siteUrl}/auth/callback` },
+        options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
       })
       if (error) throw error
       setSent(true)

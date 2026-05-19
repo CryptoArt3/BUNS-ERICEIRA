@@ -1,7 +1,8 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import { supabase } from '@/lib/supabase/client'
 import { useCart } from '@/components/cart/CartContext'
 
 function currency(x: number) {
@@ -10,6 +11,13 @@ function currency(x: number) {
 
 export default function CartPage() {
   const { cart, inc, dec, remove, setNote } = useCart()
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setIsLoggedIn(!!data.session)
+    })
+  }, [])
 
   const subtotal = useMemo(
     () => cart.items.reduce((acc, it) => acc + it.price * it.qty, 0),
@@ -37,6 +45,21 @@ export default function CartPage() {
 
       {/* ── Content ────────────────────────────────────────── */}
       <div className="max-w-screen-xl mx-auto px-3 sm:px-4 pt-6 pb-32">
+
+        {/* Login banner */}
+        {isLoggedIn === false && cart.items.length > 0 && (
+          <div className="mt-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 bg-white border-2 border-buns-yellow rounded-2xl px-5 py-4">
+            <p className="text-black/70 text-sm flex-1">
+              Para finalizar o pedido vais precisar de entrar. Guardamos o teu carrinho enquanto confirmas o email.
+            </p>
+            <Link
+              href="/login?next=/checkout"
+              className="shrink-0 px-4 py-2 bg-black text-buns-yellow font-black text-sm rounded-xl uppercase tracking-wide"
+            >
+              Entrar →
+            </Link>
+          </div>
+        )}
 
         {/* Empty state */}
         {cart.items.length === 0 && (

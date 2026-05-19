@@ -232,7 +232,7 @@ export default function AccountPage() {
   /* ── Loading */
   if (loading) {
     return (
-      <main className="mx-auto max-w-2xl px-4 py-8 space-y-6">
+      <main className="mx-auto max-w-2xl px-4 py-8 pb-24 md:pb-8 space-y-6 overflow-x-hidden">
         <div className="h-8 bg-white/10 rounded animate-pulse w-48" />
         <Skeleton />
       </main>
@@ -242,7 +242,7 @@ export default function AccountPage() {
   /* ── Error / not logged in */
   if (err) {
     return (
-      <main className="mx-auto max-w-2xl px-4 py-8 space-y-4">
+      <main className="mx-auto max-w-2xl px-4 py-8 pb-24 md:pb-8 space-y-4 overflow-x-hidden">
         <p className="text-red-300">{err}</p>
         <Link className="btn btn-primary" href="/login">Entrar</Link>
       </main>
@@ -250,7 +250,7 @@ export default function AccountPage() {
   }
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-8 space-y-8">
+    <main className="mx-auto max-w-2xl px-4 py-8 pb-24 md:pb-8 space-y-8 overflow-x-hidden">
 
       {/* ── Header ── */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
