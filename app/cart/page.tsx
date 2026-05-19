@@ -48,16 +48,28 @@ export default function CartPage() {
 
         {/* Login banner */}
         {isLoggedIn === false && cart.items.length > 0 && (
-          <div className="mt-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 bg-white border-2 border-buns-yellow rounded-2xl px-5 py-4">
-            <p className="text-black/70 text-sm flex-1">
-              Para finalizar o pedido vais precisar de entrar. Guardamos o teu carrinho enquanto confirmas o email.
-            </p>
-            <Link
-              href="/login?next=/checkout"
-              className="shrink-0 px-4 py-2 bg-black text-buns-yellow font-black text-sm rounded-xl uppercase tracking-wide"
-            >
-              Entrar →
-            </Link>
+          <div className="mt-4 bg-white border-2 border-orange-400 rounded-2xl overflow-hidden">
+            <div className="h-[5px] bg-orange-400" />
+            <div className="p-5 space-y-3">
+              <p className="text-black font-black text-sm">Recomendamos entrar antes de continuar.</p>
+              <p className="text-black/60 text-sm leading-snug">
+                Ao abrir o link do email, alguns browsers podem perder o carrinho. Entra agora para garantir que o pedido fica ligado à tua conta.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                <Link
+                  href="/login?next=/menu"
+                  className="flex-1 py-3 bg-black text-buns-yellow font-black text-sm uppercase tracking-wide rounded-xl text-center"
+                >
+                  Entrar agora
+                </Link>
+                <Link
+                  href="/checkout"
+                  className="flex-1 py-3 bg-white border-2 border-black/20 text-black/60 font-bold text-sm rounded-xl text-center"
+                >
+                  Continuar para checkout
+                </Link>
+              </div>
+            </div>
           </div>
         )}
 

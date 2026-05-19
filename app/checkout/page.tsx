@@ -56,8 +56,8 @@ export default function CheckoutPage() {
   const router = useRouter()
   const { cart, clear } = useCart()
 
-  /* ── auth state (unchanged) ── */
-  const [mustLogin, setMustLogin] = useState(false)
+  /* ── auth state ── */
+  const [mustLogin, setMustLogin] = useState<boolean | null>(null)
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setMustLogin(!data?.session)
@@ -195,18 +195,35 @@ export default function CheckoutPage() {
       {/* ── Body ───────────────────────────────────────── */}
       <div className="max-w-2xl mx-auto px-3 sm:px-4 pt-6 pb-32 space-y-4">
 
-        {/* Login required notice */}
-        {mustLogin && (
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 bg-white border-2 border-orange-400 rounded-2xl px-5 py-4">
-            <p className="text-black/70 text-sm flex-1">
-              Para concluir o pedido e acompanhar o estado, inicia sessão primeiro.
-            </p>
-            <Link
-              href="/login?next=/checkout"
-              className="shrink-0 px-4 py-2 bg-black text-buns-yellow font-black text-sm rounded-xl uppercase tracking-wide"
-            >
-              Iniciar sessão
-            </Link>
+        {/* Login required — full gate */}
+        {mustLogin === true && (
+          <div className="bg-white border-2 border-black rounded-2xl overflow-hidden">
+            <div className="h-[6px] bg-buns-yellow" />
+            <div className="p-8 flex flex-col items-center text-center gap-5">
+              <span className="text-5xl">🔑</span>
+              <div className="space-y-2">
+                <p className="font-black text-black text-xl leading-tight">
+                  Para finalizar, entra primeiro.
+                </p>
+                <p className="text-black/55 text-sm leading-relaxed max-w-xs mx-auto">
+                  Depois volta ao menu para confirmar o pedido. O tracking e o carrinho ficam ligados à tua conta.
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs">
+                <Link
+                  href="/login?next=/menu"
+                  className="flex-1 py-4 bg-black text-buns-yellow font-black text-base uppercase tracking-wide rounded-xl text-center"
+                >
+                  Entrar
+                </Link>
+                <Link
+                  href="/menu"
+                  className="flex-1 py-4 bg-white border-2 border-black/20 text-black/60 font-bold text-sm rounded-xl text-center"
+                >
+                  Voltar ao menu
+                </Link>
+              </div>
+            </div>
           </div>
         )}
 
@@ -239,7 +256,7 @@ export default function CheckoutPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        {mustLogin === false && <form onSubmit={handleSubmit} className="space-y-4">
 
           {/* ── 1. Os teus dados ── */}
           <Section number="1" title="Os teus dados">
@@ -380,7 +397,7 @@ export default function CheckoutPage() {
             <Link href="/termos" className="underline underline-offset-2">Termos & Condições</Link>.
           </p>
 
-        </form>
+        </form>}
       </div>
     </main>
   )

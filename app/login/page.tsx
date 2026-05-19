@@ -70,7 +70,7 @@ export default function LoginPage() {
             style={{ fontSize: 'clamp(2.8rem, 10vw, 5.5rem)' }}
           >
             BUNS<br />
-            <span className="text-buns-yellow">Login</span>
+            <span className="text-buns-yellow">Entrar</span>
           </h1>
         </div>
       </div>
@@ -142,10 +142,10 @@ export default function LoginPage() {
                 className="font-display uppercase text-black leading-tight mb-2"
                 style={{ fontSize: 'clamp(1.4rem, 4vw, 1.9rem)' }}
               >
-                Entra para finalizar<br />o teu pedido
+                Entra antes de<br />montar o pedido
               </p>
               <p className="text-black/50 text-sm leading-snug">
-                Guardamos o teu carrinho enquanto confirmas o email.
+                Assim o carrinho e o tracking ficam ligados à tua conta.
               </p>
             </div>
 
