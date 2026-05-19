@@ -471,7 +471,7 @@ export default function KitchenPage() {
     () => orders.some((o) => o.status === 'pending' && !o.acknowledged),
     [orders]
   )
-  const { soundEnabled, soundBlocked, toggleSound, alarmActive } = useOrderSounds(hasAlerts)
+  const { soundEnabled, audioUnlocked, toggleSound, alarmActive } = useOrderSounds(hasAlerts)
 
   /* ── update status ── */
   const handleAction = useCallback(async (id: string, status: OrderStatus) => {
@@ -531,12 +531,6 @@ export default function KitchenPage() {
             <span className="text-white/40 text-sm">A carregar…</span>
           )}
 
-          {soundBlocked && (
-            <span className="text-red-300 text-sm font-bold animate-pulse">
-              🔇 Som bloqueado — clica Ativar som
-            </span>
-          )}
-
           {alarmActive && (
             <span className="px-3 py-1.5 rounded-xl bg-red-600 text-white text-sm font-black animate-pulse">
               🔔 Alarme ativo
@@ -545,17 +539,32 @@ export default function KitchenPage() {
 
           <button
             onClick={toggleSound}
-            aria-pressed={soundEnabled}
+            aria-pressed={soundEnabled && audioUnlocked}
             className={`px-3 py-2 rounded-xl text-sm font-bold transition ${
-              soundEnabled
+              soundEnabled && audioUnlocked
                 ? 'bg-buns-yellow text-black'
                 : 'bg-white/10 text-white/70 hover:bg-white/15'
             }`}
           >
-            {soundEnabled ? '🔊 Som ativo' : '🔈 Ativar som'}
+            {soundEnabled && audioUnlocked ? '🔊 Som ativo' : '🔈 Ativar som'}
           </button>
         </div>
       </div>
+
+      {/* Sound blocked banner */}
+      {alarmActive && !audioUnlocked && (
+        <div className="flex items-center gap-3 px-4 py-3 bg-red-500/20 border-b border-red-500/40 text-red-200 shrink-0 flex-wrap">
+          <span className="text-sm font-medium flex-1">
+            🔇 Som bloqueado pelo browser — clica Ativar som para receber alertas.
+          </span>
+          <button
+            onClick={toggleSound}
+            className="px-4 py-2 rounded-lg bg-buns-yellow text-black text-sm font-black shrink-0"
+          >
+            🔊 Ativar som
+          </button>
+        </div>
+      )}
 
       {/* Alert banner — new unacknowledged orders */}
       {hasAlerts && (

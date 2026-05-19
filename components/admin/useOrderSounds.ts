@@ -29,12 +29,10 @@ function doBeep(ctx: AudioContext) {
 
 /* ─── Hook ────────────────────────────────────────────────── */
 export function useOrderSounds(hasAlerts: boolean) {
-  // soundEnabled  : user wants audio on (persisted)
-  // audioUnlocked : browser accepted at least one play() via user gesture (session only)
-  // soundBlocked  : browser rejected unlock attempt → show "click to activate" prompt
+  // soundEnabled  : user preference (persisted)
+  // audioUnlocked : browser session unlock — requires user gesture
   const [soundEnabled,  setSoundEnabled]  = useState(false)
   const [audioUnlocked, setAudioUnlocked] = useState(false)
-  const [soundBlocked,  setSoundBlocked]  = useState(false)
 
   const audioRef   = useRef<HTMLAudioElement | null>(null)
   const webCtxRef  = useRef<AudioContext | null>(null)
@@ -58,7 +56,7 @@ export function useOrderSounds(hasAlerts: boolean) {
       clearInterval(waLoopRef.current)
       waLoopRef.current = null
     }
-    console.log('[ORDER SOUND] stop alarm')
+    console.log('[ORDER SOUND] stopped')
   }, [])
 
   /* ── WebAudio loop (fallback when HTML Audio is blocked) ── */
@@ -77,17 +75,16 @@ export function useOrderSounds(hasAlerts: boolean) {
         if (webCtxRef.current.state === 'suspended') webCtxRef.current.resume()
         doBeep(webCtxRef.current)
       }, WA_LOOP_MS)
-      setSoundBlocked(false)
+      console.log('[ORDER SOUND] playing')
     } catch {
-      setSoundBlocked(true)
+      console.log('[ORDER SOUND] blocked')
     }
   }, [])
 
   /* ── Start looping alarm ── */
   const startAlert = useCallback(async () => {
-    if (alertOnRef.current) return  // already playing — idempotent
+    if (alertOnRef.current) return
     alertOnRef.current = true
-    console.log('[ORDER SOUND] auto-start alarm')
 
     if (!audioRef.current) {
       audioRef.current = new Audio(SOUND_PATH)
@@ -95,9 +92,9 @@ export function useOrderSounds(hasAlerts: boolean) {
     }
     try {
       await audioRef.current.play()
-      setSoundBlocked(false)
+      console.log('[ORDER SOUND] playing')
     } catch {
-      // HTML Audio blocked → WebAudio loop (ctx already resumed via toggleSound)
+      // HTML Audio blocked → WebAudio fallback (ctx already resumed via toggleSound)
       startWebAudioLoop()
     }
   }, [startWebAudioLoop])
@@ -105,21 +102,17 @@ export function useOrderSounds(hasAlerts: boolean) {
   /* ── Main effect: all three conditions must be true to ring ── */
   useEffect(() => {
     if (soundEnabled && audioUnlocked && hasAlerts) {
-      console.log('[ORDER SOUND] auto-start alarm (effect trigger)')
       startAlert()
     } else {
       stopAlert()
-      // Prompt user to click if they want sound but haven't unlocked yet
-      if (soundEnabled && !audioUnlocked && hasAlerts) {
-        setSoundBlocked(true)
-      }
     }
     return () => stopAlert()
   }, [soundEnabled, audioUnlocked, hasAlerts, startAlert, stopAlert])
 
   /* ── Toggle (must be called from a user gesture to unlock audio) ── */
   const toggleSound = useCallback(async () => {
-    if (soundEnabled) {
+    // If fully active, turn off
+    if (soundEnabled && audioUnlocked) {
       setSoundEnabled(false)
       setAudioUnlocked(false)
       localStorage.setItem(SOUND_KEY, '0')
@@ -127,7 +120,7 @@ export function useOrderSounds(hasAlerts: boolean) {
       return
     }
 
-    // Try HTML Audio unlock (silent play)
+    // Try HTML Audio unlock (silent play inside user gesture)
     let unlocked = false
     try {
       const a = new Audio(SOUND_PATH)
@@ -135,7 +128,6 @@ export function useOrderSounds(hasAlerts: boolean) {
       await a.play()
       a.pause()
       unlocked = true
-      setSoundBlocked(false)
     } catch {
       // HTML Audio blocked → try WebAudio resume
       try {
@@ -144,23 +136,24 @@ export function useOrderSounds(hasAlerts: boolean) {
         webCtxRef.current = ctx
         await ctx.resume()
         unlocked = true
-        setSoundBlocked(false)
       } catch {
-        setSoundBlocked(true)
+        console.log('[ORDER SOUND] blocked')
       }
     }
+
     if (!unlocked) return
 
-    // Both flags set in one batch → single re-render → effect fires with
+    console.log('[ORDER SOUND] unlocked')
+    // Both flags in one batch → single re-render → effect fires with
     // soundEnabled=true + audioUnlocked=true → startAlert() if hasAlerts
     setSoundEnabled(true)
     setAudioUnlocked(true)
     localStorage.setItem(SOUND_KEY, '1')
-  }, [soundEnabled, stopAlert])
+  }, [soundEnabled, audioUnlocked, stopAlert])
 
   return {
     soundEnabled,
-    soundBlocked,
+    audioUnlocked,
     toggleSound,
     /** true when sound is enabled AND there are unacknowledged orders */
     alarmActive: soundEnabled && hasAlerts,

@@ -177,7 +177,7 @@ export default function AdminOrdersPage() {
     () => orders.some((o) => o.status === 'pending' && !o.acknowledged),
     [orders]
   );
-  const { soundEnabled, soundBlocked, toggleSound } = useOrderSounds(hasAlerts);
+  const { soundEnabled, audioUnlocked, toggleSound, alarmActive } = useOrderSounds(hasAlerts);
 
   /* ---- ações ---- */
   const updateStatus = async (id: string, status: Order['status']) => {
@@ -310,10 +310,10 @@ export default function AdminOrdersPage() {
           </Link>
           <button
             onClick={toggleSound}
-            className={`btn ${soundEnabled ? 'btn-primary' : 'btn-ghost'}`}
-            aria-pressed={soundEnabled}
+            className={`btn ${soundEnabled && audioUnlocked ? 'btn-primary' : 'btn-ghost'}`}
+            aria-pressed={soundEnabled && audioUnlocked}
           >
-            {soundEnabled ? '🔊 Som ativo' : '🔈 Ativar som'}
+            {soundEnabled && audioUnlocked ? '🔊 Som ativo' : '🔈 Ativar som'}
           </button>
           <button
             className="btn btn-ghost"
@@ -326,16 +326,16 @@ export default function AdminOrdersPage() {
       </div>
 
       {/* Sound blocked banner */}
-      {soundBlocked && (
+      {alarmActive && !audioUnlocked && (
         <div className="mt-3 flex items-center gap-3 rounded-xl bg-red-500/20 border border-red-500/40 px-4 py-3 text-red-200 flex-wrap">
           <span className="text-sm font-medium flex-1">
-            🔇 Som bloqueado pelo browser — clica em <strong>Ativar Som</strong> para receber alertas de áudio.
+            🔇 Som bloqueado pelo browser — clica Ativar som para receber alertas.
           </span>
           <button
             onClick={toggleSound}
             className="px-4 py-2 rounded-lg bg-buns-yellow text-black text-sm font-black shrink-0"
           >
-            🔊 Ativar Som
+            🔊 Ativar som
           </button>
         </div>
       )}
