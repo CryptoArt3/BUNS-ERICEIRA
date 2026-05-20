@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { motion } from 'framer-motion'
 
 /* ─── Menu highlight data ────────────────────────────────── */
 const HIGHLIGHTS = [
@@ -47,20 +48,19 @@ function currency(x: number) {
   return new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(x)
 }
 
-/* ─── OperatingHours (hydration-safe) ───────────────────── */
-function OperatingHours() {
-  const [label, setLabel]   = useState<string>('')
+/* ─── LiveStatus — hydration-safe open/closed block ─────── */
+function LiveStatus() {
   const [isOpen, setIsOpen] = useState<boolean | null>(null)
 
   useEffect(() => {
     const tz = 'Europe/Lisbon'
     function update() {
-      const now = new Date()
-      const day = new Intl.DateTimeFormat('pt-PT', { weekday: 'short', timeZone: tz }).format(now)
-      const time = new Intl.DateTimeFormat('pt-PT', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: tz }).format(now)
-      setLabel(`${day.replace('.', '')} · ${time}`)
       try {
-        const h = parseInt(new Intl.DateTimeFormat('en-GB', { hour: '2-digit', hour12: false, timeZone: tz }).format(now), 10)
+        const now = new Date()
+        const h = parseInt(
+          new Intl.DateTimeFormat('en-GB', { hour: '2-digit', hour12: false, timeZone: tz }).format(now),
+          10,
+        )
         setIsOpen(!isNaN(h) && h >= 11 && h < 23)
       } catch { setIsOpen(false) }
     }
@@ -69,19 +69,36 @@ function OperatingHours() {
     return () => clearInterval(t)
   }, [])
 
+  /* skeleton while loading */
+  if (isOpen === null) {
+    return <div className="h-[68px] rounded-2xl bg-white/5 border border-white/8 animate-pulse" />
+  }
+
   return (
-    <div className="flex items-center gap-3 flex-wrap">
-      <span className="text-black/55 text-sm font-medium tabular-nums">{label || '—'}</span>
-      {isOpen !== null && (
-        <span className={`inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wide px-2.5 py-1 rounded-lg border ${
-          isOpen
-            ? 'bg-green-100 border-green-400 text-green-700'
-            : 'bg-red-100  border-red-400  text-red-700'
-        }`}>
-          <span className={`h-1.5 w-1.5 rounded-full ${isOpen ? 'bg-green-500' : 'bg-red-500'}`} />
-          {isOpen ? 'Aberto' : 'Fechado'}
+    <div className={[
+      'rounded-2xl border-2 px-5 py-4',
+      isOpen
+        ? 'bg-green-950/60 border-green-500/50 shadow-[0_0_24px_rgba(34,197,94,0.18)]'
+        : 'bg-red-950/60  border-red-500/40  shadow-[0_0_16px_rgba(239,68,68,0.12)]',
+    ].join(' ')}>
+      <div className="flex items-center gap-3">
+        {/* Animated dot */}
+        <span className="relative flex h-3.5 w-3.5 shrink-0">
+          {isOpen && (
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-60" />
+          )}
+          <span className={`relative inline-flex h-3.5 w-3.5 rounded-full ${isOpen ? 'bg-green-400' : 'bg-red-400'}`} />
         </span>
-      )}
+        {/* Labels */}
+        <div>
+          <p className={`font-black text-sm uppercase tracking-wide leading-none ${isOpen ? 'text-green-300' : 'text-red-300'}`}>
+            {isOpen ? 'A CHAPA ESTÁ QUENTE' : 'FECHADO'}
+          </p>
+          <p className={`text-xs font-medium mt-1.5 ${isOpen ? 'text-green-400/55' : 'text-red-400/55'}`}>
+            {isOpen ? 'Até às 23:00' : 'Abre às 11:00'}
+          </p>
+        </div>
+      </div>
     </div>
   )
 }
@@ -290,56 +307,78 @@ export default function Home() {
       </section>
 
       {/* ══════════════════════════════════════════════════
-          5. LOCATION
+          5. LOCATION — live restaurant status
       ══════════════════════════════════════════════════ */}
       <section className="bg-black border-t-4 border-buns-yellow">
         <div className="max-w-screen-xl mx-auto px-4 sm:px-6 pt-10 pb-12">
-          <div className="bg-white rounded-3xl overflow-hidden border-2 border-white/0">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-60px' }}
+            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <div className="bg-[#0d0d0d] border-2 border-buns-yellow rounded-3xl overflow-hidden shadow-[0_0_60px_rgba(255,212,0,0.07),0_24px_56px_rgba(0,0,0,0.9)]">
 
-            {/* Yellow stripe */}
-            <div className="h-2 bg-buns-yellow" />
+              {/* Accent gradient stripe */}
+              <div className="h-[6px] bg-gradient-to-r from-buns-yellow via-amber-400 to-orange-500" />
 
-            <div className="p-6 sm:p-8 space-y-5">
-              {/* Heading */}
-              <div>
-                <div className="inline-flex items-center gap-1.5 bg-black text-buns-yellow text-[11px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg mb-3">
-                  📍 Onde estamos
-                </div>
-                <p
-                  className="font-display text-black uppercase leading-none"
-                  style={{ fontSize: 'clamp(1.8rem, 6vw, 3rem)' }}
-                >
-                  Ericeira.<br />
-                  <span className="text-buns-yellow" style={{ fontSize: '70%' }}>Calçada da Baleia 29A</span>
-                </p>
-              </div>
+              <div className="p-6 sm:p-8 space-y-5">
 
-              {/* Hours + open badge */}
-              <div className="bg-buns-cream rounded-2xl px-4 py-4 space-y-3">
-                <div className="flex items-center justify-between gap-3 flex-wrap">
-                  <div>
-                    <p className="text-[11px] font-black uppercase tracking-widest text-black/35 mb-1">Takeaway</p>
-                    <p className="font-black text-black text-sm">Segunda–Domingo · 11:00–23:00</p>
-                  </div>
-                  <OperatingHours />
-                </div>
+                {/* ── Badge + heading ─────────────────── */}
                 <div>
-                  <p className="text-[11px] font-black uppercase tracking-widest text-black/35 mb-1">Delivery</p>
-                  <p className="text-black/55 text-sm font-medium">🚚 Disponível brevemente</p>
+                  <div className="inline-flex items-center gap-1.5 bg-buns-yellow text-black text-[11px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg mb-4">
+                    📍 Onde estamos
+                  </div>
+                  <h2
+                    className="font-display text-white uppercase leading-none tracking-tight"
+                    style={{ fontSize: 'clamp(2.2rem, 9vw, 4.5rem)' }}
+                  >
+                    ERICEIRA.
+                  </h2>
+                  <p
+                    className="font-display text-buns-yellow uppercase leading-none tracking-tight mt-1"
+                    style={{ fontSize: 'clamp(1rem, 3.5vw, 1.65rem)' }}
+                  >
+                    CALÇADA DA BALEIA 29A
+                  </p>
                 </div>
-              </div>
 
-              {/* Map CTA */}
-              <a
-                href="https://maps.google.com/?q=BUNS%20Smash%20Burgers%2C%20Cal%C3%A7ada%20da%20Baleia%2029A%2C%20Ericeira"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block w-full py-4 bg-black text-buns-yellow font-black text-base uppercase tracking-wide rounded-2xl text-center active:scale-[0.98] transition"
-              >
-                Abrir no Google Maps →
-              </a>
+                {/* ── LIVE open/closed block ──────────── */}
+                <LiveStatus />
+
+                {/* ── Operating info ──────────────────── */}
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <div className="bg-white/[0.04] rounded-2xl px-4 py-3.5 border border-white/10">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-white/30 mb-2">Takeaway</p>
+                    <p className="font-black text-white text-sm leading-snug">Segunda–Domingo</p>
+                    <p className="font-black text-buns-yellow text-sm mt-0.5">11:00–23:00</p>
+                  </div>
+                  <div className="bg-white/[0.04] rounded-2xl px-4 py-3.5 border border-white/10">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-white/30 mb-2">Delivery</p>
+                    <p className="text-white/45 text-sm font-medium leading-snug">🚚 Disponível brevemente</p>
+                  </div>
+                </div>
+
+                {/* ── Supporting line ─────────────────── */}
+                <p className="text-white/28 text-[11px] font-black uppercase tracking-widest">
+                  🔥 Smash burgers feitos na hora
+                </p>
+
+                {/* ── Maps CTA ────────────────────────── */}
+                <motion.a
+                  href="https://maps.google.com/?q=BUNS%20Smash%20Burgers%2C%20Cal%C3%A7ada%20da%20Baleia%2029A%2C%20Ericeira"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  whileHover={{ scale: 1.015 }}
+                  whileTap={{ scale: 0.975 }}
+                  className="block w-full py-5 bg-buns-yellow text-black font-black text-base uppercase tracking-wide rounded-2xl text-center shadow-[0_0_28px_rgba(255,212,0,0.35)] hover:brightness-105 transition-[filter] will-change-transform"
+                >
+                  📍 NAVEGAR PARA A BUNS →
+                </motion.a>
+
+              </div>
             </div>
-          </div>
+          </motion.div>
         </div>
       </section>
 
@@ -419,10 +458,10 @@ export default function Home() {
             <div>
               <p className="text-[11px] font-black uppercase tracking-widest text-white/35 mb-3">Links</p>
               <ul className="space-y-2 text-sm text-white/50">
-                <li><Link href="/menu"       className="hover:text-white transition">Menu</Link></li>
-                <li><Link href="/cart"       className="hover:text-white transition">Carrinho</Link></li>
-                <li><Link href="/account"    className="hover:text-white transition">Conta</Link></li>
-                <li><Link href="/como-usar"  className="hover:text-white transition">Como usar</Link></li>
+                <li><Link href="/menu"        className="hover:text-white transition">Menu</Link></li>
+                <li><Link href="/cart"        className="hover:text-white transition">Carrinho</Link></li>
+                <li><Link href="/account"     className="hover:text-white transition">Conta</Link></li>
+                <li><Link href="/como-usar"   className="hover:text-white transition">Como usar</Link></li>
                 <li><Link href="/admin/login" className="hover:text-white transition">Área Admin</Link></li>
               </ul>
             </div>
