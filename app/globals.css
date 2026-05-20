@@ -85,6 +85,21 @@ body, .mode-day .hero::before, .mode-night .hero::before{
 .location-card:hover .pin{ color:var(--buns-accent); animation:pinPulse 1.2s infinite ease-in-out; }
 @keyframes pinPulse{ 0%,100%{transform:scale(1);} 50%{transform:scale(1.15);} }
 
+/* Menu cart interactions */
+@keyframes bunsFloatUp{
+  0%  { opacity:1; transform:translateY(0) scale(1); }
+  100%{ opacity:0; transform:translateY(-28px) scale(0.85); }
+}
+.buns-float-up{ animation:bunsFloatUp 0.55s ease-out forwards; pointer-events:none; user-select:none; }
+
+@keyframes bunsCardPop{
+  0%  { transform:translateY(0); }
+  35% { transform:translateY(-4px); }
+  65% { transform:translateY(1px); }
+  100%{ transform:translateY(0); }
+}
+.buns-card-pop{ animation:bunsCardPop 0.28s ease-out forwards; }
+
 /* Utilities */
 @layer utilities{
   .safe-bottom{ padding-bottom: env(safe-area-inset-bottom); }

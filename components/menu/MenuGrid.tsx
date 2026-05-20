@@ -44,8 +44,8 @@ export default function MenuGrid() {
   return (
     <section className="w-full">
 
-      {/* Category pill bar — not sticky; sits in normal document flow */}
-      <div className="bg-buns-cream border-b-2 border-black/10">
+      {/* Category pill bar — sticky on desktop, scrolls with page on mobile */}
+      <div className="bg-buns-cream border-b-2 border-black/10 md:sticky md:top-16 md:z-30">
         <div
           ref={chipsRef}
           className="ios-hscroll no-scrollbar flex gap-2 px-4 py-3 overflow-x-auto"
@@ -81,8 +81,9 @@ export default function MenuGrid() {
       </div>
 
       {visible.length === 0 && (
-        <div className="text-black/40 p-8 text-center font-black uppercase tracking-wide">
-          Sem produtos nesta categoria.
+        <div className="py-16 text-center">
+          <p className="font-display text-black/30 uppercase text-2xl">Nada nesta categoria ainda 👀</p>
+          <p className="text-black/25 text-sm mt-2">Em breve chegam novidades.</p>
         </div>
       )}
 
@@ -111,7 +112,12 @@ function CategoryPill({
       onClick={onClick}
       style={
         active
-          ? { background: activeStyle.bg, color: activeStyle.text, borderColor: activeStyle.bg }
+          ? {
+              background: activeStyle.bg,
+              color: activeStyle.text,
+              borderColor: activeStyle.bg,
+              boxShadow: `0 0 14px ${activeStyle.bg}55`,
+            }
           : undefined
       }
       className={[
