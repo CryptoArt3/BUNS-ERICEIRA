@@ -2,99 +2,130 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Menu, X } from 'lucide-react'
+import { usePathname } from 'next/navigation'
 
-// Rotas internas válidas
-type AppRoute = '/' | '/menu' | '/cart' | '/checkout' | '/login' | '/account'
+type AppRoute =
+  | '/'
+  | '/menu'
+  | '/cart'
+  | '/account'
+  | '/ar'
+  | '/wall-of-fame'
+  | '/eventos'
+
+const NAV_ITEMS: { href: AppRoute; emoji: string; label: string }[] = [
+  { href: '/',             emoji: '🏠', label: 'Início' },
+  { href: '/menu',         emoji: '🍔', label: 'Menu' },
+  { href: '/cart',         emoji: '🛒', label: 'Carrinho' },
+  { href: '/account',      emoji: '👤', label: 'Conta' },
+  { href: '/ar',           emoji: '🧠', label: 'AR Experience' },
+  { href: '/wall-of-fame', emoji: '🏆', label: 'Wall of Fame' },
+  { href: '/eventos',      emoji: '🎉', label: 'Eventos' },
+]
 
 export default function MobileNav() {
   const [open, setOpen] = useState(false)
+  const pathname = usePathname()
 
-  // bloquear scroll do body quando o menu está aberto
   useEffect(() => {
-    if (open) document.body.style.overflow = 'hidden'
-    else document.body.style.overflow = ''
-    return () => {
-      document.body.style.overflow = ''
-    }
+    document.body.style.overflow = open ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
   }, [open])
 
+  useEffect(() => { setOpen(false) }, [pathname])
+
+  const close = () => setOpen(false)
+
   return (
-    <div className="md:hidden relative">
+    <div className="md:hidden">
+
+      {/* ── Trigger button ── */}
       <button
         aria-label={open ? 'Fechar menu' : 'Abrir menu'}
+        aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className="p-2 rounded-xl bg-white/10 hover:bg-white/20 transition"
+        className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/10 active:bg-white/20 transition"
       >
-        {open ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        <span className="font-black text-white text-lg leading-none">{open ? '✕' : '☰'}</span>
       </button>
 
-      {/* Overlay para clicar fora e fechar */}
-      {open && (
-        <div
-          aria-hidden
-          onClick={() => setOpen(false)}
-          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-[2px]"
-        />
-      )}
-
-      {/* Painel centralizado, com margens laterais e safe-area no topo */}
+      {/* ── Fullscreen drawer ── */}
       {open && (
         <div
           role="dialog"
           aria-modal="true"
-          className="
-            fixed z-50
-            left-4 right-4 mx-auto max-w-sm
-            top-[calc(env(safe-area-inset-top,0px)+64px)]
-          "
+          className="fixed inset-0 z-[9999] bg-black flex flex-col overflow-hidden"
+          style={{
+            minHeight: '100dvh',
+            paddingTop: 'env(safe-area-inset-top, 0px)',
+            paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+          }}
         >
-          <div className="rounded-2xl bg-black/90 border border-white/10 shadow-2xl overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
-              <div className="font-display text-lg">Menu</div>
-              <button
-                aria-label="Fechar menu"
-                onClick={() => setOpen(false)}
-                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 transition"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
 
-            <nav className="px-2 py-2 text-center space-y-1">
-              <NavItem href="/" onSelect={() => setOpen(false)}>🏠 Início</NavItem>
-              <NavItem href="/menu" onSelect={() => setOpen(false)}>🍔 Menu</NavItem>
-              <NavItem href="/cart" onSelect={() => setOpen(false)}>🛒 Carrinho</NavItem>
-              <NavItem href="/account" onSelect={() => setOpen(false)}>👤 Conta</NavItem>
-            </nav>
+          {/* ── Top bar ── */}
+          <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 shrink-0">
+            <Link href="/" onClick={close}>
+              <span className="font-display text-buns-yellow uppercase text-2xl leading-none tracking-tight">
+                BUNS
+              </span>
+            </Link>
+            <button
+              aria-label="Fechar menu"
+              onClick={close}
+              className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/10 active:bg-white/20 transition"
+            >
+              <span className="font-black text-white text-lg leading-none">✕</span>
+            </button>
           </div>
+
+          {/* ── Nav items ── */}
+          <nav className="flex-1 overflow-y-auto" aria-label="Navegação principal">
+            {NAV_ITEMS.map((item) => {
+              const isActive =
+                item.href === '/'
+                  ? pathname === '/'
+                  : pathname.startsWith(item.href)
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={close}
+                  className={`flex items-center gap-4 w-full px-5 border-b border-white/10 transition-colors ${
+                    isActive
+                      ? 'bg-buns-yellow/10 text-buns-yellow'
+                      : 'text-white hover:bg-white/5 hover:text-buns-yellow'
+                  }`}
+                  style={{ minHeight: '64px' }}
+                >
+                  <span className="text-2xl shrink-0">{item.emoji}</span>
+                  <span className="font-display uppercase leading-none tracking-tight flex-1"
+                        style={{ fontSize: 'clamp(1.3rem, 5vw, 1.6rem)' }}>
+                    {item.label}
+                  </span>
+                  {isActive && (
+                    <span className="text-buns-yellow text-sm shrink-0">●</span>
+                  )}
+                </Link>
+              )
+            })}
+          </nav>
+
+          {/* ── Bottom strip ── */}
+          <div className="shrink-0 px-5 pt-5 pb-5 border-t border-white/10 space-y-3">
+            <Link
+              href="/menu"
+              onClick={close}
+              className="block w-full py-4 bg-buns-yellow text-black font-black text-lg uppercase tracking-wide rounded-2xl text-center active:scale-[0.98] transition"
+            >
+              Pedir agora →
+            </Link>
+            <p className="text-center text-[11px] font-black uppercase tracking-widest text-white/25">
+              Ericeira · Takeaway · 11:00–23:00
+            </p>
+          </div>
+
         </div>
       )}
     </div>
-  )
-}
-
-function NavItem({
-  href,
-  children,
-  onSelect,
-}: {
-  href: AppRoute
-  children: React.ReactNode
-  onSelect?: () => void
-}) {
-  return (
-    <Link
-      href={href}
-      onClick={onSelect}
-      className="
-        block w-full px-4 py-3
-        text-lg font-medium text-white/95
-        hover:text-buns-yellow hover:bg-white/10 active:bg-white/15
-        rounded-xl transition
-      "
-    >
-      {children}
-    </Link>
   )
 }
