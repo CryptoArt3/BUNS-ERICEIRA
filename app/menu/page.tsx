@@ -7,9 +7,14 @@ import MenuGrid from '@/components/menu/MenuGrid'
 
 const BANNER_DISMISSED_KEY = 'buns_menu_login_banner_dismissed'
 
+function scrollToMenu(e: React.MouseEvent<HTMLAnchorElement>) {
+  e.preventDefault()
+  document.getElementById('menu-products')?.scrollIntoView({ behavior: 'smooth' })
+}
+
 export default function MenuPage() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null)
-  const [bannerDismissed, setBannerDismissed] = useState(true) // true until loaded
+  const [bannerDismissed, setBannerDismissed] = useState(true)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -73,8 +78,76 @@ export default function MenuPage() {
         </div>
       )}
 
+      {/* ── Inside the Smash video ───────────────────────── */}
+      <section
+        aria-label="Por dentro do smash"
+        className="bg-buns-cream border-b-2 border-black/10 px-4 sm:px-6 py-8 sm:py-10"
+      >
+        <div className="max-w-screen-xl mx-auto">
+          <div className="flex flex-col sm:flex-row items-center gap-7 sm:gap-12">
+
+            {/* ── 9:16 Video card ──────────────────────── */}
+            <div className="shrink-0 w-[52vw] max-w-[200px] sm:w-[200px] md:w-[240px]">
+              <div className="relative aspect-[9/16] rounded-3xl border-4 border-black overflow-hidden shadow-[6px_6px_0_0_rgba(0,0,0,0.75)]">
+                {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+                <video
+                  src="/videos/menu-inside-smash.mp4"
+                  poster="/videos/menu-inside-smash-poster.jpg"
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  preload="metadata"
+                  className="absolute inset-0 w-full h-full object-cover"
+                  aria-label="Vídeo de produção BUNS Ericeira"
+                />
+                {/* Gradient overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-black/15 pointer-events-none" />
+                {/* Badge */}
+                <div className="absolute top-3 left-3">
+                  <span className="bg-buns-yellow text-black text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-md leading-none">
+                    BUNS Kitchen
+                  </span>
+                </div>
+                {/* Bottom text overlay */}
+                <div className="absolute bottom-3 left-3 right-3">
+                  <p className="text-white font-black text-xs uppercase tracking-wide leading-snug drop-shadow-md">
+                    Feito hoje<br />na Ericeira
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* ── Text + CTA ───────────────────────────── */}
+            <div className="text-center sm:text-left">
+              <div className="inline-flex items-center gap-1.5 bg-black text-buns-yellow text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg mb-4">
+                🔥 A nossa cozinha
+              </div>
+              <h2
+                className="font-display text-black uppercase leading-none tracking-tight"
+                style={{ fontSize: 'clamp(1.9rem, 7vw, 3.8rem)' }}
+              >
+                POR DENTRO<br />
+                <span className="text-buns-yellow">DO SMASH</span>
+              </h2>
+              <p className="mt-3 text-black/55 text-sm leading-relaxed max-w-[260px] mx-auto sm:mx-0">
+                Chapa quente, queijo a derreter e BUNS feitos na Ericeira.
+              </p>
+              <a
+                href="#menu-products"
+                onClick={scrollToMenu}
+                className="mt-5 inline-flex items-center gap-2 px-6 py-3 bg-black text-buns-yellow font-black text-sm uppercase tracking-wide rounded-xl border-2 border-black active:scale-[0.98] transition hover:bg-neutral-900"
+              >
+                Ver Menu ↓
+              </a>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
       {/* ── Menu grid ────────────────────────────────────── */}
-      <div className="max-w-screen-xl mx-auto px-3 sm:px-4 pb-24">
+      <div id="menu-products" className="max-w-screen-xl mx-auto px-3 sm:px-4 pb-24">
         <MenuGrid />
       </div>
 
