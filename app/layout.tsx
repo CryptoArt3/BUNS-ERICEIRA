@@ -2,6 +2,7 @@
 import "./globals.css";
 import type { Metadata, Viewport } from "next";
 import { CartProvider } from "@/components/cart/CartContext";
+import { I18nProvider } from "@/lib/i18n/I18nProvider";
 import { Header } from "@/components/ui/Header";
 import WelcomeModal from "@/components/ui/WelcomeModal";
 import StickyCartBar from "@/components/cart/StickyCartBar";
@@ -42,6 +43,7 @@ export default function RootLayout({
   return (
     <html lang="pt">
       <body suppressHydrationWarning>
+        <I18nProvider>
         <CartProvider>
           {/* wrapper anti-bleed */}
           <div className="app-shell min-h-dvh grid grid-rows-[auto,1fr] pb-16 md:pb-0">
@@ -52,6 +54,7 @@ export default function RootLayout({
 
           <StickyCartBar />
         </CartProvider>
+        </I18nProvider>
       </body>
     </html>
   );

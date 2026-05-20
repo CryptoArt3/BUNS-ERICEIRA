@@ -5,10 +5,10 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase/client'
 import {
   ACTIVE_ORDER_STATUSES,
-  getOrderStatusLabel,
   getOrderStatusTone,
   type OrderStatus,
 } from '@/lib/orders/status'
+import { useI18n } from '@/lib/i18n/useI18n'
 
 /* ─── Types ──────────────────────────────────────────────── */
 type OrderItem = {
@@ -42,30 +42,35 @@ function formatDate(iso: string) {
   })
 }
 
-function itemSummary(items: OrderItem[] | null): string {
+function itemSummary(items: OrderItem[] | null, t: (key: string) => string): string {
   if (!items || items.length === 0) return ''
   const shown = items.slice(0, 2).map((it) => `${it.name} ×${it.qty}`).join(', ')
   const extra = items.length - 2
-  return extra > 0 ? `${shown} e mais ${extra}` : shown
+  if (extra <= 0) return shown
+  const suffix = t('account.and_more_suffix')
+  return suffix
+    ? `${shown} ${t('account.and_more')} ${extra} ${suffix}`
+    : `${shown} ${t('account.and_more')} ${extra}`
 }
 
-function waitText(order: Order): string {
+function waitText(order: Order, t: (key: string) => string): string {
   const isTakeaway = (order.order_type ?? '').toUpperCase() === 'TAKEAWAY'
   switch (order.status) {
-    case 'pending':    return 'A aguardar confirmação...'
-    case 'preparing':  return '~10–15 min'
-    case 'ready':      return 'Vai buscar ao balcão!'
-    case 'delivering': return isTakeaway ? 'Vai buscar ao balcão!' : 'A caminho...'
+    case 'pending':    return t('account.wait_pending')
+    case 'preparing':  return t('account.wait_preparing')
+    case 'ready':      return t('account.wait_ready')
+    case 'delivering': return isTakeaway ? t('account.wait_ready') : t('account.wait_delivering')
     default:           return ''
   }
 }
 
 /* ─── Active order card ──────────────────────────────────── */
 function ActiveOrderCard({ order }: { order: Order }) {
+  const { t }   = useI18n()
   const tone    = getOrderStatusTone(order.status)
-  const label   = getOrderStatusLabel(order.status, order.order_type ?? '')
-  const wait    = waitText(order)
-  const summary = itemSummary(order.items)
+  const label   = t('order.status.' + order.status)
+  const wait    = waitText(order, t)
+  const summary = itemSummary(order.items, t)
 
   return (
     <article className="bg-white border-2 border-black rounded-2xl overflow-hidden">
@@ -107,7 +112,7 @@ function ActiveOrderCard({ order }: { order: Order }) {
           href={`/order/${order.id}`}
           className="block w-full py-3 bg-black text-buns-yellow font-black text-sm uppercase tracking-wide rounded-xl text-center active:scale-[0.98] transition"
         >
-          Ver estado do pedido →
+          {t('account.order_cta')}
         </Link>
       </div>
     </article>
@@ -116,14 +121,14 @@ function ActiveOrderCard({ order }: { order: Order }) {
 
 /* ─── History order row ──────────────────────────────────── */
 function HistoryRow({ order }: { order: Order }) {
+  const { t }   = useI18n()
   const tone    = getOrderStatusTone(order.status)
-  const label   = getOrderStatusLabel(order.status, order.order_type ?? '')
-  const summary = itemSummary(order.items)
+  const label   = t('order.status.' + order.status)
+  const summary = itemSummary(order.items, t)
 
   return (
     <li className="bg-white border-2 border-black/10 rounded-2xl overflow-hidden">
       <div className="p-4">
-        {/* Mobile: stacked; Desktop: horizontal */}
         <div className="flex items-start gap-3">
           <span className="text-2xl shrink-0 mt-0.5" aria-hidden="true">{tone.emoji}</span>
           <div className="flex-1 min-w-0 space-y-1">
@@ -175,6 +180,7 @@ export default function AccountPage() {
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
   const [userEmail, setUserEmail] = useState<string | null>(null)
+  const { t } = useI18n()
 
   useEffect(() => {
     let sub: ReturnType<typeof supabase.channel> | null = null
@@ -189,7 +195,7 @@ export default function AccountPage() {
 
       if (!user) {
         setLoading(false)
-        setErr('Precisas de iniciar sessão.')
+        setErr(t('account.must_login'))
         return
       }
 
@@ -222,6 +228,7 @@ export default function AccountPage() {
 
     load()
     return () => { sub?.unsubscribe() }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function handleSignOut() {
@@ -257,7 +264,7 @@ export default function AccountPage() {
           <div className="max-w-screen-xl mx-auto">
             <h1 className="font-display text-white uppercase leading-none tracking-tight"
                 style={{ fontSize: 'clamp(2.8rem, 10vw, 5.5rem)' }}>
-              BUNS<br /><span className="text-buns-yellow">Conta</span>
+              BUNS<br /><span className="text-buns-yellow">{t('account.hero_title2')}</span>
             </h1>
           </div>
         </div>
@@ -270,7 +277,7 @@ export default function AccountPage() {
                 href="/login"
                 className="inline-block px-6 py-3 bg-black text-buns-yellow font-black text-sm uppercase tracking-wide rounded-xl"
               >
-                Entrar
+                {t('account.sign_in_cta')}
               </Link>
             </div>
           </div>
@@ -286,14 +293,14 @@ export default function AccountPage() {
       <div className="bg-black px-4 sm:px-6 pt-8 pb-7 border-b-4 border-buns-yellow">
         <div className="max-w-screen-xl mx-auto">
           <div className="inline-flex items-center gap-1.5 bg-buns-yellow text-black text-[11px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg mb-5">
-            👤 A minha conta
+            {t('account.hero_tag')}
           </div>
           <h1
             className="font-display text-white uppercase leading-none tracking-tight"
             style={{ fontSize: 'clamp(2.8rem, 10vw, 5.5rem)' }}
           >
             BUNS<br />
-            <span className="text-buns-yellow">Conta</span>
+            <span className="text-buns-yellow">{t('account.hero_title2')}</span>
           </h1>
           {userEmail && (
             <p className="mt-3 text-white/40 text-sm font-medium break-all">{userEmail}</p>
@@ -310,36 +317,36 @@ export default function AccountPage() {
             href="/menu"
             className="flex-1 py-3 bg-black text-buns-yellow font-black text-sm uppercase tracking-wide rounded-xl text-center active:scale-[0.98] transition"
           >
-            Novo pedido
+            {t('account.new_order')}
           </Link>
           <button
             onClick={handleSignOut}
             className="flex-1 py-3 bg-white border-2 border-black text-black font-black text-sm uppercase tracking-wide rounded-xl active:scale-[0.98] transition"
           >
-            Sair
+            {t('account.sign_out')}
           </button>
         </div>
 
         {/* ── Active orders ── */}
         <section>
           <p className="text-[11px] font-black uppercase tracking-[0.18em] text-black/35 mb-3">
-            Pedidos ativos
+            {t('account.active_orders')}
           </p>
 
           {active.length === 0 ? (
             <div className="bg-white border-2 border-black/10 rounded-2xl p-6 flex flex-col items-center text-center gap-3">
               <span className="text-4xl" aria-hidden="true">🍔</span>
               <div>
-                <p className="font-black text-black text-base">Sem pedidos ativos</p>
+                <p className="font-black text-black text-base">{t('account.no_active')}</p>
                 <p className="text-black/45 text-sm mt-0.5">
-                  Os teus pedidos em curso aparecem aqui.
+                  {t('account.no_active_sub')}
                 </p>
               </div>
               <Link
                 href="/menu"
                 className="w-full py-3 bg-black text-buns-yellow font-black text-sm uppercase tracking-wide rounded-xl text-center active:scale-[0.98] transition"
               >
-                Fazer novo pedido
+                {t('account.make_order')}
               </Link>
             </div>
           ) : (
@@ -355,7 +362,7 @@ export default function AccountPage() {
         {history.length > 0 && (
           <section>
             <p className="text-[11px] font-black uppercase tracking-[0.18em] text-black/35 mb-3">
-              Histórico
+              {t('account.history')}
             </p>
             <ul className="space-y-2">
               {history.map((o) => (

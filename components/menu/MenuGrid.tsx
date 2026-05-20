@@ -4,6 +4,7 @@ import { useMemo, useRef, useState, useEffect } from 'react'
 import ProductCard from './ProductCard'
 import { PRODUCTS, CATEGORIES } from './data'
 import type { Product, CategoryId } from './data'
+import { useI18n } from '@/lib/i18n/useI18n'
 
 type FilterId = 'all' | CategoryId
 
@@ -25,6 +26,7 @@ const PILL_ACTIVE: Record<string, { bg: string; text: string }> = {
 export default function MenuGrid() {
   const [filter, setFilter] = useState<FilterId>('all')
   const chipsRef = useRef<HTMLDivElement>(null)
+  const { t } = useI18n()
 
   const visible: Product[] = useMemo(() => {
     if (filter === 'all') return PRODUCTS
@@ -56,7 +58,7 @@ export default function MenuGrid() {
             onClick={() => setFilter('all')}
             data-active={filter === 'all'}
           >
-            🍔 Tudo
+            {t('cat.all')}
           </CategoryPill>
 
           {CATEGORIES.map((c) => (
@@ -67,7 +69,7 @@ export default function MenuGrid() {
               onClick={() => setFilter(c.id as FilterId)}
               data-active={filter === c.id}
             >
-              {c.emoji} {c.label}
+              {c.emoji} {t('cat.' + c.id)}
             </CategoryPill>
           ))}
         </div>
@@ -82,8 +84,8 @@ export default function MenuGrid() {
 
       {visible.length === 0 && (
         <div className="py-16 text-center">
-          <p className="font-display text-black/30 uppercase text-2xl">Nada nesta categoria ainda 👀</p>
-          <p className="text-black/25 text-sm mt-2">Em breve chegam novidades.</p>
+          <p className="font-display text-black/30 uppercase text-2xl">{t('cat.empty')}</p>
+          <p className="text-black/25 text-sm mt-2">{t('cat.empty_sub')}</p>
         </div>
       )}
 

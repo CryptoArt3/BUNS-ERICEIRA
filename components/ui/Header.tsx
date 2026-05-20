@@ -9,7 +9,9 @@ import { useCart } from '@/components/cart/CartContext'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { ModeToggle } from '@/components/ui/ModeToggle'
 import MobileNav from '@/components/ui/MobileNav'
+import LangToggle from '@/components/ui/LangToggle'
 import { supabase } from '@/lib/supabase/client'
+import { useI18n } from '@/lib/i18n/useI18n'
 
 const UBER_LINK = 'https://www.ubereats.com/pt/store/buns-smash-burger/O_JvrmwGUeSg0zoFNkw6AQ?diningMode=DELIVERY&pl=JTdCJTIyYWRkcmVzcyUyMiUzQSUyMkVyaWNlaXJhJTIyJTJDJTIycmVmZXJlbmNlJTIyJTNBJTIyQ2hJSmwyXzlyUTRuSHcwUlRLb1FER0VNTEhRJTIyJTJDJTIycmVmZXJlbmNlVHlwZSUyMiUzQSUyMmdvb2dsZV9wbGFjZXMlMjIlMkMlMjJsYXRpdHVkZSUyMiUzQTM4Ljk2ODEyNzclMkMlMjJsb25naXR1ZGUlMjIlM0EtOS40MDczMDA0JTdE'
 const ERICEIRA_EATS = 'https://ericeiraeats.pt'
@@ -20,6 +22,7 @@ export const Header = () => {
   const path = usePathname()
   const router = useRouter()
   const { cart } = useCart()
+  const { t }    = useI18n()
 
   if (path.startsWith('/screen') || path.startsWith('/admin')) {
     return null
@@ -86,9 +89,10 @@ export const Header = () => {
         <nav className="hidden md:flex items-center gap-2">
           <ModeToggle />
           <ThemeToggle />
+          <LangToggle />
 
           <NavLink href="/menu" active={path.startsWith('/menu')}>
-            Menu
+            {t('nav.menu')}
           </NavLink>
 
           {email ? (
@@ -98,11 +102,11 @@ export const Header = () => {
                 active={path.startsWith('/account')}
                 icon={<User className="w-4 h-4" />}
               >
-                Conta
+                {t('nav.account')}
               </NavLink>
               <button onClick={handleSignOut} className="btn btn-ghost">
                 <LogOut className="w-4 h-4 mr-2" />
-                Sair
+                {t('header.sign_out')}
               </button>
             </>
           ) : (
@@ -111,18 +115,19 @@ export const Header = () => {
               active={path.startsWith('/login')}
               icon={<LogIn className="w-4 h-4" />}
             >
-              Entrar
+              {t('header.sign_in')}
             </NavLink>
           )}
 
           <Link href="/cart" className="btn btn-primary">
             <ShoppingCart className="w-4 h-4 mr-2" />
-            Carrinho {mounted && count > 0 && <span className="ml-2">({count})</span>}
+            {t('nav.cart')} {mounted && count > 0 && <span className="ml-2">({count})</span>}
           </Link>
         </nav>
 
-        {/* mobile – hambúrguer com pequeno respiro à direita */}
-        <div className="md:hidden pr-1">
+        {/* mobile – lang toggle + hambúrguer */}
+        <div className="md:hidden flex items-center gap-2 pr-1">
+          <LangToggle />
           <MobileNav />
         </div>
       </div>

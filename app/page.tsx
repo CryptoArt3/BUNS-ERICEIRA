@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
+import { useI18n } from '@/lib/i18n/useI18n'
 
 /* ─── Menu highlight data ────────────────────────────────── */
 const HIGHLIGHTS = [
@@ -51,6 +52,7 @@ function currency(x: number) {
 /* ─── LiveStatus — hydration-safe open/closed block ─────── */
 function LiveStatus() {
   const [isOpen, setIsOpen] = useState<boolean | null>(null)
+  const { t } = useI18n()
 
   useEffect(() => {
     const tz = 'Europe/Lisbon'
@@ -65,8 +67,8 @@ function LiveStatus() {
       } catch { setIsOpen(false) }
     }
     update()
-    const t = setInterval(update, 30_000)
-    return () => clearInterval(t)
+    const timer = setInterval(update, 30_000)
+    return () => clearInterval(timer)
   }, [])
 
   /* skeleton while loading */
@@ -92,10 +94,10 @@ function LiveStatus() {
         {/* Labels */}
         <div>
           <p className={`font-black text-sm uppercase tracking-wide leading-none ${isOpen ? 'text-green-300' : 'text-red-300'}`}>
-            {isOpen ? 'A CHAPA ESTÁ QUENTE' : 'FECHADO'}
+            {isOpen ? t('home.location_open') : t('home.location_closed')}
           </p>
           <p className={`text-xs font-medium mt-1.5 ${isOpen ? 'text-green-400/55' : 'text-red-400/55'}`}>
-            {isOpen ? 'Até às 23:00' : 'Abre às 11:00'}
+            {isOpen ? t('home.location_open_until') : t('home.location_opens_at')}
           </p>
         </div>
       </div>
@@ -105,6 +107,8 @@ function LiveStatus() {
 
 /* ─── Page ───────────────────────────────────────────────── */
 export default function Home() {
+  const { t } = useI18n()
+
   return (
     <main className="w-full max-w-full overflow-x-hidden bg-buns-cream">
 
@@ -116,7 +120,7 @@ export default function Home() {
 
           {/* Tag */}
           <div className="inline-flex items-center gap-1.5 bg-buns-yellow text-black text-[11px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg mb-6">
-            🔥 Smash Burgers · Ericeira
+            {t('home.hero_tag')}
           </div>
 
           {/* Main title */}
@@ -131,7 +135,7 @@ export default function Home() {
 
           {/* Sub-line */}
           <p className="mt-5 text-white/50 text-base sm:text-lg font-medium max-w-md">
-            Ericeira · Smash burgers · Takeaway
+            {t('home.hero_sub')}
           </p>
 
           {/* CTAs */}
@@ -140,13 +144,13 @@ export default function Home() {
               href="/menu"
               className="flex-1 py-5 bg-buns-yellow text-black font-black text-lg uppercase tracking-wide rounded-2xl border-2 border-buns-yellow text-center active:scale-[0.98] transition"
             >
-              Pedir agora →
+              {t('home.cta_order')}
             </Link>
             <a
               href="#aventuras"
               className="flex-1 py-5 bg-white/8 text-white font-black text-base uppercase tracking-wide rounded-2xl border-2 border-white/15 text-center active:scale-[0.98] transition hover:bg-white/12"
             >
-              Ver aventuras
+              {t('home.cta_adventures')}
             </a>
           </div>
         </div>
@@ -159,16 +163,16 @@ export default function Home() {
         <div className="max-w-screen-xl mx-auto px-4 sm:px-6 py-6">
           <div className="grid grid-cols-3 gap-2 sm:gap-6 mb-5">
             {[
-              { n: '1', label: 'Escolhe', sub: 'os teus favoritos' },
-              { n: '2', label: 'Finaliza', sub: 'o checkout em segundos' },
-              { n: '3', label: 'Acompanha', sub: 'o estado em tempo real' },
+              { n: '1', titleKey: 'home.step1_title', subKey: 'home.step1_sub' },
+              { n: '2', titleKey: 'home.step2_title', subKey: 'home.step2_sub' },
+              { n: '3', titleKey: 'home.step3_title', subKey: 'home.step3_sub' },
             ].map((s) => (
               <div key={s.n} className="text-center">
                 <div className="w-10 h-10 rounded-full bg-black text-buns-yellow font-black text-lg flex items-center justify-center mx-auto mb-2">
                   {s.n}
                 </div>
-                <p className="font-black text-black text-sm uppercase tracking-wide leading-tight">{s.label}</p>
-                <p className="text-black/55 text-xs mt-0.5 leading-snug hidden sm:block">{s.sub}</p>
+                <p className="font-black text-black text-sm uppercase tracking-wide leading-tight">{t(s.titleKey)}</p>
+                <p className="text-black/55 text-xs mt-0.5 leading-snug hidden sm:block">{t(s.subKey)}</p>
               </div>
             ))}
           </div>
@@ -177,7 +181,7 @@ export default function Home() {
               href="/menu"
               className="inline-block px-8 py-3 bg-black text-buns-yellow font-black text-sm uppercase tracking-wide rounded-xl active:scale-[0.98] transition"
             >
-              Abrir o menu →
+              {t('home.steps_cta')}
             </Link>
           </div>
         </div>
@@ -193,13 +197,13 @@ export default function Home() {
           <div className="mb-6 flex items-end justify-between gap-4 flex-wrap">
             <div>
               <div className="inline-flex items-center gap-1.5 bg-buns-yellow text-black text-[11px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg mb-3">
-                📲 BUNS & Bunana Adventures
+                {t('home.adventures_tag')}
               </div>
               <p
                 className="font-display text-white uppercase leading-none"
                 style={{ fontSize: 'clamp(1.8rem, 6vw, 3.5rem)' }}
               >
-                As aventuras mais<br className="sm:hidden" /> caóticas<br className="hidden sm:block" /> da Ericeira.
+                {t('home.adventures_title')}
               </p>
             </div>
             <a
@@ -208,7 +212,7 @@ export default function Home() {
               rel="noopener noreferrer"
               className="shrink-0 px-5 py-2.5 bg-white/10 text-white font-black text-sm uppercase tracking-wide rounded-xl border border-white/15 hover:bg-white/15 transition"
             >
-              Instagram →
+              {t('home.adventures_instagram')}
             </a>
           </div>
 
@@ -250,20 +254,20 @@ export default function Home() {
           <div className="mb-6 flex items-end justify-between gap-4 flex-wrap">
             <div>
               <div className="inline-flex items-center gap-1.5 bg-black text-buns-yellow text-[11px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg mb-3">
-                🍔 O Menu
+                {t('home.menu_tag')}
               </div>
               <p
                 className="font-display text-black uppercase leading-none"
                 style={{ fontSize: 'clamp(1.8rem, 6vw, 3.5rem)' }}
               >
-                Os favoritos<br className="sm:hidden" /> da BUNS.
+                {t('home.menu_title')}
               </p>
             </div>
             <Link
               href="/menu"
               className="shrink-0 px-5 py-2.5 bg-black text-buns-yellow font-black text-sm uppercase tracking-wide rounded-xl"
             >
-              Ver menu completo →
+              {t('home.menu_see_all')}
             </Link>
           </div>
 
@@ -327,7 +331,7 @@ export default function Home() {
                 {/* ── Badge + heading ─────────────────── */}
                 <div>
                   <div className="inline-flex items-center gap-1.5 bg-buns-yellow text-black text-[11px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg mb-4">
-                    📍 Onde estamos
+                    {t('home.location_badge')}
                   </div>
                   <h2
                     className="font-display text-white uppercase leading-none tracking-tight"
@@ -349,19 +353,19 @@ export default function Home() {
                 {/* ── Operating info ──────────────────── */}
                 <div className="grid sm:grid-cols-2 gap-3">
                   <div className="bg-white/[0.04] rounded-2xl px-4 py-3.5 border border-white/10">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-white/30 mb-2">Takeaway</p>
-                    <p className="font-black text-white text-sm leading-snug">Segunda–Domingo</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-white/30 mb-2">{t('home.location_takeaway')}</p>
+                    <p className="font-black text-white text-sm leading-snug">{t('home.location_hours')}</p>
                     <p className="font-black text-buns-yellow text-sm mt-0.5">11:00–23:00</p>
                   </div>
                   <div className="bg-white/[0.04] rounded-2xl px-4 py-3.5 border border-white/10">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-white/30 mb-2">Delivery</p>
-                    <p className="text-white/45 text-sm font-medium leading-snug">🚚 Disponível brevemente</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-white/30 mb-2">{t('home.location_delivery')}</p>
+                    <p className="text-white/45 text-sm font-medium leading-snug">{t('home.location_soon')}</p>
                   </div>
                 </div>
 
                 {/* ── Supporting line ─────────────────── */}
                 <p className="text-white/28 text-[11px] font-black uppercase tracking-widest">
-                  🔥 Smash burgers feitos na hora
+                  {t('home.location_smash')}
                 </p>
 
                 {/* ── Maps CTA ────────────────────────── */}
@@ -373,7 +377,7 @@ export default function Home() {
                   whileTap={{ scale: 0.975 }}
                   className="block w-full py-5 bg-buns-yellow text-black font-black text-base uppercase tracking-wide rounded-2xl text-center shadow-[0_0_28px_rgba(255,212,0,0.35)] hover:brightness-105 transition-[filter] will-change-transform"
                 >
-                  📍 NAVEGAR PARA A BUNS →
+                  {t('home.location_maps')}
                 </motion.a>
 
               </div>
@@ -391,20 +395,20 @@ export default function Home() {
             <div className="px-5 py-5 sm:px-8 sm:py-6 flex flex-col sm:flex-row items-start sm:items-center gap-4">
               <div className="flex-1">
                 <div className="inline-flex items-center gap-1.5 bg-buns-yellow text-black text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md mb-2">
-                  🕶️ Novo
+                  {t('home.ar_tag')}
                 </div>
                 <p className="font-display text-white uppercase leading-none text-xl sm:text-2xl">
-                  Menu em Realidade Aumentada
+                  {t('home.ar_title')}
                 </p>
                 <p className="text-white/45 text-sm mt-1">
-                  Coloca os burgers da BUNS na tua mesa em tamanho real.
+                  {t('home.ar_sub')}
                 </p>
               </div>
               <Link
                 href="/ar"
                 className="shrink-0 px-6 py-3 bg-buns-yellow text-black font-black text-sm uppercase tracking-wide rounded-xl active:scale-[0.98] transition"
               >
-                Experimentar AR →
+                {t('home.ar_cta')}
               </Link>
             </div>
           </div>
@@ -424,7 +428,7 @@ export default function Home() {
               <div className="h-[5px] bg-buns-yellow" />
               <div className="p-5">
                 <p className="font-display text-black uppercase text-xl leading-none mb-1">🔥 Wall of Fame</p>
-                <p className="text-black/50 text-sm leading-snug">Consegues comer mais do que o campeão? O teu nome pode ficar na história.</p>
+                <p className="text-black/50 text-sm leading-snug">{t('home.wof_desc')}</p>
               </div>
             </Link>
             <Link
@@ -434,7 +438,7 @@ export default function Home() {
               <div className="h-[5px] bg-buns-yellow" />
               <div className="p-5">
                 <p className="font-display text-black uppercase text-xl leading-none mb-1">🎉 Eventos BUNS</p>
-                <p className="text-black/50 text-sm leading-snug">Meetups, quizzes, record nights e eventos especiais. Vê o que está a acontecer.</p>
+                <p className="text-black/50 text-sm leading-snug">{t('home.events_desc')}</p>
               </div>
             </Link>
           </div>
@@ -458,9 +462,9 @@ export default function Home() {
             <div>
               <p className="text-[11px] font-black uppercase tracking-widest text-white/35 mb-3">Links</p>
               <ul className="space-y-2 text-sm text-white/50">
-                <li><Link href="/menu"        className="hover:text-white transition">Menu</Link></li>
-                <li><Link href="/cart"        className="hover:text-white transition">Carrinho</Link></li>
-                <li><Link href="/account"     className="hover:text-white transition">Conta</Link></li>
+                <li><Link href="/menu"        className="hover:text-white transition">{t('nav.menu')}</Link></li>
+                <li><Link href="/cart"        className="hover:text-white transition">{t('nav.cart')}</Link></li>
+                <li><Link href="/account"     className="hover:text-white transition">{t('nav.account')}</Link></li>
                 <li><Link href="/como-usar"   className="hover:text-white transition">Como usar</Link></li>
                 <li><Link href="/admin/login" className="hover:text-white transition">Área Admin</Link></li>
               </ul>

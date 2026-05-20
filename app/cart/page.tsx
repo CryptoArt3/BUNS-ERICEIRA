@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase/client'
 import { useCart } from '@/components/cart/CartContext'
+import { useI18n } from '@/lib/i18n/useI18n'
 
 function currency(x: number) {
   return new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(x)
@@ -12,6 +13,7 @@ function currency(x: number) {
 export default function CartPage() {
   const { cart, inc, dec, remove, setNote } = useCart()
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null)
+  const { t } = useI18n()
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -31,14 +33,14 @@ export default function CartPage() {
       <div className="bg-black px-4 sm:px-6 pt-8 pb-7 border-b-4 border-buns-yellow">
         <div className="max-w-screen-xl mx-auto">
           <div className="inline-flex items-center gap-1.5 bg-buns-yellow text-black text-[11px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg mb-5">
-            🛒 O teu pedido
+            {t('cart.hero_tag')}
           </div>
           <h1
             className="font-display text-white uppercase leading-none tracking-tight"
             style={{ fontSize: 'clamp(2.8rem, 10vw, 5.5rem)' }}
           >
             BUNS<br />
-            <span className="text-buns-yellow">Carrinho</span>
+            <span className="text-buns-yellow">{t('cart.hero_title2')}</span>
           </h1>
         </div>
       </div>
@@ -51,22 +53,22 @@ export default function CartPage() {
           <div className="mt-4 bg-white border-2 border-orange-400 rounded-2xl overflow-hidden">
             <div className="h-[5px] bg-orange-400" />
             <div className="p-5 space-y-3">
-              <p className="text-black font-black text-sm">Recomendamos entrar antes de continuar.</p>
+              <p className="text-black font-black text-sm">{t('cart.login_warn_title')}</p>
               <p className="text-black/60 text-sm leading-snug">
-                Ao abrir o link do email, alguns browsers podem perder o carrinho. Entra agora para garantir que o pedido fica ligado à tua conta.
+                {t('cart.login_warn_body')}
               </p>
               <div className="flex flex-col sm:flex-row gap-2 pt-1">
                 <Link
                   href="/login?next=/menu"
                   className="flex-1 py-3 bg-black text-buns-yellow font-black text-sm uppercase tracking-wide rounded-xl text-center"
                 >
-                  Entrar agora
+                  {t('cart.login_cta')}
                 </Link>
                 <Link
                   href="/checkout"
                   className="flex-1 py-3 bg-white border-2 border-black/20 text-black/60 font-bold text-sm rounded-xl text-center"
                 >
-                  Continuar para checkout
+                  {t('cart.continue_checkout')}
                 </Link>
               </div>
             </div>
@@ -81,16 +83,16 @@ export default function CartPage() {
               className="font-display uppercase text-black leading-none"
               style={{ fontSize: 'clamp(2rem, 6vw, 3rem)' }}
             >
-              Carrinho vazio
+              {t('cart.empty_title')}
             </p>
             <p className="text-black/50 text-base max-w-xs">
-              Ainda não adicionaste nada. Volta ao menu e escolhe os teus favoritos.
+              {t('cart.empty_sub')}
             </p>
             <Link
               href="/menu"
               className="mt-2 inline-flex items-center gap-2 px-6 py-3 bg-black text-buns-yellow font-black text-sm uppercase tracking-wide rounded-xl active:scale-95 transition"
             >
-              Ver Menu →
+              {t('cart.go_menu')}
             </Link>
           </div>
         )}
@@ -163,12 +165,12 @@ export default function CartPage() {
                       {/* Note */}
                       <div className="mt-4">
                         <label className="text-[11px] font-black uppercase tracking-widest text-black/35 block mb-1.5">
-                          Nota ao cozinheiro
+                          {t('cart.note_label')}
                         </label>
                         <textarea
                           value={note}
                           onChange={(e) => setNote(it.id, e.target.value)}
-                          placeholder="ex.: sem cebola, mais picante…"
+                          placeholder={t('cart.note_placeholder')}
                           className="w-full rounded-xl bg-buns-cream border-2 border-black/15 focus:border-black/50 px-3 py-2.5 text-sm text-black placeholder:text-black/25 outline-none resize-none transition"
                           rows={2}
                         />
@@ -189,10 +191,10 @@ export default function CartPage() {
                     className="font-display text-buns-yellow uppercase leading-none"
                     style={{ fontSize: 'clamp(1.5rem, 3vw, 2rem)' }}
                   >
-                    Resumo
+                    {t('cart.summary_title')}
                   </p>
                   <p className="text-white/40 text-xs mt-1">
-                    {cart.items.reduce((n, it) => n + it.qty, 0)} item(s)
+                    {cart.items.reduce((n, it) => n + it.qty, 0)} {t('cart.items_count')}
                   </p>
                 </div>
 
@@ -209,15 +211,15 @@ export default function CartPage() {
                 {/* totals */}
                 <div className="px-6 py-4 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-white/50 text-sm">Subtotal</span>
+                    <span className="text-white/50 text-sm">{t('cart.subtotal')}</span>
                     <span className="text-white font-bold">{currency(subtotal)}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-white/50 text-sm">Takeaway</span>
+                    <span className="text-white/50 text-sm">{t('cart.takeaway')}</span>
                     <span className="text-white font-bold">{currency(0)}</span>
                   </div>
                   <div className="border-t border-white/10 pt-3 mt-1 flex items-center justify-between">
-                    <span className="text-white font-black text-lg">Total</span>
+                    <span className="text-white font-black text-lg">{t('cart.total')}</span>
                     <span className="text-buns-yellow font-black text-2xl tabular-nums">
                       {currency(subtotal)}
                     </span>
@@ -230,13 +232,13 @@ export default function CartPage() {
                     href="/checkout"
                     className="block w-full py-4 bg-buns-yellow text-black font-black text-base uppercase tracking-wide rounded-xl text-center active:scale-[0.98] transition"
                   >
-                    Finalizar pedido →
+                    {t('cart.finalize')}
                   </Link>
                   <Link
                     href="/menu"
                     className="block w-full py-3 bg-white/8 text-white/50 font-bold text-sm uppercase tracking-wide rounded-xl text-center hover:bg-white/12 transition"
                   >
-                    Continuar a ver menu
+                    {t('cart.continue_menu')}
                   </Link>
                 </div>
               </div>
@@ -253,7 +255,7 @@ export default function CartPage() {
               href="/checkout"
               className="block w-full py-4 bg-buns-yellow text-black font-black text-lg uppercase tracking-wide rounded-xl text-center active:scale-[0.98] transition"
             >
-              Finalizar pedido — {currency(subtotal)}
+              {t('cart.mobile_finalize')} — {currency(subtotal)}
             </Link>
           </div>
         </div>

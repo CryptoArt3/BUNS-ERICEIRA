@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { AnimatePresence, motion } from 'framer-motion'
+import { useI18n } from '@/lib/i18n/useI18n'
 
 const STORAGE_KEY   = 'buns_welcome_seen_at'
 const DAYS_INTERVAL = 1 // <- mostra novamente passado 1 dia (altera se quiseres)
@@ -25,6 +26,7 @@ export default function WelcomeModal() {
   const [mounted, setMounted] = useState(false)
   const path   = usePathname()
   const router = useRouter()
+  const { t }  = useI18n()
 
   useEffect(() => {
     setMounted(true)
@@ -76,7 +78,7 @@ export default function WelcomeModal() {
             key="dialog"
             role="dialog"
             aria-modal="true"
-            aria-label="Bem-vindo à BUNS Smash Burgers"
+            aria-label={t('modal.badge')}
             initial={{ opacity: 0, scale: 0.95, y: 16 }}
             animate={{ opacity: 1, scale: 1,    y: 0  }}
             exit={{    opacity: 0, scale: 0.95, y: 16 }}
@@ -114,7 +116,7 @@ export default function WelcomeModal() {
 
               {/* Badge */}
               <div className="inline-flex items-center gap-1.5 bg-buns-yellow text-black text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg mb-4">
-                🍔 Bem-vindo à BUNS
+                {t('modal.badge')}
               </div>
 
               {/* Title */}
@@ -122,13 +124,13 @@ export default function WelcomeModal() {
                 className="font-display text-white uppercase leading-none tracking-tight"
                 style={{ fontSize: 'clamp(1.7rem, 6vw, 2.2rem)' }}
               >
-                ENTRA NO<br />
-                <span className="text-buns-yellow">UNIVERSO BUNS</span>
+                {t('modal.title_line1')}<br />
+                <span className="text-buns-yellow">{t('modal.title_line2')}</span>
               </h2>
 
               {/* Subtitle */}
               <p className="mt-3 text-white/50 text-sm leading-relaxed">
-                Smash burgers, Bunanas e caos delicioso na Ericeira.
+                {t('modal.subtitle')}
               </p>
 
               {/* CTAs */}
@@ -137,19 +139,19 @@ export default function WelcomeModal() {
                   onClick={goToMenu}
                   className="w-full py-4 bg-buns-yellow text-black font-black text-sm uppercase tracking-wide rounded-2xl active:scale-[0.98] transition shadow-[0_0_20px_rgba(255,212,0,0.35)] hover:brightness-105"
                 >
-                  Ver Menu →
+                  {t('modal.cta_menu')}
                 </button>
                 <button
                   onClick={close}
                   className="w-full py-3.5 border-2 border-white/15 bg-white/[0.06] text-white font-black text-sm uppercase tracking-wide rounded-2xl active:scale-[0.98] transition hover:border-white/30 hover:bg-white/10"
                 >
-                  Fechar
+                  {t('modal.cta_close')}
                 </button>
               </div>
 
               {/* Footer note */}
               <p className="mt-4 text-center text-[10px] font-black uppercase tracking-widest text-white/20">
-                Mostramos isto no máximo 1x por dia.
+                {t('modal.footer')}
               </p>
 
             </div>

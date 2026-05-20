@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import type { Route } from 'next'
 import { supabase } from '@/lib/supabase/client'
+import { useI18n } from '@/lib/i18n/useI18n'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -13,6 +14,7 @@ export default function LoginPage() {
   const [sessionEmail, setSessionEmail] = useState<string | null>(null)
   // Resolved after mount to avoid SSR mismatch
   const [nextPath, setNextPath] = useState<Route>('/checkout')
+  const { t } = useI18n()
 
   // Read ?next= from URL (client-only, no Suspense needed)
   useEffect(() => {
@@ -63,14 +65,14 @@ export default function LoginPage() {
       <div className="bg-black px-4 sm:px-6 pt-8 pb-7 border-b-4 border-buns-yellow">
         <div className="max-w-screen-xl mx-auto">
           <div className="inline-flex items-center gap-1.5 bg-buns-yellow text-black text-[11px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg mb-5">
-            🔑 Acesso à conta
+            {t('login.hero_tag')}
           </div>
           <h1
             className="font-display text-white uppercase leading-none tracking-tight"
             style={{ fontSize: 'clamp(2.8rem, 10vw, 5.5rem)' }}
           >
             BUNS<br />
-            <span className="text-buns-yellow">Entrar</span>
+            <span className="text-buns-yellow">{t('login.hero_title2')}</span>
           </h1>
         </div>
       </div>
@@ -85,7 +87,7 @@ export default function LoginPage() {
               <div className="h-[6px] bg-buns-yellow" />
               <div className="p-5">
                 <p className="text-[11px] font-black uppercase tracking-widest text-black/35 mb-1">
-                  Sessão ativa
+                  {t('login.active_session')}
                 </p>
                 <p className="text-black font-black text-lg break-all">{sessionEmail}</p>
               </div>
@@ -95,13 +97,13 @@ export default function LoginPage() {
                 href={nextPath}
                 className="flex-1 py-4 bg-black text-buns-yellow font-black text-sm uppercase tracking-wide rounded-xl text-center active:scale-[0.98] transition"
               >
-                Continuar →
+                {t('login.continue')}
               </Link>
               <button
                 onClick={handleSignOut}
                 className="px-5 py-4 bg-white border-2 border-black text-black font-black text-sm uppercase tracking-wide rounded-xl hover:bg-buns-cream transition active:scale-[0.98]"
               >
-                Sair
+                {t('login.sign_out')}
               </button>
             </div>
           </div>
@@ -116,18 +118,18 @@ export default function LoginPage() {
                 className="font-display uppercase text-black leading-none"
                 style={{ fontSize: 'clamp(1.5rem, 5vw, 2rem)' }}
               >
-                Verifica o email
+                {t('login.sent_title')}
               </p>
               <p className="text-black/55 text-sm leading-relaxed">
-                Enviámos um link para <strong className="text-black">{email}</strong>.
+                {t('login.sent_body1')} <strong className="text-black">{email}</strong>.
                 <br />
-                Clica no link para entrar — o teu carrinho está guardado.
+                {t('login.sent_body2')}
               </p>
               <button
                 onClick={() => setSent(false)}
                 className="text-xs text-black/35 underline underline-offset-2 mt-2"
               >
-                Usar outro email
+                {t('login.use_other')}
               </button>
             </div>
           </div>
@@ -142,10 +144,12 @@ export default function LoginPage() {
                 className="font-display uppercase text-black leading-tight mb-2"
                 style={{ fontSize: 'clamp(1.4rem, 4vw, 1.9rem)' }}
               >
-                Entra antes de<br />montar o pedido
+                {t('login.heading').split('\n').map((line, i, arr) => (
+                  <span key={i}>{line}{i < arr.length - 1 && <br />}</span>
+                ))}
               </p>
               <p className="text-black/50 text-sm leading-snug">
-                Assim o carrinho e o tracking ficam ligados à tua conta.
+                {t('login.sub')}
               </p>
             </div>
 
@@ -153,14 +157,14 @@ export default function LoginPage() {
             <form onSubmit={handleSend} className="space-y-3">
               <label className="flex flex-col gap-1.5">
                 <span className="text-[11px] font-black uppercase tracking-widest text-black/40">
-                  Email
+                  {t('login.email_label')}
                 </span>
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="o.teu@email.com"
+                  placeholder={t('login.email_ph')}
                   className="w-full rounded-xl bg-white border-2 border-black/20 focus:border-black px-4 py-3 text-black placeholder:text-black/30 outline-none font-medium transition text-base"
                 />
               </label>
@@ -176,12 +180,12 @@ export default function LoginPage() {
                 disabled={loading}
                 className="w-full py-4 bg-black text-buns-yellow font-black text-base uppercase tracking-wide rounded-xl border-2 border-black active:scale-[0.98] transition disabled:opacity-50"
               >
-                {loading ? 'A enviar…' : 'Enviar link mágico →'}
+                {loading ? t('login.sending') : t('login.send_link')}
               </button>
             </form>
 
             <p className="text-xs text-black/30 text-center leading-relaxed">
-              Sem password. Receberás um link seguro no teu email.
+              {t('login.no_password')}
             </p>
 
             {/* Skip login — only when coming from cart/checkout */}
@@ -191,7 +195,7 @@ export default function LoginPage() {
                   href={nextPath}
                   className="text-sm text-black/35 underline underline-offset-2 hover:text-black/60 transition"
                 >
-                  Continuar sem conta →
+                  {t('login.skip')}
                 </Link>
               </div>
             )}

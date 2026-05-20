@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useI18n } from '@/lib/i18n/useI18n'
+import LangToggle from '@/components/ui/LangToggle'
 
 type AppRoute =
   | '/'
@@ -13,19 +15,20 @@ type AppRoute =
   | '/wall-of-fame'
   | '/eventos'
 
-const NAV_ITEMS: { href: AppRoute; emoji: string; label: string }[] = [
-  { href: '/',             emoji: '🏠', label: 'Início' },
-  { href: '/menu',         emoji: '🍔', label: 'Menu' },
-  { href: '/cart',         emoji: '🛒', label: 'Carrinho' },
-  { href: '/account',      emoji: '👤', label: 'Conta' },
-  { href: '/ar',           emoji: '🧠', label: 'AR Experience' },
-  { href: '/wall-of-fame', emoji: '🏆', label: 'Wall of Fame' },
-  { href: '/eventos',      emoji: '🎉', label: 'Eventos' },
+const NAV_ITEMS: { href: AppRoute; emoji: string; tKey: string }[] = [
+  { href: '/',             emoji: '🏠', tKey: 'nav.home' },
+  { href: '/menu',         emoji: '🍔', tKey: 'nav.menu' },
+  { href: '/cart',         emoji: '🛒', tKey: 'nav.cart' },
+  { href: '/account',      emoji: '👤', tKey: 'nav.account' },
+  { href: '/ar',           emoji: '🧠', tKey: 'nav.ar' },
+  { href: '/wall-of-fame', emoji: '🏆', tKey: 'nav.wof' },
+  { href: '/eventos',      emoji: '🎉', tKey: 'nav.events' },
 ]
 
 export default function MobileNav() {
   const [open, setOpen] = useState(false)
   const pathname = usePathname()
+  const { t } = useI18n()
 
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : ''
@@ -69,13 +72,16 @@ export default function MobileNav() {
                 BUNS
               </span>
             </Link>
-            <button
-              aria-label="Fechar menu"
-              onClick={close}
-              className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/10 active:bg-white/20 transition"
-            >
-              <span className="font-black text-white text-lg leading-none">✕</span>
-            </button>
+            <div className="flex items-center gap-3">
+              <LangToggle />
+              <button
+                aria-label="Fechar menu"
+                onClick={close}
+                className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/10 active:bg-white/20 transition"
+              >
+                <span className="font-black text-white text-lg leading-none">✕</span>
+              </button>
+            </div>
           </div>
 
           {/* ── Nav items ── */}
@@ -100,7 +106,7 @@ export default function MobileNav() {
                   <span className="text-2xl shrink-0">{item.emoji}</span>
                   <span className="font-display uppercase leading-none tracking-tight flex-1"
                         style={{ fontSize: 'clamp(1.3rem, 5vw, 1.6rem)' }}>
-                    {item.label}
+                    {t(item.tKey)}
                   </span>
                   {isActive && (
                     <span className="text-buns-yellow text-sm shrink-0">●</span>
@@ -117,9 +123,9 @@ export default function MobileNav() {
               onClick={close}
               className="block w-full py-4 bg-buns-yellow text-black font-black text-lg uppercase tracking-wide rounded-2xl text-center active:scale-[0.98] transition"
             >
-              Pedir agora →
+              {t('nav.order_now')}
             </Link>
-            <p className="text-center text-[11px] font-black uppercase tracking-widest text-white/25">
+            <p className="text-[11px] font-black uppercase tracking-widest text-white/25 text-center">
               Ericeira · Takeaway · 11:00–23:00
             </p>
           </div>

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase/client'
 import MenuGrid from '@/components/menu/MenuGrid'
+import { useI18n } from '@/lib/i18n/useI18n'
 
 const BANNER_DISMISSED_KEY = 'buns_menu_login_banner_dismissed'
 
@@ -15,6 +16,7 @@ function scrollToMenu(e: React.MouseEvent<HTMLAnchorElement>) {
 export default function MenuPage() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null)
   const [bannerDismissed, setBannerDismissed] = useState(true)
+  const { t } = useI18n()
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -38,7 +40,7 @@ export default function MenuPage() {
         <div className="max-w-screen-xl mx-auto">
 
           <div className="inline-flex items-center gap-1.5 bg-buns-yellow text-black text-[11px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg mb-5">
-            🔥 Smash Burgers · Ericeira
+            {t('menu.hero_tag')}
           </div>
 
           <h1 className="font-display text-white uppercase leading-none tracking-tight"
@@ -48,7 +50,7 @@ export default function MenuPage() {
           </h1>
 
           <p className="mt-4 text-white/50 text-sm font-medium max-w-sm">
-            Escolhe os teus favoritos — adiciona ao carrinho e segue para checkout.
+            {t('menu.hero_sub')}
           </p>
         </div>
       </div>
@@ -58,20 +60,20 @@ export default function MenuPage() {
         <div className="bg-buns-yellow border-b-2 border-black/10 px-4 sm:px-6 py-4">
           <div className="max-w-screen-xl mx-auto flex flex-col sm:flex-row sm:items-center gap-3">
             <p className="text-black text-sm font-medium flex-1">
-              Para guardar o teu pedido e acompanhar o estado, entra antes de adicionar ao carrinho.
+              {t('menu.banner_msg')}
             </p>
             <div className="flex items-center gap-2 shrink-0">
               <Link
                 href="/login?next=/menu"
                 className="px-4 py-2 bg-black text-buns-yellow font-black text-sm rounded-xl uppercase tracking-wide"
               >
-                Entrar
+                {t('menu.banner_login')}
               </Link>
               <button
                 onClick={dismissBanner}
                 className="px-4 py-2 bg-black/10 text-black/70 font-bold text-sm rounded-xl"
               >
-                Continuar sem entrar
+                {t('menu.banner_skip')}
               </button>
             </div>
           </div>
@@ -108,11 +110,12 @@ export default function MenuPage() {
                   <span className="bg-buns-yellow text-black text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-md leading-none">
                     BUNS Kitchen
                   </span>
+
                 </div>
                 {/* Bottom text overlay */}
                 <div className="absolute bottom-3 left-3 right-3">
                   <p className="text-white font-black text-xs uppercase tracking-wide leading-snug drop-shadow-md">
-                    Feito hoje<br />na Ericeira
+                    {t('menu.video_overlay1')}<br />{t('menu.video_overlay2')}
                   </p>
                 </div>
               </div>
@@ -121,24 +124,24 @@ export default function MenuPage() {
             {/* ── Text + CTA ───────────────────────────── */}
             <div className="text-center sm:text-left">
               <div className="inline-flex items-center gap-1.5 bg-black text-buns-yellow text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg mb-4">
-                🔥 A nossa cozinha
+                {t('menu.video_badge')}
               </div>
               <h2
                 className="font-display text-black uppercase leading-none tracking-tight"
                 style={{ fontSize: 'clamp(1.9rem, 7vw, 3.8rem)' }}
               >
-                POR DENTRO<br />
-                <span className="text-buns-yellow">DO SMASH</span>
+                {t('menu.video_title1')}<br />
+                <span className="text-buns-yellow">{t('menu.video_title2')}</span>
               </h2>
               <p className="mt-3 text-black/55 text-sm leading-relaxed max-w-[260px] mx-auto sm:mx-0">
-                Chapa quente, queijo a derreter e BUNS feitos na Ericeira.
+                {t('menu.video_sub')}
               </p>
               <a
                 href="#menu-products"
                 onClick={scrollToMenu}
                 className="mt-5 inline-flex items-center gap-2 px-6 py-3 bg-black text-buns-yellow font-black text-sm uppercase tracking-wide rounded-xl border-2 border-black active:scale-[0.98] transition hover:bg-neutral-900"
               >
-                Ver Menu ↓
+                {t('menu.video_cta')}
               </a>
             </div>
 

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
 import { useCart } from '@/components/cart/CartContext'
+import { useI18n } from '@/lib/i18n/useI18n'
 
 /* ── helpers (unchanged) ─────────────────────────────────── */
 function currency(x: number) {
@@ -55,6 +56,7 @@ const selectCls =
 export default function CheckoutPage() {
   const router = useRouter()
   const { cart, clear } = useCart()
+  const { t } = useI18n()
 
   /* ── auth state ── */
   const [mustLogin, setMustLogin] = useState<boolean | null>(null)
@@ -87,15 +89,15 @@ export default function CheckoutPage() {
     setErr(null)
 
     if (mustLogin) {
-      setErr('Para concluir o pedido e acompanhar o estado, inicia sessão primeiro.')
+      setErr(t('checkout.err_login'))
       return
     }
-    if (!name.trim()) return setErr('Indica o teu nome.')
+    if (!name.trim()) return setErr(t('checkout.err_name'))
 
     const phoneClean = (phone.match(/\d/g) ?? []).join('').slice(0, 15)
-    if (!phoneClean) return setErr('Indica o teu telemóvel.')
-    if (needsAddress && !address.trim()) return setErr('Indica a morada para entrega.')
-    if (items.length === 0) return setErr('O carrinho está vazio.')
+    if (!phoneClean) return setErr(t('checkout.err_phone'))
+    if (needsAddress && !address.trim()) return setErr(t('checkout.err_address'))
+    if (items.length === 0) return setErr(t('checkout.err_empty'))
 
     const items_count = items.reduce((n, it) => n + it.qty, 0)
     setLoading(true)
@@ -104,7 +106,7 @@ export default function CheckoutPage() {
       const { data: sessionData } = await supabase.auth.getSession()
       const userId = sessionData?.session?.user?.id ?? null
       if (!userId) {
-        setErr('Sessão inválida. Inicia sessão novamente.')
+        setErr(t('checkout.err_session'))
         setLoading(false)
         return
       }
@@ -145,7 +147,7 @@ export default function CheckoutPage() {
       if (error) {
         setErr(
           String(error.message).toLowerCase().includes('row-level security')
-            ? 'Não foi possível criar o pedido devido às regras de segurança. Inicia sessão e tenta novamente.'
+            ? t('checkout.err_rls')
             : error.message
         )
         setLoading(false)
@@ -156,7 +158,7 @@ export default function CheckoutPage() {
       localStorage.removeItem('cart')
       router.push(`/order/${data.id}`)
     } catch (e: any) {
-      setErr(e?.message ?? 'Falha ao enviar o pedido.')
+      setErr(e?.message ?? t('checkout.err_send'))
     } finally {
       setLoading(false)
     }
@@ -180,14 +182,14 @@ export default function CheckoutPage() {
       <div className="bg-black px-4 sm:px-6 pt-8 pb-7 border-b-4 border-buns-yellow">
         <div className="max-w-screen-xl mx-auto">
           <div className="inline-flex items-center gap-1.5 bg-buns-yellow text-black text-[11px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg mb-5">
-            ✅ Confirmar pedido
+            {t('checkout.hero_tag')}
           </div>
           <h1
             className="font-display text-white uppercase leading-none tracking-tight"
             style={{ fontSize: 'clamp(2.8rem, 10vw, 5.5rem)' }}
           >
             BUNS<br />
-            <span className="text-buns-yellow">Checkout</span>
+            <span className="text-buns-yellow">{t('checkout.hero_title2')}</span>
           </h1>
         </div>
       </div>
@@ -203,10 +205,10 @@ export default function CheckoutPage() {
               <span className="text-5xl">🔑</span>
               <div className="space-y-2">
                 <p className="font-black text-black text-xl leading-tight">
-                  Para finalizar, entra primeiro.
+                  {t('checkout.must_login_title')}
                 </p>
                 <p className="text-black/55 text-sm leading-relaxed max-w-xs mx-auto">
-                  Depois volta ao menu para confirmar o pedido. O tracking e o carrinho ficam ligados à tua conta.
+                  {t('checkout.must_login_sub')}
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs">
@@ -214,13 +216,13 @@ export default function CheckoutPage() {
                   href="/login?next=/menu"
                   className="flex-1 py-4 bg-black text-buns-yellow font-black text-base uppercase tracking-wide rounded-xl text-center"
                 >
-                  Entrar
+                  {t('checkout.sign_in')}
                 </Link>
                 <Link
                   href="/menu"
                   className="flex-1 py-4 bg-white border-2 border-black/20 text-black/60 font-bold text-sm rounded-xl text-center"
                 >
-                  Voltar ao menu
+                  {t('checkout.back_menu')}
                 </Link>
               </div>
             </div>
@@ -233,23 +235,23 @@ export default function CheckoutPage() {
             <div className="h-[6px] bg-buns-yellow" />
             <div className="p-6 space-y-3">
               <p className="text-black font-black text-lg leading-tight">
-                O teu carrinho está vazio.
+                {t('checkout.empty_title')}
               </p>
               <p className="text-black/55 text-sm leading-snug">
-                Volta ao menu para escolher os teus BUNS.
+                {t('checkout.empty_sub')}
               </p>
               <div className="flex gap-3 pt-1">
                 <Link
                   href="/menu"
                   className="px-4 py-2.5 bg-black text-buns-yellow font-black text-sm rounded-xl uppercase tracking-wide active:scale-95 transition"
                 >
-                  Ver Menu
+                  {t('nav.menu')}
                 </Link>
                 <Link
                   href="/cart"
                   className="px-4 py-2.5 bg-white border-2 border-black text-black font-black text-sm rounded-xl uppercase tracking-wide active:scale-95 transition"
                 >
-                  Carrinho
+                  {t('nav.cart')}
                 </Link>
               </div>
             </div>
@@ -259,19 +261,19 @@ export default function CheckoutPage() {
         {mustLogin === false && <form onSubmit={handleSubmit} className="space-y-4">
 
           {/* ── 1. Os teus dados ── */}
-          <Section number="1" title="Os teus dados">
+          <Section number="1" title={t('checkout.section1')}>
             <div className="grid sm:grid-cols-2 gap-3">
               <label className="flex flex-col gap-1.5">
-                <span className="text-[11px] font-black uppercase tracking-widest text-black/40">Nome</span>
+                <span className="text-[11px] font-black uppercase tracking-widest text-black/40">{t('checkout.name')}</span>
                 <input
                   className={inputCls}
-                  placeholder="O teu nome"
+                  placeholder={t('checkout.name_ph')}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                 />
               </label>
               <label className="flex flex-col gap-1.5">
-                <span className="text-[11px] font-black uppercase tracking-widest text-black/40">Telemóvel</span>
+                <span className="text-[11px] font-black uppercase tracking-widest text-black/40">{t('checkout.phone')}</span>
                 <input
                   className={inputCls}
                   placeholder="962 000 000"
@@ -283,35 +285,35 @@ export default function CheckoutPage() {
           </Section>
 
           {/* ── 2. Entrega ── */}
-          <Section number="2" title="Entrega">
+          <Section number="2" title={t('checkout.section2')}>
             <label className="flex flex-col gap-1.5">
-              <span className="text-[11px] font-black uppercase tracking-widest text-black/40">Tipo de entrega</span>
+              <span className="text-[11px] font-black uppercase tracking-widest text-black/40">{t('checkout.delivery_type')}</span>
               <div className="relative">
                 <select
                   className={selectCls}
                   value={zoneChoice}
                   onChange={(e) => setZoneChoice(e.target.value as typeof zoneChoice)}
                 >
-                  <option value="TAKEAWAY">🏪 Levantamento em loja (Takeaway)</option>
-                  <option value="Ericeira" disabled>🚚 Entrega — Ericeira (+2,50€) — brevemente</option>
-                  <option value="Ribamar" disabled>🚚 Entrega — Ribamar (+3,50€) — brevemente</option>
-                  <option value="Achada" disabled>🚚 Entrega — Achada (+3,50€) — brevemente</option>
-                  <option value="Sobreiro" disabled>🚚 Entrega — Sobreiro (+3,50€) — brevemente</option>
-                  <option value="Outro" disabled>🚚 Entrega — Outra zona (+3,50€) — brevemente</option>
+                  <option value="TAKEAWAY">{t('checkout.opt_takeaway')}</option>
+                  <option value="Ericeira" disabled>{t('checkout.opt_ericeira')}</option>
+                  <option value="Ribamar" disabled>{t('checkout.opt_ribamar')}</option>
+                  <option value="Achada" disabled>{t('checkout.opt_achada')}</option>
+                  <option value="Sobreiro" disabled>{t('checkout.opt_sobreiro')}</option>
+                  <option value="Outro" disabled>{t('checkout.opt_outro')}</option>
                 </select>
                 <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-black/40 text-sm">▾</span>
               </div>
               <span className="text-xs text-black/40 mt-0.5">
-                Entrega ao domicílio 🚚 disponível brevemente.
+                {t('checkout.delivery_soon')}
               </span>
             </label>
 
             {needsAddress && (
               <label className="flex flex-col gap-1.5">
-                <span className="text-[11px] font-black uppercase tracking-widest text-black/40">Morada de entrega</span>
+                <span className="text-[11px] font-black uppercase tracking-widest text-black/40">{t('checkout.address')}</span>
                 <input
                   className={inputCls}
-                  placeholder="Rua e nº, localidade"
+                  placeholder={t('checkout.address_ph')}
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
                 />
@@ -320,18 +322,18 @@ export default function CheckoutPage() {
           </Section>
 
           {/* ── 3. Pagamento ── */}
-          <Section number="3" title="Pagamento">
+          <Section number="3" title={t('checkout.section3')}>
             <label className="flex flex-col gap-1.5">
-              <span className="text-[11px] font-black uppercase tracking-widest text-black/40">Método</span>
+              <span className="text-[11px] font-black uppercase tracking-widest text-black/40">{t('checkout.payment')}</span>
               <div className="relative">
                 <select
                   className={selectCls}
                   value={paymentMethod}
                   onChange={(e) => setPaymentMethod(e.target.value as 'cash' | 'mbway' | 'card')}
                 >
-                  <option value="cash">💵 Dinheiro</option>
-                  <option value="mbway">📱 MB WAY</option>
-                  <option value="card">💳 Cartão</option>
+                  <option value="cash">{t('checkout.cash')}</option>
+                  <option value="mbway">{t('checkout.mbway')}</option>
+                  <option value="card">{t('checkout.card')}</option>
                 </select>
                 <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-black/40 text-sm">▾</span>
               </div>
@@ -339,9 +341,9 @@ export default function CheckoutPage() {
           </Section>
 
           {/* ── 4. Resumo ── */}
-          <Section number="4" title="Resumo do pedido">
+          <Section number="4" title={t('checkout.section4')}>
             {items.length === 0 ? (
-              <p className="text-black/40 text-sm">Carrinho vazio.</p>
+              <p className="text-black/40 text-sm">{t('checkout.empty_title')}</p>
             ) : (
               <div className="space-y-1.5">
                 {items.map((it) => (
@@ -360,17 +362,17 @@ export default function CheckoutPage() {
 
             <div className="border-t-2 border-black/10 pt-4 mt-2 space-y-2">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-black/50">Subtotal</span>
+                <span className="text-black/50">{t('checkout.subtotal')}</span>
                 <span className="text-black font-bold tabular-nums">{currency(subtotal)}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-black/50">
-                  {delivery_type === 'TAKEAWAY' ? 'Takeaway' : `Entrega (${zone})`}
+                  {delivery_type === 'TAKEAWAY' ? t('cart.takeaway') : `${t('order.type_delivery').replace('🚚 ', '')} (${zone})`}
                 </span>
                 <span className="text-black font-bold tabular-nums">{currency(delivery_fee)}</span>
               </div>
               <div className="border-t-2 border-black/10 pt-2 flex items-center justify-between">
-                <span className="text-black font-black text-lg">Total</span>
+                <span className="text-black font-black text-lg">{t('checkout.total')}</span>
                 <span className="text-black font-black text-2xl tabular-nums">{currency(total)}</span>
               </div>
             </div>
@@ -389,12 +391,12 @@ export default function CheckoutPage() {
             disabled={loading || items.length === 0}
             className="w-full py-5 bg-black text-buns-yellow font-black text-xl uppercase tracking-wide rounded-2xl border-4 border-buns-yellow active:scale-[0.98] transition disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            {loading ? 'A enviar…' : 'Confirmar pedido →'}
+            {loading ? t('checkout.submitting') : t('checkout.submit')}
           </button>
 
           <p className="text-center text-xs text-black/30 pb-2">
-            Ao confirmar aceitas os nossos{' '}
-            <Link href="/termos" className="underline underline-offset-2">Termos & Condições</Link>.
+            {t('checkout.terms')}{' '}
+            <Link href="/termos" className="underline underline-offset-2">{t('checkout.terms_link')}</Link>.
           </p>
 
         </form>}

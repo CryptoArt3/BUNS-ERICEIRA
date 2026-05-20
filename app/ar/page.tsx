@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import Script from 'next/script'
+import { useI18n } from '@/lib/i18n/useI18n'
 
 type MenuId = 'classic' | 'bacon' | 'epic' | 'veggie'
 
@@ -60,6 +61,7 @@ const MENUS: {
 
 export default function BunsARPage() {
   const [activeId, setActiveId] = useState<MenuId>('bacon')
+  const { t } = useI18n()
 
   const activeMenu = useMemo(
     () => MENUS.find((m) => m.id === activeId)!,
@@ -101,7 +103,7 @@ export default function BunsARPage() {
           <div className="max-w-screen-lg mx-auto">
             <div className="inline-flex items-center gap-2 bg-buns-yellow text-black text-[11px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg mb-5">
               <span className="h-2 w-2 rounded-full bg-black animate-pulse" />
-              AR Mode · Ativo
+              {t('ar.hero_tag')}
             </div>
             <h1
               className="font-display text-white uppercase leading-none tracking-tight"
@@ -111,7 +113,7 @@ export default function BunsARPage() {
               <span className="text-buns-yellow">Menu AR</span>
             </h1>
             <p className="mt-3 text-white/45 text-sm sm:text-base font-medium max-w-md">
-              Coloca os teus burgers favoritos na mesa em tamanho real. Aponta o telemóvel e entra na experiência.
+              {t('ar.hero_sub')}
             </p>
           </div>
         </div>
@@ -122,7 +124,7 @@ export default function BunsARPage() {
           {/* ── Burger selector ── */}
           <div>
             <p className="text-[11px] font-black uppercase tracking-[0.25em] text-white/35 mb-3">
-              Escolhe o teu loadout
+              {t('ar.selector')}
             </p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {MENUS.map((menu) => {
@@ -165,16 +167,16 @@ export default function BunsARPage() {
             {/* AR viewer */}
             <div className="bg-white/5 border-2 border-white/10 rounded-3xl overflow-hidden">
               <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between gap-3">
-                <p className="text-[11px] font-black uppercase tracking-widest text-white/35">Visualizador AR</p>
+                <p className="text-[11px] font-black uppercase tracking-widest text-white/35">{t('ar.viewer')}</p>
                 <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase px-2 py-1 rounded-md bg-buns-yellow/15 border border-buns-yellow/30 text-buns-yellow">
                   <span className="h-1.5 w-1.5 rounded-full bg-buns-yellow animate-pulse" />
-                  Live
+                  {t('ar.live')}
                 </span>
               </div>
               <div className="p-3">
                 <p className="text-xs text-white/40 text-center mb-2">
-                  Aponte para a mesa e toque em{' '}
-                  <span className="text-buns-yellow font-black">"Ver em AR"</span>
+                  {t('ar.point_text')}{' '}
+                  <span className="text-buns-yellow font-black">{t('ar.point_btn')}</span>
                 </p>
                 <model-viewer
                   src={activeMenu.modelSrc}
@@ -201,7 +203,7 @@ export default function BunsARPage() {
                     className="buns-ar-button flex items-center gap-2 rounded-full bg-buns-yellow text-black text-sm font-black px-5 py-2.5 shadow-[0_0_20px_rgba(250,204,21,0.7)] active:scale-95 transition-transform mr-4 mb-4"
                   >
                     <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-black text-buns-yellow text-xs">⬢</span>
-                    <span>VER EM AR</span>
+                    <span>{t('ar.view_in_ar')}</span>
                   </button>
                 </model-viewer>
               </div>
@@ -210,7 +212,7 @@ export default function BunsARPage() {
             {/* Details panel */}
             <div className="bg-white/5 border-2 border-white/10 rounded-3xl overflow-hidden">
               <div className="px-5 py-4 border-b border-white/10">
-                <p className="text-[11px] font-black uppercase tracking-widest text-white/35 mb-1">Smash Build</p>
+                <p className="text-[11px] font-black uppercase tracking-widest text-white/35 mb-1">{t('ar.build')}</p>
                 <p className="font-display text-white uppercase leading-none text-2xl">{activeMenu.name}</p>
                 {activeMenu.highlight && (
                   <p className="text-xs text-buns-yellow font-black uppercase tracking-wide mt-1">{activeMenu.highlight}</p>
@@ -219,7 +221,7 @@ export default function BunsARPage() {
 
               <div className="p-5 space-y-5">
                 <div>
-                  <p className="text-[11px] font-black uppercase tracking-widest text-white/35 mb-2">Ingredientes</p>
+                  <p className="text-[11px] font-black uppercase tracking-widest text-white/35 mb-2">{t('ar.ingredients')}</p>
                   <ul className="space-y-2">
                     {activeMenu.ingredients.map((item) => (
                       <li key={item} className="flex items-center gap-2 text-sm text-white/80">
@@ -243,16 +245,16 @@ export default function BunsARPage() {
                     onClick={handleGoToMenu}
                     className="w-full py-4 bg-buns-yellow text-black font-black text-sm uppercase tracking-wide rounded-2xl active:scale-[0.98] transition shadow-[0_0_20px_rgba(250,204,21,0.35)]"
                   >
-                    Abrir experiência AR →
+                    {t('ar.cta_ar')}
                   </button>
                   <Link
                     href="/menu"
                     className="block w-full py-3 bg-white/8 border border-white/15 text-white/60 font-black text-sm uppercase tracking-wide rounded-2xl text-center active:scale-[0.98] transition"
                   >
-                    Ver menu completo
+                    {t('ar.cta_menu')}
                   </Link>
                   <p className="text-[10px] text-white/25 text-center">
-                    BUNS · Ericeira · Smash Burgers AR Mode
+                    {t('ar.footer')}
                   </p>
                 </div>
               </div>

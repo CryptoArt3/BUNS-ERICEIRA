@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import type { Product, ProductVariant } from './data'
 import { useCart } from '@/components/cart/CartContext'
+import { useI18n } from '@/lib/i18n/useI18n'
 
 /* Category accent colours */
 const ACCENT: Record<string, string> = {
@@ -17,6 +18,7 @@ const ACCENT: Record<string, string> = {
 
 export default function ProductCard({ product }: { product: Product }) {
   const { add } = useCart()
+  const { t }   = useI18n()
 
   const hasMenu = typeof product.menuPrice === 'number'
   const hasVariants = Array.isArray(product.variants) && product.variants.length > 0
@@ -97,22 +99,22 @@ export default function ProductCard({ product }: { product: Product }) {
             <div className="flex flex-wrap gap-1.5 mb-3">
               {product.tags.includes('bestseller') && (
                 <span className="bg-buns-yellow text-black text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider">
-                  👑 Mais pedido
+                  {t('product.bestseller')}
                 </span>
               )}
               {product.tags.includes('spicy') && (
                 <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider">
-                  🔥 Picante
+                  {t('product.spicy')}
                 </span>
               )}
               {product.tags.includes('veg') && (
                 <span className="bg-green-500 text-white text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider">
-                  🌱 Veggie
+                  {t('product.veg')}
                 </span>
               )}
               {product.tags.includes('new') && (
                 <span className="bg-blue-500 text-white text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider">
-                  ✨ Novo
+                  {t('product.new')}
                 </span>
               )}
             </div>
@@ -195,7 +197,7 @@ export default function ProductCard({ product }: { product: Product }) {
                     : 'text-black/50 hover:text-black',
                 ].join(' ')}
               >
-                Burger
+                {t('product.burger')}
               </button>
               <button
                 onClick={() => setVariant('menu')}
@@ -207,10 +209,10 @@ export default function ProductCard({ product }: { product: Product }) {
                     : 'text-black/50 hover:text-black',
                 ].join(' ')}
               >
-                + Menu
+                {t('product.menu_combo')}
                 {variant === 'menu' && (
                   <span className="absolute -top-2.5 -right-1 text-[9px] bg-black text-buns-yellow px-1.5 py-0.5 rounded-full leading-none font-black whitespace-nowrap">
-                    BATATA + BEBIDA
+                    {t('product.menu_badge')}
                   </span>
                 )}
               </button>
@@ -236,7 +238,7 @@ export default function ProductCard({ product }: { product: Product }) {
                   : 'bg-black border-black text-buns-yellow hover:bg-neutral-800',
               ].join(' ')}
             >
-              {added ? '✓ Adicionado!' : '+ Adicionar'}
+              {added ? t('product.added') : t('product.add')}
             </button>
           </div>
 

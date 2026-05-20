@@ -5,11 +5,11 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase/client'
 import {
   getFlowStepIndex,
-  getOrderStatusLabel,
   getOrderStatusTone,
   isActiveOrder,
   type OrderStatus,
 } from '@/lib/orders/status'
+import { useI18n } from '@/lib/i18n/useI18n'
 
 /* ─── Store config ───────────────────────────────────────── */
 const STORE_PHONE = ''
@@ -39,22 +39,8 @@ type TrackedOrder = {
   created_at: string
 }
 
-/* ─── Timeline ───────────────────────────────────────────── */
+/* ─── Timeline step type ─────────────────────────────────── */
 type TimelineStep = { status: OrderStatus; label: string; sub: string }
-
-const TAKEAWAY_STEPS: TimelineStep[] = [
-  { status: 'pending',   label: 'Pedido recebido',     sub: 'O teu pedido chegou à BUNS' },
-  { status: 'preparing', label: 'Em preparação',        sub: 'A equipa está na chapa 🔥' },
-  { status: 'ready',     label: 'Pronto para levantar', sub: 'Dirige-te ao balcão — está quente!' },
-  { status: 'done',      label: 'Levantado',            sub: 'Bom proveito! 🤙' },
-]
-
-const DELIVERY_STEPS: TimelineStep[] = [
-  { status: 'pending',    label: 'Pedido recebido', sub: 'O teu pedido chegou à BUNS' },
-  { status: 'preparing',  label: 'Em preparação',   sub: 'A equipa está na chapa 🔥' },
-  { status: 'delivering', label: 'A caminho',       sub: 'O teu pedido está a caminho' },
-  { status: 'done',       label: 'Entregue',        sub: 'Bom proveito! 🤙' },
-]
 
 /* ─── Status accent map (cream-background palette) ──────── */
 type Accent = { stripe: string; badge: string; label: string }
@@ -106,20 +92,24 @@ function SkeletonPage() {
 
 /* ─── Status card ────────────────────────────────────────── */
 function StatusCard({ order }: { order: TrackedOrder }) {
-  const ac      = accent(order.status)
-  const label   = getOrderStatusLabel(order.status, order.order_type)
-  const active  = isActiveOrder(order.status)
-  const isTakeaway = isTakeawayOrder(order.order_type)
-  const tone    = getOrderStatusTone(order.status)
+  const { t }       = useI18n()
+  const ac          = accent(order.status)
+  const label       = t('order.status.' + order.status)
+  const active      = isActiveOrder(order.status)
+  const isTakeaway  = isTakeawayOrder(order.order_type)
+  const tone        = getOrderStatusTone(order.status)
 
-  const statusSub: Record<OrderStatus, string> = {
-    pending:    'A equipa vai aceitar em breve',
-    preparing:  'O teu smash burger está na chapa 🔥',
-    ready:      isTakeaway ? 'Dirige-te ao balcão para levantares' : 'Pronto para recolha',
-    delivering: isTakeaway ? 'Dirige-te ao balcão para levantares' : 'O pedido está a caminho',
-    done:       'Obrigado! Bom proveito 🤙',
-    cancelled:  'Contacta a BUNS para mais informação',
-  }
+  const statusSub = ((): string => {
+    switch (order.status) {
+      case 'pending':    return t('order.sub.pending')
+      case 'preparing':  return t('order.sub.preparing')
+      case 'ready':      return isTakeaway ? t('order.sub.ready_takeaway')      : t('order.sub.ready_delivery')
+      case 'delivering': return isTakeaway ? t('order.sub.delivering_takeaway') : t('order.sub.delivering_delivery')
+      case 'done':       return t('order.sub.done')
+      case 'cancelled':  return t('order.sub.cancelled')
+      default:           return ''
+    }
+  })()
 
   return (
     <div className={`bg-white border-2 border-black/8 rounded-3xl overflow-hidden${active ? ' shadow-lg' : ''}`}>
@@ -139,7 +129,7 @@ function StatusCard({ order }: { order: TrackedOrder }) {
             {label}
           </p>
           <p className="text-black/50 text-sm leading-snug max-w-xs mx-auto">
-            {statusSub[order.status]}
+            {statusSub}
           </p>
         </div>
       </div>
@@ -149,6 +139,8 @@ function StatusCard({ order }: { order: TrackedOrder }) {
 
 /* ─── Timeline ───────────────────────────────────────────── */
 function Timeline({ order }: { order: TrackedOrder }) {
+  const { t }  = useI18n()
+
   if (order.status === 'cancelled') {
     return (
       <div className="bg-white border-2 border-red-300 rounded-3xl overflow-hidden">
@@ -156,8 +148,8 @@ function Timeline({ order }: { order: TrackedOrder }) {
         <div className="p-5 flex items-start gap-3">
           <span className="text-2xl shrink-0">❌</span>
           <div>
-            <p className="font-black text-black text-base">Pedido cancelado</p>
-            <p className="text-black/50 text-sm mt-0.5">Contacta a BUNS para mais informação.</p>
+            <p className="font-black text-black text-base">{t('order.cancelled_title')}</p>
+            <p className="text-black/50 text-sm mt-0.5">{t('order.cancelled_sub')}</p>
           </div>
         </div>
       </div>
@@ -165,15 +157,30 @@ function Timeline({ order }: { order: TrackedOrder }) {
   }
 
   const isTakeaway = isTakeawayOrder(order.order_type)
+
+  const TAKEAWAY_STEPS: TimelineStep[] = [
+    { status: 'pending',   label: t('order.tl.received'),     sub: t('order.tl.received_sub') },
+    { status: 'preparing', label: t('order.tl.preparing'),    sub: t('order.tl.preparing_sub') },
+    { status: 'ready',     label: t('order.tl.ready_pickup'), sub: t('order.tl.ready_pickup_sub') },
+    { status: 'done',      label: t('order.tl.done_pickup'),  sub: t('order.tl.done_pickup_sub') },
+  ]
+
+  const DELIVERY_STEPS: TimelineStep[] = [
+    { status: 'pending',    label: t('order.tl.received'),       sub: t('order.tl.received_sub') },
+    { status: 'preparing',  label: t('order.tl.preparing'),      sub: t('order.tl.preparing_sub') },
+    { status: 'delivering', label: t('order.tl.delivering'),     sub: t('order.tl.delivering_sub') },
+    { status: 'done',       label: t('order.tl.done_delivery'),  sub: t('order.tl.done_delivery_sub') },
+  ]
+
   const steps      = isTakeaway ? TAKEAWAY_STEPS : DELIVERY_STEPS
   const currentIdx = getFlowStepIndex(order.status, order.order_type)
 
   return (
     <div className="bg-white border-2 border-black/8 rounded-3xl p-5 sm:p-6">
       <p className="text-[11px] font-black uppercase tracking-[0.18em] text-black/35 mb-5">
-        Estado do pedido
+        {t('order.timeline_label')}
       </p>
-      <ol className="space-y-0" aria-label="Progresso do pedido">
+      <ol className="space-y-0" aria-label={t('order.timeline_aria')}>
         {steps.map((step, i) => {
           const isPast   = currentIdx > i
           const isActive = currentIdx === i
@@ -228,6 +235,7 @@ export default function OrderTrackingPage({ params }: { params: { id: string } }
   const [order, setOrder] = useState<TrackedOrder | null>(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
+  const { t } = useI18n()
 
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
   const pollRef    = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -286,7 +294,7 @@ export default function OrderTrackingPage({ params }: { params: { id: string } }
           <div className="max-w-lg mx-auto">
             <h1 className="font-display text-white uppercase leading-none tracking-tight"
                 style={{ fontSize: 'clamp(2.8rem, 10vw, 5.5rem)' }}>
-              BUNS<br /><span className="text-buns-yellow">Pedido</span>
+              BUNS<br /><span className="text-buns-yellow">#{id.slice(0, 8).toUpperCase()}</span>
             </h1>
           </div>
         </div>
@@ -296,14 +304,14 @@ export default function OrderTrackingPage({ params }: { params: { id: string } }
             <div className="p-8 flex flex-col items-center text-center gap-4">
               <span className="text-5xl">🔍</span>
               <div className="space-y-1">
-                <p className="font-black text-black text-lg">Pedido não encontrado</p>
-                <p className="text-black/50 text-sm">Verifica o link ou contacta a BUNS.</p>
+                <p className="font-black text-black text-lg">{t('order.not_found')}</p>
+                <p className="text-black/50 text-sm">{t('order.not_found_sub')}</p>
               </div>
               <Link
                 href="/menu"
                 className="w-full py-4 bg-black text-buns-yellow font-black text-base uppercase tracking-wide rounded-2xl text-center active:scale-[0.98] transition"
               >
-                Voltar ao menu
+                {t('order.back_menu')}
               </Link>
             </div>
           </div>
@@ -325,7 +333,7 @@ export default function OrderTrackingPage({ params }: { params: { id: string } }
 
           {/* Status badge in hero */}
           <div className={`inline-flex items-center gap-1.5 text-[11px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg mb-5 ${ac.badge}`}>
-            Pedido em curso
+            {t('order.hero_badge')}
           </div>
 
           {/* Order ID heading */}
@@ -355,9 +363,9 @@ export default function OrderTrackingPage({ params }: { params: { id: string } }
           <div className="bg-white border-2 border-black/8 rounded-2xl px-4 py-3 flex items-center gap-3">
             <span className="text-xl shrink-0">✅</span>
             <p className="text-sm text-black/60 leading-snug">
-              Podes fechar esta página — o pedido fica guardado na{' '}
+              {t('order.close_notice')}{' '}
               <Link href="/account" className="font-black text-black underline underline-offset-2">
-                tua conta
+                {t('order.close_account')}
               </Link>
               .
             </p>
@@ -370,10 +378,10 @@ export default function OrderTrackingPage({ params }: { params: { id: string } }
         {/* ── Items ── */}
         <div className="bg-white border-2 border-black/8 rounded-3xl overflow-hidden">
           <div className="flex items-center gap-3 px-5 py-4 bg-black">
-            <h2 className="font-black text-white uppercase tracking-wide text-sm">O teu pedido</h2>
+            <h2 className="font-black text-white uppercase tracking-wide text-sm">{t('order.section_order')}</h2>
           </div>
           <div className="p-5 space-y-3">
-            <ul className="space-y-2.5" aria-label="Itens do pedido">
+            <ul className="space-y-2.5" aria-label={t('order.items_aria')}>
               {(order.items ?? []).map((item, i) => (
                 <li key={i} className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -395,17 +403,17 @@ export default function OrderTrackingPage({ params }: { params: { id: string } }
 
             <div className="border-t-2 border-black/8 pt-3 space-y-1.5">
               <div className="flex justify-between text-sm">
-                <span className="text-black/45">Subtotal</span>
+                <span className="text-black/45">{t('order.subtotal')}</span>
                 <span className="text-black font-bold tabular-nums">{currency(order.subtotal)}</span>
               </div>
               {order.delivery_fee > 0 && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-black/45">Taxa de entrega</span>
+                  <span className="text-black/45">{t('order.delivery_fee')}</span>
                   <span className="text-black font-bold tabular-nums">{currency(order.delivery_fee)}</span>
                 </div>
               )}
               <div className="border-t-2 border-black/8 pt-2 flex justify-between">
-                <span className="text-black font-black text-base">Total</span>
+                <span className="text-black font-black text-base">{t('order.total')}</span>
                 <span className="text-black font-black text-xl tabular-nums">{currency(order.total)}</span>
               </div>
             </div>
@@ -415,34 +423,34 @@ export default function OrderTrackingPage({ params }: { params: { id: string } }
         {/* ── Pickup / Delivery info ── */}
         <div className="bg-white border-2 border-black/8 rounded-3xl overflow-hidden">
           <div className="flex items-center gap-3 px-5 py-4 bg-black">
-            <h2 className="font-black text-white uppercase tracking-wide text-sm">Informações</h2>
+            <h2 className="font-black text-white uppercase tracking-wide text-sm">{t('order.section_info')}</h2>
           </div>
           <div className="p-5 space-y-4">
             <div className="grid grid-cols-2 gap-x-4 gap-y-3">
               <div>
-                <p className="text-[11px] font-black uppercase tracking-widest text-black/35 mb-1">Tipo</p>
-                <p className="font-bold text-black text-sm">{isTakeaway ? '🏪 Takeaway' : '🚚 Entrega'}</p>
+                <p className="text-[11px] font-black uppercase tracking-widest text-black/35 mb-1">{t('order.type_label')}</p>
+                <p className="font-bold text-black text-sm">{isTakeaway ? t('order.type_takeaway') : t('order.type_delivery')}</p>
               </div>
 
               {!isTakeaway && order.zone && (
                 <div>
-                  <p className="text-[11px] font-black uppercase tracking-widest text-black/35 mb-1">Zona</p>
+                  <p className="text-[11px] font-black uppercase tracking-widest text-black/35 mb-1">{t('order.zone_label')}</p>
                   <p className="font-bold text-black text-sm">{order.zone}</p>
                 </div>
               )}
 
               <div>
-                <p className="text-[11px] font-black uppercase tracking-widest text-black/35 mb-1">Pagamento</p>
+                <p className="text-[11px] font-black uppercase tracking-widest text-black/35 mb-1">{t('order.payment_label')}</p>
                 <p className="font-bold text-black text-sm">
-                  {order.payment_method === 'cash'  ? '💵 Dinheiro'  :
-                   order.payment_method === 'mbway' ? '📱 MB WAY'    :
-                   order.payment_method === 'card'  ? '💳 Cartão'    :
+                  {order.payment_method === 'cash'  ? t('order.pay_cash')  :
+                   order.payment_method === 'mbway' ? t('order.pay_mbway') :
+                   order.payment_method === 'card'  ? t('order.pay_card')  :
                    order.payment_method}
                 </p>
               </div>
 
               <div>
-                <p className="text-[11px] font-black uppercase tracking-widest text-black/35 mb-1">Hora</p>
+                <p className="text-[11px] font-black uppercase tracking-widest text-black/35 mb-1">{t('order.time_label')}</p>
                 <p className="font-bold text-black text-sm tabular-nums">{formatTime(order.created_at)}</p>
               </div>
             </div>
@@ -452,7 +460,7 @@ export default function OrderTrackingPage({ params }: { params: { id: string } }
                 <span className="shrink-0 mt-0.5">📍</span>
                 <span className="text-black/65 leading-snug">
                   <strong className="text-black">{STORE_ADDRESS}</strong>
-                  {' '}— levanta no balcão quando receberes o aviso.
+                  {' '}{t('order.pickup_notice')}
                 </span>
               </div>
             )}
@@ -466,20 +474,20 @@ export default function OrderTrackingPage({ params }: { params: { id: string } }
               href={`tel:${STORE_PHONE}`}
               className="block w-full py-4 bg-white border-2 border-black text-black font-black text-sm uppercase tracking-wide rounded-2xl text-center active:scale-[0.98] transition"
             >
-              📞 Ligar para a BUNS
+              {t('order.call_cta')}
             </a>
           )}
           <Link
             href="/account"
             className="block w-full py-4 bg-white border-2 border-black/20 text-black/60 font-black text-sm uppercase tracking-wide rounded-2xl text-center active:scale-[0.98] transition"
           >
-            Ver na minha conta
+            {t('order.view_account')}
           </Link>
           <Link
             href="/menu"
             className="block w-full py-4 bg-black text-buns-yellow font-black text-base uppercase tracking-wide rounded-2xl border-2 border-black text-center active:scale-[0.98] transition"
           >
-            Voltar ao menu
+            {t('order.back_menu')}
           </Link>
         </div>
 

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useMemo, useState, useEffect, useRef } from 'react'
 import { usePathname } from 'next/navigation'
 import { useCart } from '@/components/cart/CartContext'
+import { useI18n } from '@/lib/i18n/useI18n'
 
 function currency(x: number) {
   return new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(x)
@@ -12,6 +13,7 @@ function currency(x: number) {
 export default function StickyCartBar() {
   const path     = usePathname()
   const { cart } = useCart()
+  const { t }    = useI18n()
   const items    = cart?.items ?? []
   const count    = useMemo(() => items.reduce((n, it) => n + it.qty, 0),    [items])
   const subtotal = useMemo(() => items.reduce((s, it) => s + it.price * it.qty, 0), [items])
@@ -74,14 +76,14 @@ export default function StickyCartBar() {
             <div className="min-w-0">
               <div className="flex items-center gap-2 mb-0.5">
                 <span className="text-[10px] font-black uppercase tracking-widest text-white/45">
-                  Carrinho
+                  {t('dock.label')}
                 </span>
                 <span
                   className={[
                     'inline-flex items-center justify-center w-5 h-5 rounded-full bg-buns-yellow text-black text-[10px] font-black leading-none',
                     countPop ? 'buns-card-pop' : '',
                   ].join(' ')}
-                  aria-label={`${count} ${count === 1 ? 'item' : 'itens'}`}
+                  aria-label={`${count} item${count === 1 ? '' : 's'}`}
                 >
                   {count}
                 </span>
@@ -100,13 +102,13 @@ export default function StickyCartBar() {
                 href="/cart"
                 className="px-4 py-2.5 rounded-xl border-2 border-white/20 bg-white/[0.07] text-white text-sm font-black uppercase tracking-wide active:scale-95 transition-all hover:border-white/40 hover:bg-white/10"
               >
-                Ver
+                {t('dock.view')}
               </Link>
               <Link
                 href="/checkout"
                 className="buns-checkout-glow px-5 py-2.5 rounded-xl bg-buns-yellow text-black text-sm font-black uppercase tracking-wide active:scale-95 transition-transform hover:brightness-105"
               >
-                Checkout →
+                {t('dock.checkout')}
               </Link>
             </div>
 
