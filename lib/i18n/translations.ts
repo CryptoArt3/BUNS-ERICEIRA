@@ -287,6 +287,12 @@ const pt: Record<string, string> = {
   'order.tl.done_delivery':   'Entregue',
   'order.tl.done_delivery_sub':'Bom proveito! 🤙',
 
+  // ── Order sound alert ─────────────────────────────────────
+  'order.sound_enable':    '🔔 Ativar aviso sonoro',
+  'order.sound_enabled':   '🔔 Aviso sonoro ativo',
+  'order.ready_toast':     'O teu pedido está pronto para levantar!',
+  'order.ready_toast_cta': 'Dirige-te ao balcão',
+
   // ── AR page ───────────────────────────────────────────────
   'ar.hero_tag':     '🕶 AR Mode · Ativo',
   'ar.hero_sub':     'Coloca os teus burgers favoritos na mesa em tamanho real. Aponta o telemóvel e entra na experiência.',
@@ -595,6 +601,12 @@ const en: Record<string, string> = {
   'order.tl.delivering_sub':   'Your order is on its way',
   'order.tl.done_delivery':    'Delivered',
   'order.tl.done_delivery_sub':'Enjoy! 🤙',
+
+  // ── Order sound alert ─────────────────────────────────────
+  'order.sound_enable':    '🔔 Enable sound alert',
+  'order.sound_enabled':   '🔔 Sound alert enabled',
+  'order.ready_toast':     'Your order is ready for pickup!',
+  'order.ready_toast_cta': 'Head to the counter',
 
   // ── AR page ───────────────────────────────────────────────
   'ar.hero_tag':     '🕶 AR Mode · Active',

@@ -237,6 +237,13 @@ export default function OrderTrackingPage({ params }: { params: { id: string } }
   const [notFound, setNotFound] = useState(false)
   const { t } = useI18n()
 
+  /* ── Sound alert state ── */
+  const [soundEnabled, setSoundEnabled]           = useState(false)
+  const [readyToastVisible, setReadyToastVisible] = useState(false)
+  const audioRef       = useRef<HTMLAudioElement | null>(null)
+  const soundPlayedRef = useRef(false)
+  const alertPlayedKey = `buns_order_ready_alert_played_${id}`
+
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
   const pollRef    = useRef<ReturnType<typeof setInterval> | null>(null)
 
@@ -282,6 +289,71 @@ export default function OrderTrackingPage({ params }: { params: { id: string } }
       if (pollRef.current) clearInterval(pollRef.current)
     }
   }, [id, fetchOrder])
+
+  /* ── Load sound preference ── */
+  useEffect(() => {
+    setSoundEnabled(!!localStorage.getItem('buns_sound_enabled'))
+  }, [])
+
+  /* ── Init audio element once ── */
+  useEffect(() => {
+    const audio = new Audio('/sounds/order-ready.mp3')
+    audio.volume = 0.65
+    audio.preload = 'auto'
+    audioRef.current = audio
+    return () => { audioRef.current = null }
+  }, [])
+
+  /* ── Detect ready: show toast + vibrate (once per order) ── */
+  useEffect(() => {
+    if (!order || order.status !== 'ready') return
+    if (localStorage.getItem(alertPlayedKey)) return
+
+    localStorage.setItem(alertPlayedKey, '1')
+    setReadyToastVisible(true)
+    try { navigator.vibrate?.([200, 80, 200]) } catch {}
+  }, [order?.status, alertPlayedKey])
+
+  /* ── Play sound when ready + enabled (separate to handle late opt-in) ── */
+  useEffect(() => {
+    if (!order || order.status !== 'ready') return
+    if (!soundEnabled || soundPlayedRef.current || !audioRef.current) return
+
+    soundPlayedRef.current = true
+    audioRef.current.currentTime = 0
+    audioRef.current.play().catch(() => {})
+  }, [order?.status, soundEnabled])
+
+  /* ── Sound toggle handler (must run in user-gesture context for iOS) ── */
+  function handleToggleSound() {
+    if (soundEnabled) {
+      setSoundEnabled(false)
+      localStorage.removeItem('buns_sound_enabled')
+      return
+    }
+
+    setSoundEnabled(true)
+    localStorage.setItem('buns_sound_enabled', '1')
+
+    if (!audioRef.current) return
+    const audio = audioRef.current
+
+    if (order?.status === 'ready' && !soundPlayedRef.current) {
+      // Order already ready — play immediately within gesture context
+      soundPlayedRef.current = true
+      audio.currentTime = 0
+      audio.volume = 0.65
+      audio.play().catch(() => {})
+    } else {
+      // Prime WebAudio context silently so future async play is unlocked on iOS
+      audio.volume = 0
+      audio.play().then(() => {
+        audio.pause()
+        audio.currentTime = 0
+        audio.volume = 0.65
+      }).catch(() => {})
+    }
+  }
 
   /* ── Loading */
   if (loading) return <SkeletonPage />
@@ -357,6 +429,22 @@ export default function OrderTrackingPage({ params }: { params: { id: string } }
 
         {/* ── Big status card ── */}
         <StatusCard order={order} />
+
+        {/* ── Sound alert toggle — shown while order is active ── */}
+        {isActive && (
+          <button
+            onClick={handleToggleSound}
+            className={[
+              'w-full flex items-center justify-center gap-2 py-3 rounded-2xl border-2',
+              'text-sm font-black uppercase tracking-wide transition active:scale-[0.98]',
+              soundEnabled
+                ? 'bg-buns-yellow border-buns-yellow text-black'
+                : 'bg-white border-black/15 text-black/45 hover:border-black/30 hover:text-black/65',
+            ].join(' ')}
+          >
+            {t(soundEnabled ? 'order.sound_enabled' : 'order.sound_enable')}
+          </button>
+        )}
 
         {/* ── "You can close" notice ── */}
         {isActive && (
@@ -492,6 +580,35 @@ export default function OrderTrackingPage({ params }: { params: { id: string } }
         </div>
 
       </div>
+
+      {/* ── Ready toast — fixed bottom, shown once when status becomes ready ── */}
+      {readyToastVisible && (
+        <div className="fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom,0px))] inset-x-0 z-50 px-4 pointer-events-none">
+          <div className="max-w-lg mx-auto pointer-events-auto">
+            <div className="bg-white border-2 border-green-500/40 rounded-2xl overflow-hidden shadow-[0_4px_32px_rgba(34,197,94,0.18)]">
+              <div className="h-[5px] bg-green-500" />
+              <div className="px-4 py-3.5 flex items-start gap-3">
+                <span className="text-2xl shrink-0 mt-0.5" aria-hidden="true">🔔</span>
+                <div className="flex-1 min-w-0">
+                  <p className="font-black text-black text-sm leading-snug">
+                    {t('order.ready_toast')}
+                  </p>
+                  <p className="text-green-700 text-xs font-black uppercase tracking-wide mt-0.5">
+                    {t('order.ready_toast_cta')} →
+                  </p>
+                </div>
+                <button
+                  onClick={() => setReadyToastVisible(false)}
+                  className="shrink-0 w-7 h-7 flex items-center justify-center rounded-full bg-black/5 text-black/40 hover:text-black transition text-xl leading-none select-none"
+                  aria-label="Fechar"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   )
 }
