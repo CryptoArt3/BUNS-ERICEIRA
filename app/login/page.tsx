@@ -2,21 +2,52 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import type { Route } from 'next'
 import { supabase } from '@/lib/supabase/client'
 import { useI18n } from '@/lib/i18n/useI18n'
 import { isIosDevice, isStandalone } from '@/lib/pwa'
 
+/* ── Cart restore (same logic as auth/callback, needed here for OTP flow) ── */
+function restoreCartIfEmpty() {
+  try {
+    const current = localStorage.getItem('cart')
+    let empty = true
+    if (current) {
+      try {
+        const parsed = JSON.parse(current)
+        empty = !Array.isArray(parsed?.items) || parsed.items.length === 0
+      } catch { empty = true }
+    }
+    if (empty) {
+      const backup = localStorage.getItem('buns_pending_cart_backup')
+      if (backup) {
+        try {
+          const p = JSON.parse(backup)
+          if (Array.isArray(p?.items) && p.items.length > 0) {
+            localStorage.setItem('cart', backup)
+          }
+        } catch {}
+      }
+    }
+  } finally {
+    localStorage.removeItem('buns_pending_cart_backup')
+  }
+}
+
 export default function LoginPage() {
-  const [email, setEmail] = useState('')
-  const [sent, setSent] = useState(false)
-  const [err, setErr] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
+  const router = useRouter()
+  const { t } = useI18n()
+
+  const [step, setStep]               = useState<'email' | 'code'>('email')
+  const [email, setEmail]             = useState('')
+  const [code, setCode]               = useState('')
+  const [loading, setLoading]         = useState(false)
+  const [err, setErr]                 = useState<string | null>(null)
   const [sessionEmail, setSessionEmail] = useState<string | null>(null)
   const [showIosPwaHint, setShowIosPwaHint] = useState(false)
   // Resolved after mount to avoid SSR mismatch
-  const [nextPath, setNextPath] = useState<Route>('/checkout')
-  const { t } = useI18n()
+  const [nextPath, setNextPath]       = useState<Route>('/checkout')
 
   // Read ?next= from URL (client-only, no Suspense needed)
   useEffect(() => {
@@ -32,12 +63,13 @@ export default function LoginPage() {
     })
   }, [])
 
-  // Show iOS hint when on iPhone/iPad but NOT already in standalone PWA mode
+  // Show iOS hint when on iPhone/iPad outside standalone PWA
   useEffect(() => {
     setShowIosPwaHint(isIosDevice() && !isStandalone())
   }, [])
 
-  async function handleSend(e: React.FormEvent) {
+  /* ── Step 1: send OTP code ── */
+  async function handleSendCode(e: React.FormEvent) {
     e.preventDefault()
     setErr(null)
     setLoading(true)
@@ -45,16 +77,58 @@ export default function LoginPage() {
       localStorage.setItem('buns_auth_next', nextPath || '/checkout')
       const cartRaw = localStorage.getItem('cart')
       localStorage.setItem('buns_pending_cart_backup', cartRaw ?? JSON.stringify({ items: [] }))
-      console.log('[AUTH CART] backup saved', cartRaw)
 
       const { error } = await supabase.auth.signInWithOtp({
         email: email.trim(),
-        options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+        options: { shouldCreateUser: true },
       })
       if (error) throw error
-      setSent(true)
+      setStep('code')
     } catch (e: any) {
-      setErr(e?.message || 'Falhou o envio do link.')
+      setErr(e?.message || t('login.err_send'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  /* ── Step 2: verify OTP code → redirect ── */
+  async function handleVerifyCode(e: React.FormEvent) {
+    e.preventDefault()
+    setErr(null)
+    setLoading(true)
+    try {
+      const { error } = await supabase.auth.verifyOtp({
+        email: email.trim(),
+        token: code.trim(),
+        type: 'email',
+      })
+      if (error) throw error
+
+      // Success — restore cart then navigate (loading stays true until component unmounts)
+      restoreCartIfEmpty()
+      const saved = localStorage.getItem('buns_auth_next')
+      const next = (saved?.startsWith('/') ? saved : '/checkout') as Route
+      localStorage.removeItem('buns_auth_next')
+      router.replace(next)
+    } catch {
+      setErr(t('login.err_invalid_code'))
+      setLoading(false)
+    }
+  }
+
+  /* ── Resend: send a fresh OTP to the same email ── */
+  async function handleResend() {
+    setErr(null)
+    setCode('')
+    setLoading(true)
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email: email.trim(),
+        options: { shouldCreateUser: true },
+      })
+      if (error) throw error
+    } catch (e: any) {
+      setErr(e?.message || t('login.err_send'))
     } finally {
       setLoading(false)
     }
@@ -115,43 +189,99 @@ export default function LoginPage() {
             </div>
           </div>
 
-        /* ── Email sent ── */
-        ) : sent ? (
-          <div className="bg-white border-2 border-black rounded-2xl overflow-hidden">
-            <div className="h-[6px] bg-buns-yellow" />
-            <div className="p-8 text-center space-y-4">
-              <span className="text-5xl block">📬</span>
-              <p
-                className="font-display uppercase text-black leading-none"
-                style={{ fontSize: 'clamp(1.5rem, 5vw, 2rem)' }}
-              >
-                {t('login.sent_title')}
-              </p>
-              <p className="text-black/55 text-sm leading-relaxed">
-                {t('login.sent_body1')} <strong className="text-black">{email}</strong>.
-                <br />
-                {t('login.sent_body2')}
-              </p>
+        /* ── Step 2: code verification ── */
+        ) : step === 'code' ? (
+          <div className="space-y-5">
+            <div className="bg-white border-2 border-black rounded-2xl overflow-hidden">
+              <div className="h-[6px] bg-buns-yellow" />
+              <div className="p-6 space-y-5">
 
-              {/* iOS PWA hint — show after magic link is sent, on iPhone outside standalone */}
-              {showIosPwaHint && (
-                <div className="bg-buns-cream border border-black/10 rounded-xl px-4 py-3 text-left">
-                  <p className="text-xs text-black/65 leading-snug">
-                    📱 {t('login.ios_pwa_hint')}
+                {/* Header */}
+                <div className="text-center space-y-1.5">
+                  <span className="text-4xl block" aria-hidden="true">📬</span>
+                  <p
+                    className="font-display uppercase text-black leading-none mt-2"
+                    style={{ fontSize: 'clamp(1.4rem, 5vw, 1.8rem)' }}
+                  >
+                    {t('login.code_sent_title')}
+                  </p>
+                  <p className="text-black/50 text-sm leading-snug">{t('login.code_sent_sub')}</p>
+                  <p className="text-xs text-black/35 mt-1">
+                    {t('login.code_sent_for')}:{' '}
+                    <span className="font-black text-black/60 break-all">{email}</span>
                   </p>
                 </div>
-              )}
 
-              <button
-                onClick={() => setSent(false)}
-                className="text-xs text-black/35 underline underline-offset-2 mt-2"
-              >
-                {t('login.use_other')}
-              </button>
+                {/* iOS PWA hint — positive framing for the code UX */}
+                {showIosPwaHint && (
+                  <div className="bg-buns-cream border border-black/10 rounded-xl px-4 py-3">
+                    <p className="text-xs text-black/65 leading-snug">
+                      📱 {t('login.ios_pwa_hint')}
+                    </p>
+                  </div>
+                )}
+
+                {/* Code form */}
+                <form onSubmit={handleVerifyCode} className="space-y-3">
+                  <label className="flex flex-col gap-1.5">
+                    <span className="text-[11px] font-black uppercase tracking-widest text-black/40">
+                      {t('login.code_label')}
+                    </span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      autoComplete="one-time-code"
+                      maxLength={6}
+                      required
+                      autoFocus
+                      value={code}
+                      onChange={(e) => {
+                        setCode(e.target.value.replace(/\D/g, '').slice(0, 6))
+                        setErr(null)
+                      }}
+                      placeholder={t('login.code_ph')}
+                      className="w-full rounded-xl bg-white border-2 border-black/20 focus:border-black px-4 py-3.5 text-black placeholder:text-black/20 outline-none font-black text-3xl tracking-[0.35em] text-center tabular-nums transition"
+                    />
+                  </label>
+
+                  {err && (
+                    <div className="bg-white border-2 border-red-400 rounded-xl px-4 py-3 text-red-600 text-sm font-medium">
+                      {err}
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={loading || code.length < 6}
+                    className="w-full py-4 bg-black text-buns-yellow font-black text-base uppercase tracking-wide rounded-xl active:scale-[0.98] transition disabled:opacity-50"
+                  >
+                    {loading ? t('login.verifying') : t('login.confirm_code')}
+                  </button>
+                </form>
+
+                {/* Resend + change email */}
+                <div className="flex items-center justify-between pt-1">
+                  <button
+                    onClick={handleResend}
+                    disabled={loading}
+                    className="text-xs text-black/40 underline underline-offset-2 hover:text-black/70 transition disabled:opacity-40"
+                  >
+                    {t('login.resend')}
+                  </button>
+                  <button
+                    onClick={() => { setStep('email'); setCode(''); setErr(null) }}
+                    className="text-xs text-black/40 underline underline-offset-2 hover:text-black/70 transition"
+                  >
+                    {t('login.use_other')}
+                  </button>
+                </div>
+
+              </div>
             </div>
           </div>
 
-        /* ── Login form ── */
+        /* ── Step 1: email entry ── */
         ) : (
           <div className="space-y-6">
 
@@ -165,13 +295,11 @@ export default function LoginPage() {
                   <span key={i}>{line}{i < arr.length - 1 && <br />}</span>
                 ))}
               </p>
-              <p className="text-black/50 text-sm leading-snug">
-                {t('login.sub')}
-              </p>
+              <p className="text-black/50 text-sm leading-snug">{t('login.sub')}</p>
             </div>
 
             {/* form */}
-            <form onSubmit={handleSend} className="space-y-3">
+            <form onSubmit={handleSendCode} className="space-y-3">
               <label className="flex flex-col gap-1.5">
                 <span className="text-[11px] font-black uppercase tracking-widest text-black/40">
                   {t('login.email_label')}
@@ -197,7 +325,7 @@ export default function LoginPage() {
                 disabled={loading}
                 className="w-full py-4 bg-black text-buns-yellow font-black text-base uppercase tracking-wide rounded-xl border-2 border-black active:scale-[0.98] transition disabled:opacity-50"
               >
-                {loading ? t('login.sending') : t('login.send_link')}
+                {loading ? t('login.sending') : t('login.send_code')}
               </button>
             </form>
 
