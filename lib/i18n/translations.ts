@@ -186,6 +186,16 @@ const pt: Record<string, string> = {
   'login.sending':        'A enviar…',
   'login.no_password':    'Sem password. Receberás um link seguro no teu email.',
   'login.skip':           'Continuar sem conta →',
+  'login.ios_pwa_hint':   'No iPhone, o link de acesso pode abrir no Safari. Depois de entrar, volta a abrir a app BUNS pelo ecrã principal.',
+
+  // ── Auth callback ─────────────────────────────────────────
+  'callback.checking':     'A verificar sessão…',
+  'callback.title':        'Sessão iniciada!',
+  'callback.sub':          'Estás autenticado com sucesso.',
+  'callback.ios_hint':     'Estás a usar a app BUNS? Volta ao ecrã principal e abre a app para continuar.',
+  'callback.cta_checkout': 'Continuar para checkout',
+  'callback.cta_account':  'Abrir conta',
+  'callback.redirecting':  'A redirecionar…',
 
   // ── Account ───────────────────────────────────────────────
   'account.hero_tag':       '👤 A minha conta',
@@ -474,6 +484,16 @@ const en: Record<string, string> = {
   'login.sending':        'Sending…',
   'login.no_password':    "No password needed. You'll receive a secure link in your email.",
   'login.skip':           'Continue without account →',
+  'login.ios_pwa_hint':   'On iPhone, the magic link may open in Safari. After signing in, return to the BUNS app on your home screen.',
+
+  // ── Auth callback ─────────────────────────────────────────
+  'callback.checking':     'Checking session…',
+  'callback.title':        'Signed in!',
+  'callback.sub':          'You have been authenticated successfully.',
+  'callback.ios_hint':     'Using the BUNS app? Return to your home screen and open the app to continue.',
+  'callback.cta_checkout': 'Continue to checkout',
+  'callback.cta_account':  'Open account',
+  'callback.redirecting':  'Redirecting…',
 
   // ── Account ───────────────────────────────────────────────
   'account.hero_tag':       '👤 My account',

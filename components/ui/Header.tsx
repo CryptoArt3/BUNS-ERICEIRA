@@ -54,7 +54,10 @@ export const Header = () => {
   }
 
   return (
-    <header className="sticky top-0 z-50 backdrop-blur border-b border-white/10 bg-black/50">
+    <header
+      className="sticky top-0 z-50 backdrop-blur border-b border-white/10 bg-black/50"
+      style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+    >
       <div className="mx-auto max-w-6xl px-4 h-16 flex items-center justify-between">
         {/* logo — só texto (removido o logo pequeno) */}
         <Link

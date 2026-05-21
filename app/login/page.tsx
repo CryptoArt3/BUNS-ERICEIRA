@@ -5,6 +5,7 @@ import Link from 'next/link'
 import type { Route } from 'next'
 import { supabase } from '@/lib/supabase/client'
 import { useI18n } from '@/lib/i18n/useI18n'
+import { isIosDevice, isStandalone } from '@/lib/pwa'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -12,6 +13,7 @@ export default function LoginPage() {
   const [err, setErr] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [sessionEmail, setSessionEmail] = useState<string | null>(null)
+  const [showIosPwaHint, setShowIosPwaHint] = useState(false)
   // Resolved after mount to avoid SSR mismatch
   const [nextPath, setNextPath] = useState<Route>('/checkout')
   const { t } = useI18n()
@@ -28,6 +30,11 @@ export default function LoginPage() {
     supabase.auth.getSession().then(({ data }) => {
       setSessionEmail(data.session?.user?.email ?? null)
     })
+  }, [])
+
+  // Show iOS hint when on iPhone/iPad but NOT already in standalone PWA mode
+  useEffect(() => {
+    setShowIosPwaHint(isIosDevice() && !isStandalone())
   }, [])
 
   async function handleSend(e: React.FormEvent) {
@@ -125,6 +132,16 @@ export default function LoginPage() {
                 <br />
                 {t('login.sent_body2')}
               </p>
+
+              {/* iOS PWA hint — show after magic link is sent, on iPhone outside standalone */}
+              {showIosPwaHint && (
+                <div className="bg-buns-cream border border-black/10 rounded-xl px-4 py-3 text-left">
+                  <p className="text-xs text-black/65 leading-snug">
+                    📱 {t('login.ios_pwa_hint')}
+                  </p>
+                </div>
+              )}
+
               <button
                 onClick={() => setSent(false)}
                 className="text-xs text-black/35 underline underline-offset-2 mt-2"
