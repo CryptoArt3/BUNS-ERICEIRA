@@ -280,6 +280,12 @@ const pt: Record<string, string> = {
   'ar.cta_menu':     'Ver menu completo',
   'ar.footer':       'BUNS · Ericeira · Smash Burgers AR Mode',
   'ar.view_in_ar':   'VER EM AR',
+
+  // ── PWA install banner ────────────────────────────────────
+  'pwa.install_title':       'Instala a BUNS no teu telemóvel',
+  'pwa.install_sub_ios':     'Safari → Partilhar → Adicionar ao ecrã principal',
+  'pwa.install_sub_android': 'Abre mais rápido, mesmo sem ligação.',
+  'pwa.install_cta':         'Instalar app',
 }
 
 const en: Record<string, string> = {
@@ -562,6 +568,12 @@ const en: Record<string, string> = {
   'ar.cta_menu':     'See full menu',
   'ar.footer':       'BUNS · Ericeira · Smash Burgers AR Mode',
   'ar.view_in_ar':   'VIEW IN AR',
+
+  // ── PWA install banner ────────────────────────────────────
+  'pwa.install_title':       'Install BUNS on your phone',
+  'pwa.install_sub_ios':     'Safari → Share → Add to Home Screen',
+  'pwa.install_sub_android': 'Opens faster, even without signal.',
+  'pwa.install_cta':         'Install app',
 }
 
 export const translations: Record<LangKey, Record<string, string>> = { pt, en }

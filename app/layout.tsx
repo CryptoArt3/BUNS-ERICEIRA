@@ -6,6 +6,8 @@ import { I18nProvider } from "@/lib/i18n/I18nProvider";
 import { Header } from "@/components/ui/Header";
 import WelcomeModal from "@/components/ui/WelcomeModal";
 import StickyCartBar from "@/components/cart/StickyCartBar";
+import PwaRegister from "@/components/ui/PwaRegister";
+import InstallBanner from "@/components/ui/InstallBanner";
 
 export const metadata: Metadata = {
   title: "BUNS — Smash Burgers",
@@ -27,12 +29,19 @@ export const metadata: Metadata = {
       },
     ],
   },
+
+  appleWebApp: {
+    capable: true,
+    title: "BUNS",
+    statusBarStyle: "black-translucent",
+  },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  themeColor: "#000000",
 };
 
 export default function RootLayout({
@@ -53,8 +62,10 @@ export default function RootLayout({
           </div>
 
           <StickyCartBar />
+          <InstallBanner />
         </CartProvider>
         </I18nProvider>
+        <PwaRegister />
       </body>
     </html>
   );
