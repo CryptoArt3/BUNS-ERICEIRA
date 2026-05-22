@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase/client'
 import MenuGrid from '@/components/menu/MenuGrid'
 import { useI18n } from '@/lib/i18n/useI18n'
+import { track } from '@/lib/analytics/track'
 
 const BANNER_DISMISSED_KEY = 'buns_menu_login_banner_dismissed'
 
@@ -23,6 +24,7 @@ export default function MenuPage() {
       setIsLoggedIn(!!data.session)
     })
     setBannerDismissed(sessionStorage.getItem(BANNER_DISMISSED_KEY) === '1')
+    track({ event_name: 'menu_view' })
   }, [])
 
   function dismissBanner() {

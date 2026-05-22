@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import type { Product, ProductVariant } from './data'
 import { useCart } from '@/components/cart/CartContext'
 import { useI18n } from '@/lib/i18n/useI18n'
+import { track } from '@/lib/analytics/track'
 
 /* Category accent colours */
 const ACCENT: Record<string, string> = {
@@ -47,6 +48,7 @@ export default function ProductCard({ product }: { product: Product }) {
     const name = variant === 'menu' && hasMenu ? `${baseName} — Menu` : baseName
     const id   = baseId + (variant === 'menu' && hasMenu ? '-menu' : '')
     add({ id, name, price, qty: 1, variant })
+    track({ event_name: 'product_add', product_id: id, cart_total: price })
 
     setAdded(true)
     setPopping(true)

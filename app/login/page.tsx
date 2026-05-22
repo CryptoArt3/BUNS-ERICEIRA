@@ -7,6 +7,7 @@ import type { Route } from 'next'
 import { supabase } from '@/lib/supabase/client'
 import { useI18n } from '@/lib/i18n/useI18n'
 import { isIosDevice, isStandalone } from '@/lib/pwa'
+import { track } from '@/lib/analytics/track'
 
 /* ── Cart restore (same logic as auth/callback, needed here for OTP flow) ── */
 function restoreCartIfEmpty() {
@@ -83,6 +84,7 @@ export default function LoginPage() {
         options: { shouldCreateUser: true },
       })
       if (error) throw error
+      track({ event_name: 'login_started' })
       setStep('code')
     } catch (e: any) {
       setErr(e?.message || t('login.err_send'))
@@ -105,6 +107,7 @@ export default function LoginPage() {
       if (error) throw error
 
       // Success — restore cart then navigate (loading stays true until component unmounts)
+      track({ event_name: 'login_success' })
       restoreCartIfEmpty()
       const saved = localStorage.getItem('buns_auth_next')
       const next = (saved?.startsWith('/') ? saved : '/checkout') as Route

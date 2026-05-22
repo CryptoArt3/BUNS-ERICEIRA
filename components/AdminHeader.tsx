@@ -53,6 +53,9 @@ export default function AdminHeader() {
             <a className={isActive("/admin/kitchen")} href="/admin/kitchen">
               👨‍🍳 Kitchen
             </a>
+            <a className={isActive("/admin/analytics")} href="/admin/analytics">
+              📊 Analytics
+            </a>
             <a className={isActive("/admin/ping")} href="/admin/ping">
               Ping
             </a>

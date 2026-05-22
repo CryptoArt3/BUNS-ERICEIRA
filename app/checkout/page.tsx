@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
 import { useCart } from '@/components/cart/CartContext'
 import { useI18n } from '@/lib/i18n/useI18n'
+import { track } from '@/lib/analytics/track'
 
 /* ── helpers (unchanged) ─────────────────────────────────── */
 function currency(x: number) {
@@ -64,6 +65,7 @@ export default function CheckoutPage() {
     supabase.auth.getSession().then(({ data }) => {
       setMustLogin(!data?.session)
     })
+    track({ event_name: 'checkout_start' })
   }, [])
 
   /* ── form state (unchanged) ── */
@@ -154,6 +156,7 @@ export default function CheckoutPage() {
         return
       }
 
+      track({ event_name: 'order_submitted', order_id: data.id, cart_total: total })
       clear()
       localStorage.removeItem('cart')
       router.push(`/order/${data.id}`)

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase/client'
 import { useCart } from '@/components/cart/CartContext'
 import { useI18n } from '@/lib/i18n/useI18n'
+import { track } from '@/lib/analytics/track'
 
 function currency(x: number) {
   return new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(x)
@@ -19,6 +20,7 @@ export default function CartPage() {
     supabase.auth.getSession().then(({ data }) => {
       setIsLoggedIn(!!data.session)
     })
+    track({ event_name: 'cart_view' })
   }, [])
 
   const subtotal = useMemo(

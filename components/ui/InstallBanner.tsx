@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { useI18n } from '@/lib/i18n/useI18n'
+import { track } from '@/lib/analytics/track'
 
 // Capture beforeinstallprompt before React hydrates so we never miss it.
 let _deferred: any = null
@@ -37,19 +38,26 @@ export default function InstallBanner() {
 
     if (isSafariOnIos) {
       setPlatform('ios')
-      const t = setTimeout(() => setVisible(true), 4000)
+      const t = setTimeout(() => {
+        setVisible(true)
+        track({ event_name: 'pwa_install_prompt_seen', metadata: { platform: 'ios' } })
+      }, 4000)
       return () => clearTimeout(t)
     }
 
     if (_deferred) {
       setPlatform('android')
-      const t = setTimeout(() => setVisible(true), 4000)
+      const t = setTimeout(() => {
+        setVisible(true)
+        track({ event_name: 'pwa_install_prompt_seen', metadata: { platform: 'android' } })
+      }, 4000)
       return () => clearTimeout(t)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   function dismiss() {
+    track({ event_name: 'pwa_install_hint_dismissed', metadata: { platform } })
     localStorage.setItem('buns_pwa_dismissed', '1')
     setVisible(false)
   }
