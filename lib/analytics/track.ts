@@ -48,7 +48,9 @@ export type TrackPayload = {
 export function track(p: TrackPayload): void {
   void (async () => {
     try {
-      await supabase.from('analytics_events').insert({
+      // Supabase client never throws — errors come back in { error }, not as exceptions.
+      // Must destructure and check explicitly.
+      const { error } = await supabase.from('analytics_events').insert({
         event_name: p.event_name,
         path: p.path ?? (typeof window !== 'undefined' ? window.location.pathname : null),
         product_id: p.product_id ?? null,
@@ -60,8 +62,11 @@ export function track(p: TrackPayload): void {
         session_id: sid(),
         metadata: p.metadata ?? null,
       })
-    } catch {
-      // never block — analytics is best-effort
+      if (error) {
+        console.error('[analytics] insert failed:', error.message, '| code:', error.code, '| hint:', error.hint)
+      }
+    } catch (e) {
+      console.error('[analytics] unexpected exception:', e)
     }
   })()
 }

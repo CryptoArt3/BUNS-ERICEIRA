@@ -23,6 +23,21 @@ type EventRow = {
   session_id: string | null
 }
 
+type LiveRow = {
+  session_id: string | null
+  path: string | null
+  is_pwa: boolean | null
+  created_at: string
+}
+
+type LiveData = {
+  onlineNow: number
+  activeFive: number
+  topPages: { path: string; count: number }[]
+  pwaNow: number
+  browserNow: number
+}
+
 /* ── Helpers ────────────────────────────────────────────────── */
 const euro = (n: number) =>
   new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(n)
@@ -171,6 +186,8 @@ export default function AdminAnalyticsPage() {
   const [loading, setLoading] = useState(true)
   const [tick, setTick] = useState(0)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const [liveData, setLiveData] = useState<LiveData | null>(null)
+  const [liveAvailable, setLiveAvailable] = useState(true)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -204,6 +221,58 @@ export default function AdminAnalyticsPage() {
   }, [range, tick]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { load() }, [load])
+
+  /* ── Live visitors (independent 15-second refresh) ── */
+  const fetchLive = useCallback(async () => {
+    const fiveMinAgo = new Date(Date.now() - 5 * 60_000).toISOString()
+    const twoMinAgo  = new Date(Date.now() - 2 * 60_000).toISOString()
+
+    const { data, error } = await supabase
+      .from('analytics_events')
+      .select('session_id,path,is_pwa,created_at')
+      .gte('created_at', fiveMinAgo)
+
+    if (error) { setLiveAvailable(false); return }
+    setLiveAvailable(true)
+
+    if (!data || data.length === 0) {
+      setLiveData({ onlineNow: 0, activeFive: 0, topPages: [], pwaNow: 0, browserNow: 0 })
+      return
+    }
+
+    // Keep most-recent event per session to get current page + is_pwa state
+    const latest: Record<string, { path: string | null; is_pwa: boolean; created_at: string }> = {}
+    for (const row of data as LiveRow[]) {
+      if (!row.session_id) continue
+      const ex = latest[row.session_id]
+      if (!ex || row.created_at > ex.created_at) {
+        latest[row.session_id] = { path: row.path, is_pwa: row.is_pwa ?? false, created_at: row.created_at }
+      }
+    }
+
+    const all    = Object.values(latest)
+    const twoMin = all.filter((s) => s.created_at >= twoMinAgo)
+
+    const pathCounts: Record<string, number> = {}
+    for (const s of all) pathCounts[s.path || '/'] = (pathCounts[s.path || '/'] ?? 0) + 1
+
+    setLiveData({
+      onlineNow:  twoMin.length,
+      activeFive: all.length,
+      topPages:   Object.entries(pathCounts)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 5)
+                    .map(([path, count]) => ({ path, count })),
+      pwaNow:     twoMin.filter((s) => s.is_pwa).length,
+      browserNow: twoMin.filter((s) => !s.is_pwa).length,
+    })
+  }, [])
+
+  useEffect(() => {
+    fetchLive()
+    const id = setInterval(fetchLive, 15_000)
+    return () => clearInterval(id)
+  }, [fetchLive])
 
   /* ── Order metrics ── */
   const m = useMemo(() => {
@@ -327,6 +396,88 @@ export default function AdminAnalyticsPage() {
             </button>
           </div>
         </div>
+
+        {/* ── Live Visitors ── */}
+        {liveAvailable && (
+          <div className={`rounded-2xl border p-5 transition-colors ${
+            liveData && liveData.onlineNow > 0
+              ? 'border-green-500/30 bg-green-500/5'
+              : 'border-white/10 bg-white/5'
+          }`}>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2.5">
+                {/* Pulse dot */}
+                <span className="relative flex h-2.5 w-2.5 shrink-0">
+                  {liveData && liveData.onlineNow > 0 ? (
+                    <>
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-60" />
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-400" />
+                    </>
+                  ) : (
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-white/20" />
+                  )}
+                </span>
+                <p className="text-[11px] font-black uppercase tracking-widest text-white/40">
+                  Visitantes em Tempo Real
+                </p>
+              </div>
+              <span className="text-[10px] text-white/20 tabular-nums">↻ 15s</span>
+            </div>
+
+            {liveData === null ? (
+              <div className="h-14 bg-white/5 rounded-xl animate-pulse" />
+            ) : (
+              <div className="flex flex-col sm:flex-row gap-6">
+
+                {/* ── Counts ── */}
+                <div className="flex gap-8 shrink-0">
+                  <div>
+                    <p className={`font-display text-5xl leading-none tabular-nums ${
+                      liveData.onlineNow > 0 ? 'text-green-400' : 'text-white/20'
+                    }`}>
+                      {liveData.onlineNow}
+                    </p>
+                    <p className="text-[11px] uppercase tracking-widest text-white/35 mt-1.5">Online agora</p>
+                    {liveData.onlineNow > 0 && (
+                      <div className="flex gap-3 mt-2">
+                        <span className="text-xs text-white/40">📱 PWA: <strong className="text-white/70">{liveData.pwaNow}</strong></span>
+                        <span className="text-xs text-white/40">🌐 Browser: <strong className="text-white/70">{liveData.browserNow}</strong></span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="w-px bg-white/8 self-stretch" />
+
+                  <div>
+                    <p className="font-display text-5xl leading-none tabular-nums text-white">
+                      {liveData.activeFive}
+                    </p>
+                    <p className="text-[11px] uppercase tracking-widest text-white/35 mt-1.5">Ativos últimos 5 min</p>
+                  </div>
+                </div>
+
+                {/* ── Top pages ── */}
+                {liveData.topPages.length > 0 && (
+                  <>
+                    <div className="hidden sm:block w-px bg-white/8 self-stretch" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] uppercase tracking-widest text-white/25 mb-2.5">Páginas ativas</p>
+                      <div className="space-y-1.5">
+                        {liveData.topPages.map(({ path, count }) => (
+                          <div key={path} className="flex items-center gap-2">
+                            <span className="text-white/50 text-xs font-mono truncate flex-1">{path}</span>
+                            <span className="shrink-0 min-w-[20px] text-right font-black text-xs text-white">{count}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+
+              </div>
+            )}
+          </div>
+        )}
 
         {loading ? (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">

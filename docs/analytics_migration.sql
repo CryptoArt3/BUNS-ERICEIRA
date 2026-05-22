@@ -24,6 +24,10 @@ create index if not exists analytics_events_created_at_idx  on public.analytics_
 create index if not exists analytics_events_session_id_idx  on public.analytics_events (session_id);
 create index if not exists analytics_events_user_id_idx     on public.analytics_events (user_id);
 
+-- Table-level grants (required even when RLS is enabled — raw SQL does NOT auto-grant like the dashboard UI does)
+grant insert on public.analytics_events to anon, authenticated;
+grant select on public.analytics_events to authenticated;
+
 -- RLS
 alter table public.analytics_events enable row level security;
 
