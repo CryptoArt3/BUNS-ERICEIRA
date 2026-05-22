@@ -141,17 +141,37 @@ export const Header = () => {
           href={UBER_LINK}
           target="_blank"
           rel="noopener noreferrer"
-          className="btn-outline flex-1 text-center"
+          className="flex-1 flex items-center justify-center gap-1.5 py-[7px] rounded-[14px]
+                     border border-white/[0.08] bg-white/[0.04]
+                     text-white/90 text-[11.5px] font-black uppercase tracking-[0.05em]
+                     transition-all duration-150 active:scale-[0.97]
+                     hover:bg-white/[0.07] hover:text-white"
+          style={{
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06), 0 2px 8px rgba(0,0,0,0.22)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+          }}
         >
-          Uber Eats <ExternalLink className="inline w-3.5 h-3.5 ml-1" />
+          Uber Eats
+          <ExternalLink className="w-[11px] h-[11px] opacity-40 shrink-0" />
         </a>
         <a
           href={ERICEIRA_EATS}
           target="_blank"
           rel="noopener noreferrer"
-          className="btn-outline flex-1 text-center"
+          className="flex-1 flex items-center justify-center gap-1.5 py-[7px] rounded-[14px]
+                     border border-white/[0.08] bg-white/[0.04]
+                     text-white/90 text-[11.5px] font-black uppercase tracking-[0.05em]
+                     transition-all duration-150 active:scale-[0.97]
+                     hover:bg-white/[0.07] hover:text-white"
+          style={{
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06), 0 2px 8px rgba(0,0,0,0.22)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+          }}
         >
-          Ericeira Eats <ExternalLink className="inline w-3.5 h-3.5 ml-1" />
+          Ericeira Eats
+          <ExternalLink className="w-[11px] h-[11px] opacity-40 shrink-0" />
         </a>
       </div>
     </header>
