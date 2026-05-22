@@ -312,6 +312,8 @@ const pt: Record<string, string> = {
   'pwa.install_title':        'Instalar app BUNS',
   'pwa.install_sub_compact':  'Pedidos mais rápidos e tracking em tempo real',
   'pwa.install_sub_ios':      'Safari → Partilhar → Adicionar ao ecrã principal',
+  'pwa.ios_step1':            'Partilhar',
+  'pwa.ios_step2':            'Adicionar ao ecrã principal',
   'pwa.install_sub_android':  'Abre mais rápido, mesmo sem ligação.',
   'pwa.install_cta':          'Instalar',
 }
@@ -628,6 +630,8 @@ const en: Record<string, string> = {
   'pwa.install_title':        'Install BUNS app',
   'pwa.install_sub_compact':  'Faster orders and real-time tracking',
   'pwa.install_sub_ios':      'Safari → Share → Add to Home Screen',
+  'pwa.ios_step1':            'Share',
+  'pwa.ios_step2':            'Add to Home Screen',
   'pwa.install_sub_android':  'Opens faster, even without signal.',
   'pwa.install_cta':          'Install',
 }

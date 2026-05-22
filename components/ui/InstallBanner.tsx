@@ -172,6 +172,7 @@ export default function InstallBanner() {
             <div className="mt-3">
               {platform === 'ios' ? (
                 <>
+                  {/* iOS: tap to expand step-by-step instructions */}
                   <button
                     onClick={handleIosCta}
                     className="w-full py-[10px] bg-buns-yellow text-black font-black
@@ -189,21 +190,31 @@ export default function InstallBanner() {
                     </svg>
                   </button>
 
-                  {/* iOS steps — collapse/expand */}
+                  {/* iOS steps — two high-contrast rows, no extra blur */}
                   <div
                     className={[
                       'overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
-                      iosOpen ? 'max-h-16 opacity-100 mt-2' : 'max-h-0 opacity-0',
+                      iosOpen ? 'max-h-36 opacity-100 mt-2.5' : 'max-h-0 opacity-0 mt-0',
                     ].join(' ')}
                   >
-                    <div className="px-3 py-2.5 rounded-[13px] bg-white/[0.06]">
-                      <p className="text-white/55 text-[11.5px] text-center leading-snug tracking-[0.01em]">
-                        {t('pwa.install_sub_ios')}
-                      </p>
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-[11px] bg-white/[0.12]">
+                        <span className="text-[15px] leading-none shrink-0 select-none">1️⃣</span>
+                        <span className="text-white/90 text-[12.5px] font-semibold leading-none">
+                          {t('pwa.ios_step1')}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-[11px] bg-white/[0.12]">
+                        <span className="text-[15px] leading-none shrink-0 select-none">2️⃣</span>
+                        <span className="text-white/90 text-[12.5px] font-semibold leading-none">
+                          {t('pwa.ios_step2')}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </>
               ) : (
+                /* Android: single tap triggers native browser install prompt — no steps, no Safari instructions */
                 <button
                   onClick={installAndroid}
                   className="w-full py-[10px] bg-buns-yellow text-black font-black
