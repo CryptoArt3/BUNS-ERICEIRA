@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { motion, useInView, AnimatePresence } from 'framer-motion'
 import { Play, MapPin, Eye } from 'lucide-react'
 import { useI18n } from '@/lib/i18n/useI18n'
+import { track } from '@/lib/analytics/track'
 
 // ── Static data ───────────────────────────────────────────────────────────────
 
@@ -168,6 +169,8 @@ function VideoCard({
 export default function CollabsPage() {
   const { t } = useI18n()
 
+  useEffect(() => { track({ event_name: 'collabs_view' }) }, [])
+
   const [form, setForm] = useState({
     nome: '', negocio: '', instagram: '', tipo: '', mensagem: '',
   })
@@ -243,11 +246,17 @@ export default function CollabsPage() {
   function selectPackage(name: string, price: string) {
     setSelectedPackage({ name, price })
     document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })
+    track({ event_name: 'collabs_package_selected', metadata: { package: name } })
   }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSubmitting(true)
+    track({ event_name: 'collabs_whatsapp_opened', metadata: {
+      package:   selectedPackage?.name ?? null,
+      business:  form.negocio,
+      instagram: form.instagram,
+    }})
     // window.open must be called synchronously to avoid popup blockers
     window.open(toWhatsapp(form, selectedPackage), '_blank', 'noopener,noreferrer')
     setTimeout(() => {

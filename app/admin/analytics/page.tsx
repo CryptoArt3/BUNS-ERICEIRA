@@ -21,6 +21,7 @@ type EventRow = {
   language: string | null
   is_pwa: boolean | null
   session_id: string | null
+  metadata: Record<string, unknown> | null
 }
 
 type LiveRow = {
@@ -32,7 +33,7 @@ type LiveRow = {
 
 type LiveData = {
   onlineNow: number
-  activeFive: number
+  uniqueToday: number
   topPages: { path: string; count: number }[]
   pwaNow: number
   browserNow: number
@@ -201,7 +202,7 @@ export default function AdminAnalyticsPage() {
         .lt('created_at', to),
       supabase
         .from('analytics_events')
-        .select('event_name,language,is_pwa,session_id')
+        .select('event_name,language,is_pwa,session_id,metadata')
         .gte('created_at', from)
         .lt('created_at', to),
     ])
@@ -224,25 +225,30 @@ export default function AdminAnalyticsPage() {
 
   /* ── Live visitors (independent 15-second refresh) ── */
   const fetchLive = useCallback(async () => {
+    const sod = new Date(); sod.setHours(0, 0, 0, 0)
     const fiveMinAgo = new Date(Date.now() - 5 * 60_000).toISOString()
     const twoMinAgo  = new Date(Date.now() - 2 * 60_000).toISOString()
 
-    const { data, error } = await supabase
-      .from('analytics_events')
-      .select('session_id,path,is_pwa,created_at')
-      .gte('created_at', fiveMinAgo)
+    const [recentRes, todayRes] = await Promise.all([
+      supabase.from('analytics_events').select('session_id,path,is_pwa,created_at').gte('created_at', fiveMinAgo),
+      supabase.from('analytics_events').select('session_id').gte('created_at', sod.toISOString()).not('session_id', 'is', null),
+    ])
 
-    if (error) { setLiveAvailable(false); return }
+    if (recentRes.error) { setLiveAvailable(false); return }
     setLiveAvailable(true)
 
-    if (!data || data.length === 0) {
-      setLiveData({ onlineNow: 0, activeFive: 0, topPages: [], pwaNow: 0, browserNow: 0 })
+    const todaySessions = new Set(
+      ((todayRes.data ?? []) as { session_id: string }[]).map((r) => r.session_id)
+    )
+
+    if (!recentRes.data || recentRes.data.length === 0) {
+      setLiveData({ onlineNow: 0, uniqueToday: todaySessions.size, topPages: [], pwaNow: 0, browserNow: 0 })
       return
     }
 
     // Keep most-recent event per session to get current page + is_pwa state
     const latest: Record<string, { path: string | null; is_pwa: boolean; created_at: string }> = {}
-    for (const row of data as LiveRow[]) {
+    for (const row of recentRes.data as LiveRow[]) {
       if (!row.session_id) continue
       const ex = latest[row.session_id]
       if (!ex || row.created_at > ex.created_at) {
@@ -257,14 +263,14 @@ export default function AdminAnalyticsPage() {
     for (const s of all) pathCounts[s.path || '/'] = (pathCounts[s.path || '/'] ?? 0) + 1
 
     setLiveData({
-      onlineNow:  twoMin.length,
-      activeFive: all.length,
-      topPages:   Object.entries(pathCounts)
-                    .sort((a, b) => b[1] - a[1])
-                    .slice(0, 5)
-                    .map(([path, count]) => ({ path, count })),
-      pwaNow:     twoMin.filter((s) => s.is_pwa).length,
-      browserNow: twoMin.filter((s) => !s.is_pwa).length,
+      onlineNow:   twoMin.length,
+      uniqueToday: todaySessions.size,
+      topPages:    Object.entries(pathCounts)
+                     .sort((a, b) => b[1] - a[1])
+                     .slice(0, 5)
+                     .map(([path, count]) => ({ path, count })),
+      pwaNow:      twoMin.filter((s) => s.is_pwa).length,
+      browserNow:  twoMin.filter((s) => !s.is_pwa).length,
     })
   }, [])
 
@@ -326,6 +332,7 @@ export default function AdminAnalyticsPage() {
     let langPt = 0, langEn = 0
     const sessions = new Set<string>()
     const pwaSessions = new Set<string>()
+    const collabsPkgCounts: Record<string, number> = {}
 
     for (const e of events) {
       counts[e.event_name] = (counts[e.event_name] ?? 0) + 1
@@ -335,8 +342,12 @@ export default function AdminAnalyticsPage() {
         sessions.add(e.session_id)
         if (e.is_pwa) pwaSessions.add(e.session_id)
       }
+      if (e.event_name === 'collabs_package_selected' && e.metadata) {
+        const pkg = e.metadata.package as string | undefined
+        if (pkg) collabsPkgCounts[pkg] = (collabsPkgCounts[pkg] ?? 0) + 1
+      }
     }
-    return { counts, langPt, langEn, sessionCount: sessions.size, pwaSessionCount: pwaSessions.size }
+    return { counts, langPt, langEn, sessionCount: sessions.size, pwaSessionCount: pwaSessions.size, collabsPkgCounts }
   }, [events])
 
   const RANGE_LABELS: Record<DateRange, string> = {
@@ -450,9 +461,9 @@ export default function AdminAnalyticsPage() {
 
                   <div>
                     <p className="font-display text-5xl leading-none tabular-nums text-white">
-                      {liveData.activeFive}
+                      {liveData.uniqueToday}
                     </p>
-                    <p className="text-[11px] uppercase tracking-widest text-white/35 mt-1.5">Ativos últimos 5 min</p>
+                    <p className="text-[11px] uppercase tracking-widest text-white/35 mt-1.5">Sessões únicas hoje</p>
                   </div>
                 </div>
 
@@ -738,6 +749,65 @@ export default function AdminAnalyticsPage() {
                 </div>
               </div>
             ) : null}
+
+            {/* ── BUNS & BUNANA COLLABS ── */}
+            {fm && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">🎬</span>
+                  <p className="text-[11px] font-black uppercase tracking-widest text-buns-yellow">
+                    BUNS &amp; BUNANA COLLABS
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  <KpiCard
+                    accent
+                    label="Visitas à página"
+                    value={String(fm.counts.collabs_view ?? 0)}
+                  />
+                  <KpiCard
+                    label="Pacotes clicados"
+                    value={String(fm.counts.collabs_package_selected ?? 0)}
+                    sub={`de ${fm.counts.collabs_view ?? 0} visitas`}
+                  />
+                  <KpiCard
+                    label="WhatsApps abertos"
+                    value={String(fm.counts.collabs_whatsapp_opened ?? 0)}
+                  />
+                  <KpiCard
+                    label="Taxa conversão"
+                    value={`${pct(fm.counts.collabs_whatsapp_opened ?? 0, fm.counts.collabs_view ?? 0)}%`}
+                    sub="visita → contacto"
+                  />
+                </div>
+
+                <Card>
+                  <SectionTitle>Pacotes selecionados</SectionTitle>
+                  {Object.keys(fm.collabsPkgCounts).length === 0 ? (
+                    <p className="text-white/25 text-sm">Sem dados no período selecionado</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {['QUICK DROP', 'CHAOS POST', 'CHAOS EPISODE'].map((pkg) => {
+                        const count = fm.collabsPkgCounts[pkg] ?? 0
+                        const total = fm.counts.collabs_package_selected ?? 0
+                        const w = total > 0 ? Math.round((count / total) * 100) : 0
+                        return (
+                          <div key={pkg} className="flex items-center gap-3">
+                            <span className="text-white/60 text-sm w-32 shrink-0">{pkg}</span>
+                            <div className="flex-1 h-2 bg-white/8 rounded-full overflow-hidden">
+                              <div className="h-full bg-buns-yellow rounded-full transition-all" style={{ width: `${w}%` }} />
+                            </div>
+                            <span className="text-white/50 text-xs w-8 text-right">{w}%</span>
+                            <span className="text-white font-black text-sm w-6 text-right">{count}x</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </Card>
+              </div>
+            )}
           </>
         )}
       </div>
