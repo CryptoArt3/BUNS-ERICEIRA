@@ -190,30 +190,65 @@ export default function Home() {
       {/* ══════════════════════════════════════════════════
           3. ADVENTURES
       ══════════════════════════════════════════════════ */}
-      <section id="aventuras" className="bg-black border-b-4 border-buns-yellow">
-        <div className="max-w-screen-xl mx-auto px-4 sm:px-6 pt-10 pb-12">
+      <section id="aventuras" className="bg-black border-b-4 border-buns-yellow relative overflow-hidden">
 
-          {/* Section heading */}
-          <div className="mb-6 flex items-end justify-between gap-4 flex-wrap">
-            <div>
-              <div className="inline-flex items-center gap-1.5 bg-buns-yellow text-black text-[11px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg mb-3">
-                {t('home.adventures_tag')}
-              </div>
-              <p
-                className="font-display text-white uppercase leading-none"
-                style={{ fontSize: 'clamp(1.8rem, 6vw, 3.5rem)' }}
-              >
-                {t('home.adventures_title')}
-              </p>
+        {/* Yellow atmospheric glow */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{ background: 'radial-gradient(ellipse at 20% 65%, rgba(255,212,0,0.09) 0%, transparent 55%)' }}
+        />
+
+        <div className="relative max-w-screen-xl mx-auto px-4 sm:px-6 pt-10 pb-12">
+
+          {/* Section heading + CTAs */}
+          <div className="mb-6">
+            <div className="inline-flex items-center gap-1.5 bg-buns-yellow text-black text-[11px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg mb-3">
+              {t('home.adventures_tag')}
             </div>
-            <a
-              href="https://www.instagram.com/buns.ericeira"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="shrink-0 px-5 py-2.5 bg-white/10 text-white font-black text-sm uppercase tracking-wide rounded-xl border border-white/15 hover:bg-white/15 transition"
+            <p
+              className="font-display text-white uppercase leading-none mb-3"
+              style={{ fontSize: 'clamp(1.8rem, 6vw, 3.5rem)' }}
             >
-              {t('home.adventures_instagram')}
-            </a>
+              {t('home.adventures_title')}
+            </p>
+            <p className="text-white/45 text-[14px] font-medium leading-snug max-w-md mb-5">
+              {t('home.adventures_sub')}
+            </p>
+
+            {/* CTA buttons */}
+            <div className="flex flex-wrap gap-2.5">
+              <a
+                href="https://www.instagram.com/buns.ericeira"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 sm:flex-none text-center px-5 py-2.5 bg-white/[0.07] text-white font-black text-[12px] uppercase tracking-wide rounded-xl border border-white/[0.1] hover:bg-white/[0.12] transition active:scale-[0.97]"
+                style={{
+                  backdropFilter: 'blur(8px)',
+                  WebkitBackdropFilter: 'blur(8px)',
+                }}
+              >
+                {t('home.adventures_instagram')}
+              </a>
+              <a
+                href="https://www.tiktok.com/@buns.ericeira"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 sm:flex-none text-center px-5 py-2.5 bg-white/[0.07] text-white font-black text-[12px] uppercase tracking-wide rounded-xl border border-white/[0.1] hover:bg-white/[0.12] transition active:scale-[0.97]"
+                style={{
+                  backdropFilter: 'blur(8px)',
+                  WebkitBackdropFilter: 'blur(8px)',
+                }}
+              >
+                {t('home.adventures_tiktok')}
+              </a>
+              <Link
+                href="/collabs"
+                className="w-full sm:w-auto text-center px-5 py-2.5 bg-buns-yellow text-black font-black text-[12px] uppercase tracking-wide rounded-xl hover:brightness-105 transition active:scale-[0.97]"
+                style={{ boxShadow: '0 0 20px rgba(255,212,0,0.28)' }}
+              >
+                {t('home.adventures_collabs')}
+              </Link>
+            </div>
           </div>
 
           {/* Video cards — horizontal scroll on mobile */}
