@@ -14,6 +14,7 @@ type AppRoute =
   | '/ar'
   | '/wall-of-fame'
   | '/eventos'
+  | '/collabs'
 
 const NAV_ITEMS: { href: AppRoute; emoji: string; tKey: string }[] = [
   { href: '/',             emoji: '🏠', tKey: 'nav.home' },
@@ -23,6 +24,7 @@ const NAV_ITEMS: { href: AppRoute; emoji: string; tKey: string }[] = [
   { href: '/ar',           emoji: '🧠', tKey: 'nav.ar' },
   { href: '/wall-of-fame', emoji: '🏆', tKey: 'nav.wof' },
   { href: '/eventos',      emoji: '🎉', tKey: 'nav.events' },
+  { href: '/collabs',      emoji: '🎬', tKey: 'nav.collabs' },
 ]
 
 export default function MobileNav() {

@@ -9,6 +9,7 @@ const pt: Record<string, string> = {
   'nav.ar':         'AR Experience',
   'nav.wof':        'Wall of Fame',
   'nav.events':     'Eventos',
+  'nav.collabs':    'Collabs',
   'nav.order_now':  'Pedir agora →',
 
   // ── Header ────────────────────────────────────────────────
@@ -421,6 +422,7 @@ const en: Record<string, string> = {
   'nav.ar':         'AR Experience',
   'nav.wof':        'Wall of Fame',
   'nav.events':     'Events',
+  'nav.collabs':    'Collabs',
   'nav.order_now':  'Order now →',
 
   // ── Header ────────────────────────────────────────────────
