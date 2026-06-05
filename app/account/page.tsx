@@ -361,6 +361,9 @@ export default function AccountPage() {
           )}
         </section>
 
+        {/* ── Quest ── */}
+        {accessToken && <QuestWidget accessToken={accessToken} />}
+
         {/* ── History ── */}
         {history.length > 0 && (
           <section>
@@ -374,9 +377,6 @@ export default function AccountPage() {
             </ul>
           </section>
         )}
-
-        {/* ── Quest ── */}
-        {accessToken && <QuestWidget accessToken={accessToken} />}
 
       </div>
     </main>
