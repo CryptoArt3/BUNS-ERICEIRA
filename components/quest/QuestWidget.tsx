@@ -11,6 +11,7 @@ export default function QuestWidget({ userId }: { userId: string }) {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       const token = session?.access_token
+      console.log('Quest debug:', { hasSession: !!session, hasToken: !!token, userId })
       if (!token) { setError(true); return }
       fetch('/api/quest/progress', { headers: { Authorization: `Bearer ${token}` } })
         .then((r) => (r.ok ? r.json() : Promise.reject()))
