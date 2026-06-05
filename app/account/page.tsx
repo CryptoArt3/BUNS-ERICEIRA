@@ -9,6 +9,7 @@ import {
   type OrderStatus,
 } from '@/lib/orders/status'
 import { useI18n } from '@/lib/i18n/useI18n'
+import QuestWidget from '@/components/quest/QuestWidget'
 
 /* ─── Types ──────────────────────────────────────────────── */
 type OrderItem = {
@@ -180,6 +181,7 @@ export default function AccountPage() {
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
   const [userEmail, setUserEmail] = useState<string | null>(null)
+  const [accessToken, setAccessToken] = useState<string | null>(null)
   const { t } = useI18n()
 
   useEffect(() => {
@@ -192,6 +194,7 @@ export default function AccountPage() {
       const { data: { session } } = await supabase.auth.getSession()
       const user = session?.user
       setUserEmail(user?.email ?? null)
+      setAccessToken(session?.access_token ?? null)
 
       if (!user) {
         setLoading(false)
@@ -371,6 +374,9 @@ export default function AccountPage() {
             </ul>
           </section>
         )}
+
+        {/* ── Quest ── */}
+        {accessToken && <QuestWidget accessToken={accessToken} />}
 
       </div>
     </main>

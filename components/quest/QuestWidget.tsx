@@ -1,24 +1,18 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase/client'
 import type { QuestProgress } from '@/lib/quest/calculate'
 
-export default function QuestWidget({ userId }: { userId: string }) {
+export default function QuestWidget({ accessToken }: { accessToken: string }) {
   const [progress, setProgress] = useState<QuestProgress | null>(null)
   const [error, setError] = useState(false)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      const token = session?.access_token
-      console.log('Quest debug:', { hasSession: !!session, hasToken: !!token, userId })
-      if (!token) { setError(true); return }
-      fetch('/api/quest/progress', { headers: { Authorization: `Bearer ${token}` } })
-        .then((r) => (r.ok ? r.json() : Promise.reject()))
-        .then(setProgress)
-        .catch(() => setError(true))
-    })
-  }, [userId])
+    fetch('/api/quest/progress', { headers: { Authorization: `Bearer ${accessToken}` } })
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then(setProgress)
+      .catch(() => setError(true))
+  }, [accessToken])
 
   if (error || !progress) return null
 
