@@ -118,7 +118,7 @@ export default function AdminQuestPage() {
                 onChange={(e) => handleChange(idx, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(idx, e)}
                 onPaste={handlePaste}
-                className="w-16 h-20 text-center text-3xl font-black bg-white/8 border-2 border-white/15 rounded-xl text-white focus:border-buns-yellow focus:outline-none transition-colors"
+                className="w-16 h-20 text-center text-3xl font-black bg-white border-2 border-black/20 rounded-xl text-black focus:border-buns-yellow focus:outline-none transition-colors"
               />
             ))}
           </div>
