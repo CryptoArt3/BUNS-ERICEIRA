@@ -202,33 +202,33 @@ export default function QuestWidget({ accessToken }: { accessToken: string }) {
       {/* ── Collapsed card ── */}
       <button
         onClick={openModal}
-        className="w-full text-left bg-white border-2 border-black rounded-2xl overflow-hidden active:scale-[0.98] transition-transform"
+        className="w-full text-left bg-black border-2 border-buns-yellow rounded-2xl overflow-hidden active:scale-[0.98] transition-transform"
       >
-        <div className="h-[5px] bg-buns-yellow" />
+        <div className="h-[4px] bg-buns-yellow" />
         <div className="p-5 space-y-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <span className="text-2xl">{current?.emoji ?? '🎯'}</span>
+            <div className="flex items-center gap-3">
+              <span className="text-4xl">{current?.emoji ?? '🎯'}</span>
               <div>
-                <p className="text-[10px] text-black/35 font-black uppercase tracking-widest">Nível</p>
-                <p className="font-display text-black text-xl uppercase leading-none">
+                <p className="text-[10px] text-white/30 font-black uppercase tracking-widest">Nível</p>
+                <p className="font-display text-buns-yellow text-xl uppercase leading-none">
                   {current?.label ?? 'Sem nível'}
                 </p>
               </div>
             </div>
-            <span className="text-xl font-black text-black/30">→</span>
+            <span className="text-xl font-black text-buns-yellow">→</span>
           </div>
-          <p className="text-xs text-black/45 font-black">
+          <p className="text-xs text-white/40 font-black">
             {doneOrders} pedido{doneOrders !== 1 ? 's' : ''} concluído{doneOrders !== 1 ? 's' : ''}
           </p>
-          <div className="h-2 bg-black/8 rounded-full overflow-hidden">
+          <div className="h-2 bg-white/10 rounded-full overflow-hidden">
             <div
               className="h-full bg-buns-yellow rounded-full transition-all duration-700"
               style={{ width: `${progressPct}%` }}
             />
           </div>
-          <p className="text-[11px] text-black/30 font-black uppercase tracking-widest text-center">
-            Toca para ver o teu universo
+          <p className="text-[11px] text-white/30 font-black uppercase tracking-widest text-center">
+            Toca para ver a tua jornada
           </p>
         </div>
       </button>
@@ -238,188 +238,196 @@ export default function QuestWidget({ accessToken }: { accessToken: string }) {
         <>
           {/* Overlay */}
           <div
-            className={`fixed inset-0 bg-black/60 z-40 transition-opacity duration-200 ${show ? 'opacity-100' : 'opacity-0'}`}
+            className={`fixed inset-0 bg-black/75 z-40 transition-opacity duration-200 ${show ? 'opacity-100' : 'opacity-0'}`}
             onClick={closeModal}
           />
 
           {/* Sheet */}
           <div
-            className={`fixed bottom-0 left-0 right-0 z-50 bg-[#faf8f4] rounded-t-[24px] max-h-[90vh] overflow-y-auto transition-transform duration-300 ${show ? 'translate-y-0' : 'translate-y-full'}`}
+            className={`fixed bottom-0 left-0 right-0 z-50 bg-[#0a0a0a] rounded-t-[24px] max-h-[90vh] overflow-y-auto transition-transform duration-300 ${show ? 'translate-y-0' : 'translate-y-full'}`}
           >
             {/* Handle */}
             <div className="flex justify-center pt-3 pb-1">
-              <div className="w-10 h-1.5 bg-black/20 rounded-full" />
+              <div className="w-10 h-1.5 bg-white/20 rounded-full" />
             </div>
 
-            <div className="px-5 pb-12 space-y-6">
+            <div className="pb-12 space-y-6">
 
               {/* 1 — Header */}
-              <div className="text-center space-y-1 pt-2">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-black/35">BUNS Quest</p>
-                <div className="text-5xl py-2" aria-hidden="true">{current?.emoji ?? '🎯'}</div>
-                <p className="font-display text-black text-3xl uppercase leading-none">
+              <div className="bg-[#0a0a14] px-5 pt-4 pb-6 text-center space-y-1">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: '#534AB7' }}>
+                  BUNS Quest
+                </p>
+                <div className="text-6xl py-2" aria-hidden="true">{current?.emoji ?? '🎯'}</div>
+                <p className="font-display text-3xl uppercase leading-none" style={{ color: '#EF9F27' }}>
                   {current?.label ?? 'Sem nível'}
                 </p>
-                <p className="text-sm text-black/45 font-black pt-1">
+                <p className="text-sm text-white/40 font-black pt-1">
                   {doneOrders} pedido{doneOrders !== 1 ? 's' : ''} concluído{doneOrders !== 1 ? 's' : ''}
                 </p>
               </div>
 
-              {/* 2 — Barra de progresso */}
-              <div>
-                <div className="flex justify-between text-[11px] text-black/40 font-black mb-2">
-                  <span>{current?.emoji} {current?.label ?? 'Início'}</span>
+              <div className="px-5 space-y-6">
+
+                {/* 2 — Barra de progresso */}
+                <div>
+                  <div className="flex justify-between text-[11px] text-white/40 font-black mb-2">
+                    <span>{current?.emoji} {current?.label ?? 'Início'}</span>
+                    {next && (
+                      <span>{nextIsHidden ? '???' : `${next.emoji} ${next.label}`}</span>
+                    )}
+                  </div>
+                  <div className="h-3 bg-white/10 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-buns-yellow rounded-full transition-all duration-[800ms]"
+                      style={{ width: `${barPct}%` }}
+                    />
+                  </div>
                   {next && (
-                    <span>{nextIsHidden ? '???' : `${next.emoji} ${next.label}`}</span>
+                    <p className="text-xs text-white/35 text-right mt-1.5 font-black">
+                      {nextIsHidden
+                        ? `??? em ${ordersToNext} pedido${ordersToNext !== 1 ? 's' : ''}`
+                        : `${ordersToNext} pedido${ordersToNext !== 1 ? 's' : ''} para ${next.label}`}
+                    </p>
                   )}
                 </div>
-                <div className="h-3 bg-black/8 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-buns-yellow rounded-full transition-all duration-[800ms]"
-                    style={{ width: `${barPct}%` }}
-                  />
-                </div>
-                {next && (
-                  <p className="text-xs text-black/35 text-right mt-1.5 font-black">
-                    {nextIsHidden
-                      ? `??? em ${ordersToNext} pedido${ordersToNext !== 1 ? 's' : ''}`
-                      : `${ordersToNext} pedido${ordersToNext !== 1 ? 's' : ''} para ${next.label}`}
-                  </p>
+
+                {/* Claim error banner */}
+                {claimError && (
+                  <div className="bg-red-500/10 border border-red-500/25 rounded-xl px-4 py-2.5 text-center">
+                    <p className="text-red-400 text-xs font-black">{claimError}</p>
+                  </div>
                 )}
-              </div>
 
-              {/* Claim error banner */}
-              {claimError && (
-                <div className="bg-red-500/10 border border-red-500/25 rounded-xl px-4 py-2.5 text-center">
-                  <p className="text-red-500 text-xs font-black">{claimError}</p>
-                </div>
-              )}
+                {/* 3 — Timeline */}
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/35 mb-4">
+                    Jornada
+                  </p>
 
-              {/* 3 — Timeline */}
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-black/35 mb-4">
-                  Jornada
-                </p>
+                  {QUEST_TIERS.map((tier, idx) => {
+                    const isCompleted  = currentIdx > idx
+                    const isCurrent    = currentIdx === idx
+                    const isFuture     = currentIdx < idx
+                    const isMyth       = tier.id === 'myth'
+                    const isMythHidden = isMyth && !isMythReached
+                    const isLast       = idx === QUEST_TIERS.length - 1
+                    const tierRewards  = isMyth ? [] : getRewardsForTier(idx)
 
-                {QUEST_TIERS.map((tier, idx) => {
-                  const isCompleted  = currentIdx > idx
-                  const isCurrent    = currentIdx === idx
-                  const isFuture     = currentIdx < idx
-                  const isMyth       = tier.id === 'myth'
-                  const isMythHidden = isMyth && !isMythReached
-                  const isLast       = idx === QUEST_TIERS.length - 1
-                  const tierRewards  = isMyth ? [] : getRewardsForTier(idx)
+                    return (
+                      <div key={tier.id} className="flex gap-4">
 
-                  return (
-                    <div key={tier.id} className="flex gap-4">
-
-                      {/* Dot + linha */}
-                      <div className="flex flex-col items-center">
-                        <div
-                          className={[
-                            'w-4 h-4 rounded-full shrink-0 mt-1 border-2',
-                            isCompleted          ? 'bg-buns-yellow border-buns-yellow'    : '',
-                            isCurrent && !isMyth ? 'bg-black border-black animate-pulse' : '',
-                            isCurrent && isMyth  ? 'animate-pulse'                       : '',
-                            isFuture  && !isMyth ? 'bg-black/10 border-black/15'         : '',
-                          ].filter(Boolean).join(' ')}
-                          style={isMyth ? { backgroundColor: '#534AB7', borderColor: '#534AB7' } : {}}
-                        />
-                        {!isLast && (
-                          <div className={`w-0.5 flex-1 min-h-[2.5rem] ${isCompleted ? 'bg-buns-yellow' : 'bg-black/10'}`} />
-                        )}
-                      </div>
-
-                      {/* Conteúdo */}
-                      <div className={`flex-1 ${isLast ? 'pb-2' : 'pb-5'}`}>
-
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-lg leading-none">{isMythHidden ? '⚫' : tier.emoji}</span>
-                          <p className={`font-black text-sm ${isFuture ? 'text-black/40' : 'text-black'}`}>
-                            {isMythHidden ? '???' : tier.label}
-                          </p>
-                          {!isMythHidden && (
-                            <span className="text-black/25 text-xs">{tier.minOrders}+ pedidos</span>
+                        {/* Dot + linha */}
+                        <div className="flex flex-col items-center">
+                          <div
+                            className={[
+                              'w-4 h-4 rounded-full shrink-0 mt-1 border-2',
+                              isCompleted          ? 'bg-buns-yellow border-buns-yellow'         : '',
+                              isCurrent && !isMyth ? 'bg-black border-buns-yellow animate-pulse' : '',
+                              isCurrent && isMyth  ? 'animate-pulse'                             : '',
+                              isFuture  && !isMyth ? 'bg-white/10 border-white/10'               : '',
+                            ].filter(Boolean).join(' ')}
+                            style={isMyth ? { backgroundColor: '#534AB7', borderColor: '#534AB7' } : {}}
+                          />
+                          {!isLast && (
+                            <div className={`w-0.5 flex-1 min-h-[2.5rem] ${isCompleted ? 'bg-buns-yellow' : 'bg-white/10'}`} />
                           )}
                         </div>
 
-                        <div className="mt-1 mb-2">
-                          {isCompleted && (
-                            <span className="inline-block text-[10px] font-black uppercase tracking-wide bg-buns-yellow/20 text-black px-2 py-0.5 rounded-md">
-                              ✓ Concluído
-                            </span>
-                          )}
-                          {isCurrent && (
-                            <span className="inline-block text-[10px] font-black uppercase tracking-wide bg-buns-yellow text-black px-2 py-0.5 rounded-md">
-                              ← Estás aqui
-                            </span>
-                          )}
-                        </div>
+                        {/* Conteúdo */}
+                        <div className={`flex-1 ${isLast ? 'pb-2' : 'pb-5'}`}>
 
-                        {/* Recompensas do nível */}
-                        {tierRewards.length > 0 && (
-                          <div className="flex flex-col gap-2">
-                            {tierRewards.map((reward) => {
-                              const unlocked   = doneOrders >= reward.atOrders
-                              const slug       = toSlug(reward.label)
-                              const dbRecord   = rewards.find((r) => r.reward_type === slug)
-                              const isRedeemed = !!dbRecord?.redeemed_at
-                              const isClaiming = claiming === slug
-
-                              return (
-                                <div key={reward.atOrders}>
-                                  {!unlocked ? (
-                                    <span className="inline-flex items-center gap-1.5 text-[11px] font-black px-2.5 py-1 rounded-lg border bg-black/5 border-black/10 text-black/30">
-                                      🔒 {reward.label}
-                                      <span className="text-[10px] text-black/20">aos {reward.atOrders}</span>
-                                    </span>
-                                  ) : isRedeemed ? (
-                                    <span className="inline-flex items-center gap-1.5 text-[11px] font-black px-2.5 py-1 rounded-lg border bg-green-500/10 border-green-500/25 text-green-700">
-                                      ✓ {reward.label} — Recebida
-                                    </span>
-                                  ) : (
-                                    <button
-                                      onClick={() => handleClaim(reward.label)}
-                                      disabled={isClaiming}
-                                      className="inline-flex items-center gap-1.5 text-[11px] font-black px-2.5 py-1.5 rounded-lg border bg-buns-yellow/20 border-buns-yellow/50 text-black active:scale-[0.97] transition-transform disabled:opacity-50"
-                                    >
-                                      🎁 {reward.label}
-                                      <span className="text-[10px] opacity-60">
-                                        {isClaiming ? '...' : '→'}
-                                      </span>
-                                    </button>
-                                  )}
-                                </div>
-                              )
-                            })}
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-lg leading-none">{isMythHidden ? '⚫' : tier.emoji}</span>
+                            <p
+                              className={`font-black text-sm ${!isMyth && isFuture ? 'text-white/30' : !isMyth ? 'text-white' : ''}`}
+                              style={isMyth ? { color: isMythHidden ? 'rgba(255,255,255,0.2)' : '#A89FEE' } : {}}
+                            >
+                              {isMythHidden ? '???' : tier.label}
+                            </p>
+                            {!isMythHidden && (
+                              <span className="text-white/20 text-xs">{tier.minOrders}+ pedidos</span>
+                            )}
                           </div>
-                        )}
 
+                          <div className="mt-1 mb-2">
+                            {isCompleted && (
+                              <span className="inline-block text-[10px] font-black uppercase tracking-wide bg-buns-yellow/20 text-buns-yellow px-2 py-0.5 rounded-md">
+                                ✓ Concluído
+                              </span>
+                            )}
+                            {isCurrent && (
+                              <span className="inline-block text-[10px] font-black uppercase tracking-wide bg-buns-yellow text-black px-2 py-0.5 rounded-md">
+                                ← Estás aqui
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Recompensas do nível */}
+                          {tierRewards.length > 0 && (
+                            <div className="flex flex-col gap-2">
+                              {tierRewards.map((reward) => {
+                                const unlocked   = doneOrders >= reward.atOrders
+                                const slug       = toSlug(reward.label)
+                                const dbRecord   = rewards.find((r) => r.reward_type === slug)
+                                const isRedeemed = !!dbRecord?.redeemed_at
+                                const isClaiming = claiming === slug
+
+                                return (
+                                  <div key={reward.atOrders}>
+                                    {!unlocked ? (
+                                      <span className="inline-flex items-center gap-1.5 text-[11px] font-black px-2.5 py-1 rounded-lg border border-dashed border-white/10 bg-white/5 text-white/25">
+                                        🔒 {reward.label}
+                                        <span className="text-[10px] text-white/15">aos {reward.atOrders}</span>
+                                      </span>
+                                    ) : isRedeemed ? (
+                                      <span className="inline-flex items-center gap-1.5 text-[11px] font-black px-2.5 py-1 rounded-lg border bg-green-500/10 border-green-500/25 text-green-400">
+                                        ✓ {reward.label} — Recebida
+                                      </span>
+                                    ) : (
+                                      <button
+                                        onClick={() => handleClaim(reward.label)}
+                                        disabled={isClaiming}
+                                        className="inline-flex items-center gap-1.5 text-[11px] font-black px-2.5 py-1.5 rounded-lg bg-buns-yellow text-black active:scale-[0.97] transition-transform disabled:opacity-50"
+                                      >
+                                        🎁 {reward.label}
+                                        <span className="text-[10px] opacity-60">
+                                          {isClaiming ? '...' : '→'}
+                                        </span>
+                                      </button>
+                                    )}
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          )}
+
+                        </div>
                       </div>
-                    </div>
-                  )
-                })}
-              </div>
+                    )
+                  })}
+                </div>
 
-              {/* 4 — Footer */}
-              <div className="space-y-4 pt-2 border-t border-black/8">
-                {isMythReached ? (
-                  <p className="text-center text-sm text-black/50 font-black pt-2">
-                    És um dos poucos que chegou até aqui. 🏆
-                  </p>
-                ) : (
-                  <p className="text-center text-xs text-black/30 italic pt-2">
-                    Existe algo acima de Legend...
-                  </p>
-                )}
-                <button
-                  onClick={closeModal}
-                  className="w-full py-3.5 bg-black text-buns-yellow font-black text-sm uppercase tracking-wide rounded-xl active:scale-[0.98] transition-transform"
-                >
-                  Fechar
-                </button>
-              </div>
+                {/* 4 — Footer */}
+                <div className="space-y-4 pt-2 border-t border-white/8">
+                  {isMythReached ? (
+                    <p className="text-center text-sm font-black pt-2" style={{ color: '#7F77DD' }}>
+                      És um dos poucos que chegou até aqui. 🏆
+                    </p>
+                  ) : (
+                    <p className="text-center text-xs italic pt-2 text-white/25">
+                      Existe algo acima de Legend...
+                    </p>
+                  )}
+                  <button
+                    onClick={closeModal}
+                    className="w-full py-3.5 border border-white/20 text-white/60 font-black text-sm uppercase tracking-wide rounded-xl active:scale-[0.98] transition-transform"
+                  >
+                    Fechar
+                  </button>
+                </div>
 
+              </div>
             </div>
           </div>
 
