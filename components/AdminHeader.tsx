@@ -59,6 +59,9 @@ export default function AdminHeader() {
             <a className={isActive("/admin/ping")} href="/admin/ping">
               Ping
             </a>
+            <a className={isActive("/admin/quest")} href="/admin/quest">
+              🎯 Quest
+            </a>
           </nav>
         </div>
 
