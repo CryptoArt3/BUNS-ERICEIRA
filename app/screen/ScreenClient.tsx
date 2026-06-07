@@ -8,6 +8,7 @@ import BunsFrozenBunanasSlide from "./BunsFrozenBunanasSlide";
 import BunsMegaMenuSlide from "./BunsMegaMenuSlide";
 import BunsMenuImpactSlide from "./BunsMenuImpactSlide";
 import BunsVibeSlide from "./BunsVibeSlide";
+import GoldBunHeroSlide from "./GoldBunHeroSlide";
 import {
   bunsAdventuresCampaign,
   resolveBunsAdventuresEpisode,
@@ -368,6 +369,8 @@ export default function ScreenClient() {
     currentSlide.type === "buns-menu-impact" || currentSlide.campaignId === "buns-menu-impact";
   const isBunsDuelSlide =
     currentSlide.type === "buns-duel" || currentSlide.campaignId === "buns-duel";
+  const isGoldBunSlide =
+    currentSlide.type === "buns-gold" || currentSlide.campaignId === "buns-gold";
 
   if (isBunsDuelSlide) {
     return (
@@ -448,6 +451,19 @@ export default function ScreenClient() {
     return (
       <div className="relative h-dvh w-full overflow-hidden">
         <BunsMenuImpactSlide />
+        <div className="absolute right-4 top-4 z-50 flex items-center gap-3 rounded-sm border border-[#ffd166]/55 bg-black/75 px-4 py-1.5 text-[0.65rem] font-black uppercase tracking-[0.24em] text-[#ffd166] shadow-[0_0_18px_rgba(255,209,102,0.18),0_8px_22px_rgba(0,0,0,0.6)] backdrop-blur-md sm:right-6 sm:top-6">
+          <span>{sourceLabel}</span>
+          <span className="h-1.5 w-1.5 rounded-full bg-[#ffd166] shadow-[0_0_10px_rgba(255,209,102,1)]" />
+          <span>{statusLabel}</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (isGoldBunSlide) {
+    return (
+      <div className="relative h-dvh w-full overflow-hidden">
+        <GoldBunHeroSlide />
         <div className="absolute right-4 top-4 z-50 flex items-center gap-3 rounded-sm border border-[#ffd166]/55 bg-black/75 px-4 py-1.5 text-[0.65rem] font-black uppercase tracking-[0.24em] text-[#ffd166] shadow-[0_0_18px_rgba(255,209,102,0.18),0_8px_22px_rgba(0,0,0,0.6)] backdrop-blur-md sm:right-6 sm:top-6">
           <span>{sourceLabel}</span>
           <span className="h-1.5 w-1.5 rounded-full bg-[#ffd166] shadow-[0_0_10px_rgba(255,209,102,1)]" />
