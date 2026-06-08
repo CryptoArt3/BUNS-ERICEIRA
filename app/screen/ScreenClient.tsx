@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import DuelScreenClient from "@/app/duel/DuelScreenClient";
 import BunsAdventuresSlide from "./BunsAdventuresSlide";
 import BunsFrozenBunanasSlide from "./BunsFrozenBunanasSlide";
@@ -41,6 +41,7 @@ type PollOption = {
 };
 
 type ScreenApiSlide = {
+  id?: string | null;
   type?: string | null;
   campaign_id?: string | null;
   poll_id?: string | null;
@@ -130,6 +131,9 @@ const SCREEN_PLAYLIST_URL = "/api/screen";
 const FALLBACK_SLIDE_DURATION_MS = 7000;
 const POLL_INTERVAL_MS = 15000;
 const MIN_LIVE_DURATION_MS = 4000;
+const GOLD_BUN_POSTER_DURATION_MS = 120000;
+const GOLD_BUN_VIDEO_DURATION_MS = 34000;
+const GOLD_BUN_PROMO_VIDEO_SRC = "/campaigns/buns-gold/gold-bun-promo.mp4";
 
 export default function ScreenClient() {
   const [index, setIndex] = useState(0);
@@ -143,6 +147,9 @@ export default function ScreenClient() {
   const isLive = Boolean(liveSlides && liveSlides.length > 0);
   const currentSlide = activeSlides[index] ?? activeSlides[0];
   const slideDurationMs = currentSlide?.durationMs ?? FALLBACK_SLIDE_DURATION_MS;
+  const advanceSlide = useCallback(() => {
+    setIndex((prev) => (prev + 1) % activeSlides.length);
+  }, [activeSlides.length]);
 
   useEffect(() => {
     setIndex((current) => (current >= activeSlides.length ? 0 : current));
@@ -154,11 +161,11 @@ export default function ScreenClient() {
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
-      setIndex((prev) => (prev + 1) % activeSlides.length);
-    }, slideDurationMs);
+      advanceSlide();
+    }, currentSlide.videoSrc ? slideDurationMs + 1000 : slideDurationMs);
 
     return () => window.clearTimeout(timeout);
-  }, [activeSlides.length, index, slideDurationMs]);
+  }, [advanceSlide, currentSlide.videoSrc, index, slideDurationMs]);
 
   useEffect(() => {
     let isMounted = true;
@@ -463,7 +470,10 @@ export default function ScreenClient() {
   if (isGoldBunSlide) {
     return (
       <div className="relative h-dvh w-full overflow-hidden">
-        <GoldBunHeroSlide />
+        <GoldBunHeroSlide
+          videoSrc={currentSlide.videoSrc}
+          onVideoEnded={currentSlide.videoSrc ? advanceSlide : undefined}
+        />
         <div className="absolute right-4 top-4 z-50 flex items-center gap-3 rounded-sm border border-[#ffd166]/55 bg-black/75 px-4 py-1.5 text-[0.65rem] font-black uppercase tracking-[0.24em] text-[#ffd166] shadow-[0_0_18px_rgba(255,209,102,0.18),0_8px_22px_rgba(0,0,0,0.6)] backdrop-blur-md sm:right-6 sm:top-6">
           <span>{sourceLabel}</span>
           <span className="h-1.5 w-1.5 rounded-full bg-[#ffd166] shadow-[0_0_10px_rgba(255,209,102,1)]" />
@@ -747,9 +757,10 @@ function normalizeLiveSlides(payload: ScreenApiResponse): DisplaySlide[] | null 
     return null;
   }
 
-  const slides = payload.slides
+  const normalizedSlides = payload.slides
     .map((slide, index) => normalizeLiveSlide(slide, index))
     .filter((slide): slide is DisplaySlide => slide !== null);
+  const slides = expandGoldBunPlaylist(normalizedSlides);
 
   if (slides.length === 0) {
     return null;
@@ -764,7 +775,9 @@ function normalizeLiveSlides(payload: ScreenApiResponse): DisplaySlide[] | null 
       slide.type === "buns-mega-menu" ||
       slide.type === "buns-menu-impact" ||
       slide.type === "buns-duel" ||
-      slide.campaignId === "buns-duel"
+      slide.campaignId === "buns-duel" ||
+      slide.type === "buns-gold" ||
+      slide.campaignId === "buns-gold"
   );
 
   return prioritySlides.length > 0 ? prioritySlides : slides;
@@ -825,6 +838,8 @@ function normalizeLiveSlide(slide: ScreenApiSlide, index: number): DisplaySlide 
     slide.campaign_id?.trim() === "buns-menu-impact";
   const isBunsDuelCampaign =
     slide.type?.trim() === "buns-duel" || slide.campaign_id?.trim() === "buns-duel";
+  const isGoldBunCampaign =
+    slide.type?.trim() === "buns-gold" || slide.campaign_id?.trim() === "buns-gold";
   const bunsAdventuresEpisode = isBunsAdventuresCampaign
     ? resolveBunsAdventuresEpisode({
         id: slide.episode_id,
@@ -840,7 +855,8 @@ function normalizeLiveSlide(slide: ScreenApiSlide, index: number): DisplaySlide 
     !isBunsVibeCampaign &&
     !isBunsFrozenBunanasCampaign &&
     !isBunsMegaMenuCampaign &&
-    !isBunsMenuImpactCampaign
+    !isBunsMenuImpactCampaign &&
+    !isGoldBunCampaign
   ) {
     return null;
   }
@@ -854,10 +870,12 @@ function normalizeLiveSlide(slide: ScreenApiSlide, index: number): DisplaySlide 
         ? "BUNS MEGA MENU"
       : isBunsMenuImpactCampaign
         ? "BUNS MENU IMPACT"
+      : isGoldBunCampaign
+        ? "GOLD BUN"
         : "BUNS DUEL");
 
   return {
-    id: slide.product_slug?.trim() || `${slide.type ?? "screen"}-${index + 1}`,
+    id: slide.id?.trim() || slide.product_slug?.trim() || `${slide.type ?? "screen"}-${index + 1}`,
     titleLines: splitTitleLines(resolvedHeadline),
     subtitle,
     lines: detailLines.length > 0 ? detailLines : slide.cta?.trim() ? [slide.cta.trim()] : [],
@@ -887,6 +905,37 @@ function normalizeLiveSlide(slide: ScreenApiSlide, index: number): DisplaySlide 
     episodeNumber: bunsAdventuresEpisode?.number ?? slide.episode_number?.trim() ?? null,
     episodeName: bunsAdventuresEpisode?.title ?? slide.episode_name?.trim() ?? null,
   };
+}
+
+function expandGoldBunPlaylist(slides: DisplaySlide[]): DisplaySlide[] {
+  const goldBunSlides = slides.filter(isGoldBunSlide);
+
+  if (goldBunSlides.length !== 1) {
+    return slides;
+  }
+
+  const slide = goldBunSlides[0];
+  const baseId = slide.id.replace(/-(poster|video)$/, "");
+  const goldBunPlaylist: DisplaySlide[] = [
+    {
+      ...slide,
+      id: `${baseId}-poster`,
+      durationMs: GOLD_BUN_POSTER_DURATION_MS,
+      videoSrc: null,
+    },
+    {
+      ...slide,
+      id: `${baseId}-video`,
+      durationMs: GOLD_BUN_VIDEO_DURATION_MS,
+      videoSrc: slide.videoSrc || GOLD_BUN_PROMO_VIDEO_SRC,
+    },
+  ];
+
+  return slides.flatMap((candidate) => (candidate === slide ? goldBunPlaylist : [candidate]));
+}
+
+function isGoldBunSlide(slide: DisplaySlide) {
+  return slide.type === "buns-gold" || slide.campaignId === "buns-gold";
 }
 
 function normalizeDurationMs(durationSeconds: number | null | undefined) {
