@@ -62,6 +62,9 @@ export default function AdminHeader() {
             <a className={isActive("/admin/quest")} href="/admin/quest">
               🎯 Quest
             </a>
+            <a className={isActive("/admin/bonus")} href="/admin/bonus">
+              🏆 Bonus
+            </a>
           </nav>
         </div>
 
