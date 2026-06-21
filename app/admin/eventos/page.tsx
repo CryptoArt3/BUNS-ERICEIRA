@@ -431,10 +431,11 @@ export default function AdminEventosPage() {
                     <input
                       type="text"
                       required
+                      autoComplete="off"
                       value={form.title}
                       onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
                       placeholder="Nome do evento"
-                      className="w-full bg-white/8 border border-white/15 rounded-xl px-4 py-3 text-white text-sm placeholder:text-white/20 focus:border-buns-yellow focus:outline-none transition-colors"
+                      className="w-full bg-zinc-900 border border-white/15 rounded-xl px-4 py-3 text-white text-sm placeholder:text-white/30 focus:border-buns-yellow focus:outline-none transition-colors"
                     />
                   </div>
 
@@ -443,10 +444,11 @@ export default function AdminEventosPage() {
                     <label className="text-xs text-white/50 mb-1.5 block">Descrição</label>
                     <textarea
                       rows={2}
+                      autoComplete="off"
                       value={form.description}
                       onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                       placeholder="Detalhe horário, condições, etc."
-                      className="w-full bg-white/8 border border-white/15 rounded-xl px-4 py-3 text-white text-sm placeholder:text-white/20 focus:border-buns-yellow focus:outline-none transition-colors resize-none"
+                      className="w-full bg-zinc-900 border border-white/15 rounded-xl px-4 py-3 text-white text-sm placeholder:text-white/30 focus:border-buns-yellow focus:outline-none transition-colors resize-none"
                     />
                   </div>
 
@@ -457,10 +459,10 @@ export default function AdminEventosPage() {
                       <select
                         value={form.status}
                         onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as EventStatus }))}
-                        className="w-full bg-white/8 border border-white/15 rounded-xl px-4 py-3 text-white text-sm focus:border-buns-yellow focus:outline-none transition-colors"
+                        className="w-full bg-zinc-900 border border-white/15 rounded-xl px-4 py-3 text-white text-sm focus:border-buns-yellow focus:outline-none transition-colors"
                       >
                         {STATUS_OPTIONS.map((o) => (
-                          <option key={o.value} value={o.value}>{o.label}</option>
+                          <option key={o.value} value={o.value} className="bg-zinc-900 text-white">{o.label}</option>
                         ))}
                       </select>
                     </div>
@@ -470,7 +472,8 @@ export default function AdminEventosPage() {
                         type="date"
                         value={form.event_date}
                         onChange={(e) => setForm((f) => ({ ...f, event_date: e.target.value }))}
-                        className="w-full bg-white/8 border border-white/15 rounded-xl px-4 py-3 text-white text-sm focus:border-buns-yellow focus:outline-none transition-colors"
+                        style={{ colorScheme: 'dark' }}
+                        className="w-full bg-zinc-900 border border-white/15 rounded-xl px-4 py-3 text-white text-sm focus:border-buns-yellow focus:outline-none transition-colors"
                       />
                     </div>
                   </div>
@@ -482,16 +485,16 @@ export default function AdminEventosPage() {
                       <select
                         value={form.recurring}
                         onChange={(e) => setForm((f) => ({ ...f, recurring: e.target.value }))}
-                        className="w-full bg-white/8 border border-white/15 rounded-xl px-4 py-3 text-white text-sm focus:border-buns-yellow focus:outline-none transition-colors"
+                        className="w-full bg-zinc-900 border border-white/15 rounded-xl px-4 py-3 text-white text-sm focus:border-buns-yellow focus:outline-none transition-colors"
                       >
-                        <option value="">Sem recorrência</option>
-                        <option value="monday">Todas as 2ªs</option>
-                        <option value="tuesday">Todas as 3ªs</option>
-                        <option value="wednesday">Todas as 4ªs</option>
-                        <option value="thursday">Todas as 5ªs</option>
-                        <option value="friday">Todas as 6ªs</option>
-                        <option value="saturday">Todos os Sábados</option>
-                        <option value="sunday">Todos os Domingos</option>
+                        <option value="" className="bg-zinc-900 text-white">Sem recorrência</option>
+                        <option value="monday" className="bg-zinc-900 text-white">Todas as 2ªs</option>
+                        <option value="tuesday" className="bg-zinc-900 text-white">Todas as 3ªs</option>
+                        <option value="wednesday" className="bg-zinc-900 text-white">Todas as 4ªs</option>
+                        <option value="thursday" className="bg-zinc-900 text-white">Todas as 5ªs</option>
+                        <option value="friday" className="bg-zinc-900 text-white">Todas as 6ªs</option>
+                        <option value="saturday" className="bg-zinc-900 text-white">Todos os Sábados</option>
+                        <option value="sunday" className="bg-zinc-900 text-white">Todos os Domingos</option>
                       </select>
                     </div>
                     {form.recurring && (
@@ -501,7 +504,8 @@ export default function AdminEventosPage() {
                           type="date"
                           value={form.recurring_start_date}
                           onChange={(e) => setForm((f) => ({ ...f, recurring_start_date: e.target.value }))}
-                          className="w-full bg-white/8 border border-white/15 rounded-xl px-4 py-3 text-white text-sm focus:border-buns-yellow focus:outline-none transition-colors"
+                          style={{ colorScheme: 'dark' }}
+                          className="w-full bg-zinc-900 border border-white/15 rounded-xl px-4 py-3 text-white text-sm focus:border-buns-yellow focus:outline-none transition-colors"
                         />
                       </div>
                     )}
