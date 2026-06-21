@@ -50,54 +50,66 @@ function currency(x: number) {
 }
 
 /* ─── LiveStatus — hydration-safe open/closed block ─────── */
+function getLisbonParts(now: Date) {
+  const fmt = (o: Intl.DateTimeFormatOptions) =>
+    new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Lisbon', ...o }).format(now)
+  const h = parseInt(fmt({ hour: '2-digit', hour12: false }), 10)
+  const weekday = fmt({ weekday: 'short' })          // 'Mon', 'Fri', 'Sat', …
+  const month = parseInt(fmt({ month: 'numeric' }), 10) // 1–12
+  return { h, weekday, month }
+}
+
 function LiveStatus() {
-  const [isOpen, setIsOpen] = useState<boolean | null>(null)
-  const { t } = useI18n()
+  const [info, setInfo] = useState<{ open: boolean; closingHour: number } | null>(null)
+  const { t, lang } = useI18n()
 
   useEffect(() => {
-    const tz = 'Europe/Lisbon'
     function update() {
       try {
-        const now = new Date()
-        const h = parseInt(
-          new Intl.DateTimeFormat('en-GB', { hour: '2-digit', hour12: false, timeZone: tz }).format(now),
-          10,
-        )
-        setIsOpen(!isNaN(h) && h >= 11 && h < 23)
-      } catch { setIsOpen(false) }
+        const { h, weekday, month } = getLisbonParts(new Date())
+        const isSummer = month === 7 || month === 8
+        // Fri/Sat evening in summer → close at 02:00 next morning
+        const isLateNightEvening = (weekday === 'Fri' || weekday === 'Sat') && isSummer
+        // 00:00–01:59 on Sat/Sun in summer = still open from previous late night
+        const isEarlyFromLateNight = h < 2 && (weekday === 'Sat' || weekday === 'Sun') && isSummer
+        const open = h >= 11 || isEarlyFromLateNight
+        const closingHour = (isLateNightEvening || isEarlyFromLateNight) ? 2 : 0
+        setInfo({ open, closingHour })
+      } catch { setInfo({ open: false, closingHour: 0 }) }
     }
     update()
     const timer = setInterval(update, 30_000)
     return () => clearInterval(timer)
   }, [])
 
-  /* skeleton while loading */
-  if (isOpen === null) {
+  if (info === null) {
     return <div className="h-[68px] rounded-2xl bg-white/5 border border-white/8 animate-pulse" />
   }
+
+  const { open, closingHour } = info
+  const closingStr = closingHour === 2 ? '02:00' : '00:00'
+  const openUntilStr = lang === 'en' ? `Open until ${closingStr}` : `Até às ${closingStr}`
 
   return (
     <div className={[
       'rounded-2xl border-2 px-5 py-4',
-      isOpen
+      open
         ? 'bg-green-950/60 border-green-500/50 shadow-[0_0_24px_rgba(34,197,94,0.18)]'
         : 'bg-red-950/60  border-red-500/40  shadow-[0_0_16px_rgba(239,68,68,0.12)]',
     ].join(' ')}>
       <div className="flex items-center gap-3">
-        {/* Animated dot */}
         <span className="relative flex h-3.5 w-3.5 shrink-0">
-          {isOpen && (
+          {open && (
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-60" />
           )}
-          <span className={`relative inline-flex h-3.5 w-3.5 rounded-full ${isOpen ? 'bg-green-400' : 'bg-red-400'}`} />
+          <span className={`relative inline-flex h-3.5 w-3.5 rounded-full ${open ? 'bg-green-400' : 'bg-red-400'}`} />
         </span>
-        {/* Labels */}
         <div>
-          <p className={`font-black text-sm uppercase tracking-wide leading-none ${isOpen ? 'text-green-300' : 'text-red-300'}`}>
-            {isOpen ? t('home.location_open') : t('home.location_closed')}
+          <p className={`font-black text-sm uppercase tracking-wide leading-none ${open ? 'text-green-300' : 'text-red-300'}`}>
+            {open ? t('home.location_open') : t('home.location_closed')}
           </p>
-          <p className={`text-xs font-medium mt-1.5 ${isOpen ? 'text-green-400/55' : 'text-red-400/55'}`}>
-            {isOpen ? t('home.location_open_until') : t('home.location_opens_at')}
+          <p className={`text-xs font-medium mt-1.5 ${open ? 'text-green-400/55' : 'text-red-400/55'}`}>
+            {open ? openUntilStr : t('home.location_opens_at')}
           </p>
         </div>
       </div>
@@ -107,7 +119,7 @@ function LiveStatus() {
 
 /* ─── Page ───────────────────────────────────────────────── */
 export default function Home() {
-  const { t } = useI18n()
+  const { t, lang } = useI18n()
 
   return (
     <main className="w-full max-w-full overflow-x-hidden bg-buns-cream">
@@ -390,7 +402,10 @@ export default function Home() {
                   <div className="bg-white/[0.04] rounded-2xl px-4 py-3.5 border border-white/10">
                     <p className="text-[10px] font-black uppercase tracking-widest text-white/30 mb-2">{t('home.location_takeaway')}</p>
                     <p className="font-black text-white text-sm leading-snug">{t('home.location_hours')}</p>
-                    <p className="font-black text-buns-yellow text-sm mt-0.5">11:00–23:00</p>
+                    <p className="font-black text-buns-yellow text-sm mt-0.5">11:00–00:00</p>
+                    <p className="text-[10px] font-black text-buns-yellow/55 mt-1">
+                      {lang === 'en' ? 'Fri–Sat (Jul–Aug): until 02:00' : 'Sex–Sáb (Jul–Ago): até às 02:00'}
+                    </p>
                   </div>
                   <div className="bg-white/[0.04] rounded-2xl px-4 py-3.5 border border-white/10">
                     <p className="text-[10px] font-black uppercase tracking-widest text-white/30 mb-2">{t('home.location_delivery')}</p>

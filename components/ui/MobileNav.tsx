@@ -128,7 +128,7 @@ export default function MobileNav() {
               {t('nav.order_now')}
             </Link>
             <p className="text-[11px] font-black uppercase tracking-widest text-white/25 text-center">
-              Ericeira · Takeaway · 11:00–23:00
+              Ericeira · Takeaway · 11:00–00:00
             </p>
           </div>
 
