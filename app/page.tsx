@@ -151,19 +151,27 @@ export default function Home() {
           </p>
 
           {/* CTAs */}
-          <div className="mt-8 flex flex-col sm:flex-row gap-3 max-w-sm">
+          <div className="mt-8 flex flex-col gap-3 max-w-sm">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Link
+                href="/menu"
+                className="flex-1 py-5 bg-buns-yellow text-black font-black text-lg uppercase tracking-wide rounded-2xl border-2 border-buns-yellow text-center active:scale-[0.98] transition"
+              >
+                {t('home.cta_order')}
+              </Link>
+              <a
+                href="#aventuras"
+                className="flex-1 py-5 bg-white/8 text-white font-black text-base uppercase tracking-wide rounded-2xl border-2 border-white/15 text-center active:scale-[0.98] transition hover:bg-white/12"
+              >
+                {t('home.cta_adventures')}
+              </a>
+            </div>
             <Link
-              href="/menu"
-              className="flex-1 py-5 bg-buns-yellow text-black font-black text-lg uppercase tracking-wide rounded-2xl border-2 border-buns-yellow text-center active:scale-[0.98] transition"
+              href="/codigo"
+              className="text-center text-white/40 hover:text-white/70 text-sm font-black uppercase tracking-wide transition py-1"
             >
-              {t('home.cta_order')}
+              {t('home.cta_found_code')} →
             </Link>
-            <a
-              href="#aventuras"
-              className="flex-1 py-5 bg-white/8 text-white font-black text-base uppercase tracking-wide rounded-2xl border-2 border-white/15 text-center active:scale-[0.98] transition hover:bg-white/12"
-            >
-              {t('home.cta_adventures')}
-            </a>
           </div>
         </div>
       </section>
@@ -253,6 +261,16 @@ export default function Home() {
               >
                 {t('home.adventures_tiktok')}
               </a>
+              <Link
+                href="/codigo"
+                className="flex-1 sm:flex-none text-center px-5 py-2.5 bg-white/[0.07] text-white/80 font-black text-[12px] uppercase tracking-wide rounded-xl border border-buns-yellow/25 hover:bg-buns-yellow/10 hover:border-buns-yellow/50 hover:text-white transition active:scale-[0.97]"
+                style={{
+                  backdropFilter: 'blur(8px)',
+                  WebkitBackdropFilter: 'blur(8px)',
+                }}
+              >
+                {t('home.adventures_found_code')}
+              </Link>
               <Link
                 href="/collabs"
                 className="w-full sm:w-auto text-center px-5 py-2.5 bg-buns-yellow text-black font-black text-[12px] uppercase tracking-wide rounded-xl hover:brightness-105 transition active:scale-[0.97]"
