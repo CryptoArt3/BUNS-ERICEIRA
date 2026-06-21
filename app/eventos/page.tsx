@@ -1,370 +1,340 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import Image from 'next/image'
+import { useEffect, useMemo, useState } from 'react'
 
-type EventStatus = 'upcoming' | 'past'
+type EventStatus = 'confirmed' | 'planned' | 'pending' | 'deciding' | 'exploring'
 
-type BunsEvent = {
+type CalendarEvent = {
   id: string
   title: string
-  subtitle?: string
-  date: string
-  weekday: string
-  time: string
-  location: string
-  category: string
+  description: string | null
   status: EventStatus
-  description: string
-  highlight?: boolean
-  flyerSrc?: string
-  rules?: string[]
-  ctaLabel?: string
-  ctaHref?: string
+  event_date: string | null
+  recurring: string | null
+  recurring_start_date: string | null
 }
 
-const WHATSAPP_NUMBER = '351912607829'
-const whatsappLink = (text: string) =>
-  `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`
+/* ── Status config ─────────────────────────────────────────── */
+const STATUS_LABEL: Record<EventStatus, string> = {
+  confirmed: 'Confirmado',
+  planned:   'Planeado',
+  pending:   'Pendente',
+  deciding:  'A decidir',
+  exploring: 'A explorar',
+}
 
-const EVENTS: BunsEvent[] = [
-  {
-    id: 'buns-chess-tournament-feb-21',
-    title: 'Torneio de Xadrez – BUNS',
-    subtitle: '12 jogadores • vagas limitadas • taça para o campeão',
-    date: 'Feb 21',
-    weekday: 'Saturday',
-    time: '15:00 – 18:00',
-    location: 'BUNS Smash Burgers, Ericeira',
-    category: 'Xadrez • Comunidade',
-    status: 'upcoming',
-    highlight: true,
-    flyerSrc: '/events/torneio-xadrez-buns-flyer.jpg',
-    description:
-      'Torneio casual e bem organizado para a comunidade: 12 vagas, 4 mesas, jogos rápidos e final para decidir o campeão. Ideal para competir, conviver e comer smash burgers entre rondas.',
-    rules: [
-      '12 jogadores (vagas limitadas) • inscrição obrigatória por WhatsApp',
-      '4 mesas em simultâneo • 4 jogos garantidos por jogador',
-      'Tempo: 20 min por partida (10 min por jogador, sem incremento) + troca rápida',
-      'Pontuação: vitória = 1 • empate = 0,5 • derrota = 0',
-      'Final: 1º vs 2º no ranking (partida única) • vencedor leva a taça BUNS',
-      'Fair play: sem ajuda externa • toque = joga • ambiente descontraído (não federado)',
-    ],
-    ctaLabel: 'Quero participar',
-    ctaHref: whatsappLink(
-      'Olá BUNS! Quero participar no Torneio de Xadrez (21 de fevereiro, 15h–18h). O meu nome é: _____.',
-    ),
-  },
-  {
-    id: 'smashed-coin-meetup',
-    title: 'SMASHED COIN – Crypto Meet Up',
-    subtitle: 'From Bitcoin maxis to degens, let\'s connect!',
-    date: 'Dec 09',
-    weekday: 'Tuesday',
-    time: '2:30 pm – 5:00 pm',
-    location: 'BUNS Smash Burgers, Ericeira',
-    category: 'Crypto • Community',
-    status: 'upcoming',
-    highlight: false,
-    flyerSrc: '/events/smashed-coin-meetup-flyer.jpg',
-    description:
-      'Crypto humans + smash burgers + tu. Um meet up descontraído para falar de Bitcoin, altcoins, builders e tudo o que mexe no mundo cripto – com a chapa BUNS a trabalhar em background.',
-    ctaLabel: 'Quero participar',
-    ctaHref: whatsappLink(
-      'Olá BUNS! Quero participar no SMASHED COIN – Crypto Meet Up. O meu nome é: _____.',
-    ),
-  },
+const STATUS_CLASS: Record<EventStatus, string> = {
+  confirmed: 'bg-green-500/20 text-green-300 border border-green-500/30',
+  planned:   'bg-emerald-500/15 text-emerald-300 border border-emerald-500/25',
+  pending:   'bg-orange-500/20 text-orange-300 border border-orange-500/30',
+  deciding:  'bg-amber-500/20 text-amber-300 border border-amber-500/30',
+  exploring: 'bg-violet-500/20 text-violet-300 border border-violet-500/30',
+}
+
+const STATUS_DOT: Record<EventStatus, string> = {
+  confirmed: 'bg-green-400',
+  planned:   'bg-emerald-400',
+  pending:   'bg-orange-400',
+  deciding:  'bg-amber-400',
+  exploring: 'bg-violet-400',
+}
+
+/* ── Recurring expansion ───────────────────────────────────── */
+const DAY_MAP: Record<string, number> = {
+  sunday: 0, monday: 1, tuesday: 2, wednesday: 3,
+  thursday: 4, friday: 5, saturday: 6,
+}
+
+function toDateStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+function expandRecurring(event: CalendarEvent, year: number, month: number): string[] {
+  if (!event.recurring || !event.recurring_start_date) return []
+  const target = DAY_MAP[event.recurring.toLowerCase()]
+  if (target === undefined) return []
+  const start = new Date(event.recurring_start_date + 'T00:00:00')
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+  const dates: string[] = []
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dt = new Date(year, month, d)
+    if (dt.getDay() === target && dt >= start) dates.push(toDateStr(dt))
+  }
+  return dates
+}
+
+/* ── Build a map: dateStr → events[] ──────────────────────── */
+function buildDayMap(events: CalendarEvent[], year: number, month: number): Map<string, CalendarEvent[]> {
+  const map = new Map<string, CalendarEvent[]>()
+
+  const add = (date: string, ev: CalendarEvent) => {
+    if (!map.has(date)) map.set(date, [])
+    map.get(date)!.push(ev)
+  }
+
+  for (const ev of events) {
+    if (ev.recurring) {
+      for (const date of expandRecurring(ev, year, month)) add(date, ev)
+    } else if (ev.event_date) {
+      const d = new Date(ev.event_date + 'T00:00:00')
+      if (d.getFullYear() === year && d.getMonth() === month) add(ev.event_date, ev)
+    }
+  }
+
+  return map
+}
+
+/* ── Calendar grid (weeks start Monday) ───────────────────── */
+function calendarGrid(year: number, month: number): (number | null)[] {
+  const first = new Date(year, month, 1).getDay()
+  const offset = (first + 6) % 7 // Mon=0
+  const days = new Date(year, month + 1, 0).getDate()
+  const grid: (number | null)[] = Array(offset).fill(null)
+  for (let d = 1; d <= days; d++) grid.push(d)
+  while (grid.length % 7 !== 0) grid.push(null)
+  return grid
+}
+
+const MONTH_PT = [
+  'Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+  'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro',
 ]
+const WEEK_PT = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom']
 
-/* ── Event type showcase ─────────────────────────────────── */
-const EVENT_TYPES = [
-  { emoji: '♟️', label: 'Torneios',      sub: 'Xadrez, gaming, challenges' },
-  { emoji: '₿',  label: 'Crypto Meetups', sub: 'Bitcoin, Web3, builders' },
-  { emoji: '🎵', label: 'Noites Temáticas', sub: 'DJs, playlists, vibes' },
-  { emoji: '🏆', label: 'Record Nights', sub: 'Wall of Fame ao vivo' },
-]
-
+/* ── Component ─────────────────────────────────────────────── */
 export default function EventosPage() {
-  const [search, setSearch] = useState('')
+  const [events, setEvents] = useState<CalendarEvent[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
 
-  const filteredEvents = useMemo(() => {
-    if (!search.trim()) return EVENTS
-    const term = search.toLowerCase()
-    return EVENTS.filter((ev) =>
-      [ev.title, ev.subtitle, ev.location, ev.category, ev.description, ev.weekday, ev.date, ev.time]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase()
-        .includes(term),
-    )
-  }, [search])
+  const now = new Date()
+  const [viewYear, setViewYear]   = useState(now.getFullYear())
+  const [viewMonth, setViewMonth] = useState(now.getMonth())
+  const [selectedDay, setSelectedDay] = useState<string | null>(null)
 
-  const highlight = filteredEvents.find((e) => e.highlight)
-  const others = filteredEvents.filter((e) => !e.highlight)
+  useEffect(() => {
+    fetch('/api/calendar')
+      .then((r) => r.json())
+      .then((data) => {
+        if (!Array.isArray(data)) { setError(true); return }
+        setEvents(data)
+      })
+      .catch(() => setError(true))
+      .finally(() => setLoading(false))
+  }, [])
+
+  const dayMap = useMemo(
+    () => buildDayMap(events, viewYear, viewMonth),
+    [events, viewYear, viewMonth]
+  )
+
+  const grid = useMemo(() => calendarGrid(viewYear, viewMonth), [viewYear, viewMonth])
+
+  const undatedEvents = useMemo(
+    () => events.filter((ev) => !ev.event_date && !ev.recurring),
+    [events]
+  )
+
+  const selectedEvents = selectedDay ? (dayMap.get(selectedDay) ?? []) : []
+
+  function prevMonth() {
+    if (viewMonth === 0) { setViewYear((y) => y - 1); setViewMonth(11) }
+    else setViewMonth((m) => m - 1)
+    setSelectedDay(null)
+  }
+
+  function nextMonth() {
+    if (viewMonth === 11) { setViewYear((y) => y + 1); setViewMonth(0) }
+    else setViewMonth((m) => m + 1)
+    setSelectedDay(null)
+  }
+
+  function toggleDay(dateStr: string) {
+    setSelectedDay((prev) => (prev === dateStr ? null : dateStr))
+  }
 
   return (
-    <main className="w-full max-w-full overflow-x-hidden bg-buns-cream">
+    <main className="min-h-screen bg-black text-white">
+      <div className="max-w-3xl mx-auto px-4 py-10 space-y-8">
 
-      {/* ── Hero strip ─────────────────────────────────────── */}
-      <div className="bg-black border-b-4 border-buns-yellow px-4 sm:px-6 pt-8 pb-10">
-        <div className="max-w-screen-xl mx-auto">
-          <div className="inline-flex items-center gap-1.5 bg-buns-yellow text-black text-[11px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg mb-5">
-            🎉 Eventos na BUNS
-          </div>
-          <h1
-            className="font-display text-white uppercase leading-none tracking-tight"
-            style={{ fontSize: 'clamp(3rem, 13vw, 7.5rem)' }}
-          >
-            BUNS<br />
-            <span className="text-buns-yellow">Events</span>
-          </h1>
-          <p className="mt-4 text-white/45 text-sm sm:text-base font-medium max-w-md">
-            Crypto meetups, torneios, quizzes e noites temáticas. A comunidade da Ericeira em volta da chapa.
-          </p>
+        {/* Header */}
+        <div className="space-y-1">
+          <p className="text-buns-yellow font-black text-xs uppercase tracking-[0.25em]">BUNS Ericeira</p>
+          <h1 className="font-display text-white text-5xl uppercase leading-none">Eventos</h1>
         </div>
-      </div>
 
-      {/* ── Body ───────────────────────────────────────────── */}
-      <div className="max-w-screen-xl mx-auto px-4 sm:px-6 pt-8 pb-32 space-y-8">
-
-        {/* ── Event types strip ── */}
-        <section className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {EVENT_TYPES.map((t) => (
-            <div key={t.label} className="bg-white border-2 border-black/8 rounded-2xl p-4 text-center">
-              <p className="text-3xl mb-2">{t.emoji}</p>
-              <p className="font-black text-black text-sm uppercase tracking-wide leading-tight">{t.label}</p>
-              <p className="text-black/45 text-xs mt-1 leading-snug">{t.sub}</p>
-            </div>
-          ))}
-        </section>
-
-        {/* ── Search ── */}
-        <section>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-2">
-            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-black/35">
-              Todos os eventos
-            </p>
-            <div className="relative w-full sm:w-72">
-              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-black/30 text-sm">🔍</span>
-              <input
-                type="text"
-                placeholder="Pesquisar eventos…"
-                className="w-full rounded-xl bg-white border-2 border-black/15 focus:border-black pl-9 pr-3 py-2.5 text-sm outline-none text-black placeholder:text-black/30 font-medium transition"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
+        {/* Loading / error */}
+        {loading && (
+          <div className="space-y-3">
+            <div className="h-64 rounded-2xl bg-white/5 animate-pulse" />
           </div>
-        </section>
-
-        {/* ── Featured event ── */}
-        {highlight && (
-          <section>
-            <div className="bg-white border-2 border-black rounded-3xl overflow-hidden">
-              {/* Yellow gradient stripe */}
-              <div className="h-2 bg-gradient-to-r from-buns-yellow via-amber-400 to-orange-500" />
-
-              <div className="p-5 sm:p-8">
-                <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
-                  <div className="inline-flex items-center gap-2 bg-buns-yellow text-black text-[11px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg">
-                    🔥 Próximo evento em destaque
-                  </div>
-                  <span className="text-[11px] font-black uppercase tracking-wide text-black/40 bg-black/5 border border-black/10 px-2.5 py-1 rounded-lg">
-                    {highlight.category}
-                  </span>
-                </div>
-
-                <div className="grid sm:grid-cols-[2fr_1.4fr] gap-6 sm:gap-8 items-start">
-                  {/* Info */}
-                  <div className="space-y-4">
-                    <div>
-                      <p className="font-display text-black uppercase leading-none"
-                         style={{ fontSize: 'clamp(1.6rem, 5vw, 2.5rem)' }}>
-                        {highlight.title}
-                      </p>
-                      {highlight.subtitle && (
-                        <p className="text-black/60 text-sm mt-2 font-medium">{highlight.subtitle}</p>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-2">
-                      {[
-                        { icon: '📅', text: `${highlight.date} (${highlight.weekday})` },
-                        { icon: '🕒', text: highlight.time },
-                        { icon: '📍', text: highlight.location },
-                      ].map(({ icon, text }) => (
-                        <div key={text} className="flex items-center gap-2 text-sm text-black/65 font-medium">
-                          <span>{icon}</span>
-                          <span>{text}</span>
-                        </div>
-                      ))}
-                    </div>
-
-                    <p className="text-black/60 text-sm leading-relaxed">{highlight.description}</p>
-
-                    {/* Rules */}
-                    {highlight.rules?.length ? (
-                      <div className="bg-buns-cream rounded-2xl p-4 space-y-2">
-                        <p className="text-[11px] font-black uppercase tracking-widest text-black/35 mb-3">
-                          Regras rápidas
-                        </p>
-                        <ul className="space-y-2">
-                          {highlight.rules.map((r) => (
-                            <li key={r} className="flex gap-2 text-sm text-black/60 leading-snug">
-                              <span className="w-2 h-2 rounded-full bg-buns-yellow shrink-0 mt-1.5" />
-                              {r}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ) : null}
-
-                    {/* CTA */}
-                    {highlight.ctaHref && (
-                      <div className="space-y-2">
-                        <a
-                          href={highlight.ctaHref}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="flex items-center justify-center gap-2 w-full py-4 bg-black text-buns-yellow font-black text-base uppercase tracking-wide rounded-2xl active:scale-[0.98] transition"
-                        >
-                          💬 {highlight.ctaLabel ?? 'Quero participar'}
-                        </a>
-                        <p className="text-xs text-black/35 text-center">
-                          Clica para abrir WhatsApp e garantir a tua vaga.
-                        </p>
-                        <p className="text-xs text-black/35 text-center">
-                          Evento casual (não federado). Fair play sempre.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Flyer */}
-                  <div className="relative min-h-[240px] rounded-2xl border-2 border-black/10 bg-black/5 overflow-hidden flex items-center justify-center">
-                    {highlight.flyerSrc ? (
-                      <Image
-                        src={highlight.flyerSrc}
-                        alt={`Flyer do evento ${highlight.title} na BUNS`}
-                        fill
-                        className="object-contain p-3"
-                        priority
-                      />
-                    ) : (
-                      <div className="p-6 text-center">
-                        <p className="text-4xl mb-2">🏆</p>
-                        <p className="text-sm text-black/40">Flyer em breve.</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
+        )}
+        {error && (
+          <p className="text-white/30 text-sm">Erro ao carregar eventos. Tenta mais tarde.</p>
         )}
 
-        {/* ── Other events grid ── */}
-        {others.length > 0 && (
-          <section>
-            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-black/35 mb-4">
-              Mais eventos
-            </p>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {others.map((ev) => (
-                <article
-                  key={ev.id}
-                  className="bg-white border-2 border-black/8 rounded-2xl overflow-hidden flex flex-col"
+        {!loading && !error && (
+          <>
+            {/* ── Calendar ── */}
+            <div className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden">
+
+              {/* Month nav */}
+              <div className="flex items-center justify-between px-5 py-4 border-b border-white/8">
+                <button
+                  onClick={prevMonth}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg text-white/40 hover:text-white hover:bg-white/8 transition text-lg"
                 >
-                  <div className="h-[5px] bg-buns-yellow" />
-                  <div className="p-5 flex-1 space-y-3">
-                    <div>
-                      <p className="font-black text-black text-base leading-tight">{ev.title}</p>
-                      {ev.subtitle && (
-                        <p className="text-black/50 text-xs mt-1">{ev.subtitle}</p>
-                      )}
-                    </div>
+                  ‹
+                </button>
+                <span className="font-black text-white text-sm uppercase tracking-widest">
+                  {MONTH_PT[viewMonth]} {viewYear}
+                </span>
+                <button
+                  onClick={nextMonth}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg text-white/40 hover:text-white hover:bg-white/8 transition text-lg"
+                >
+                  ›
+                </button>
+              </div>
 
-                    <div className="space-y-1.5">
-                      {[
-                        { icon: '📅', text: `${ev.date} (${ev.weekday})` },
-                        { icon: '🕒', text: ev.time },
-                        { icon: '📍', text: ev.location },
-                      ].map(({ icon, text }) => (
-                        <p key={text} className="flex items-center gap-2 text-xs text-black/50 font-medium">
-                          <span>{icon}</span><span>{text}</span>
-                        </p>
-                      ))}
-                    </div>
-
-                    <p className="text-xs text-black/55 leading-snug">{ev.description}</p>
-
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-[10px] font-black uppercase tracking-wide text-black/40 bg-black/5 border border-black/10 px-2 py-1 rounded-md">
-                        {ev.category}
-                      </span>
-                      <span className={`text-[10px] font-black uppercase tracking-wide px-2 py-1 rounded-md ${
-                        ev.status === 'upcoming'
-                          ? 'bg-green-100 text-green-700 border border-green-300'
-                          : 'bg-black/5 text-black/40 border border-black/10'
-                      }`}>
-                        {ev.status === 'upcoming' ? '● Próximo' : 'Passado'}
-                      </span>
-                    </div>
+              {/* Weekday headers */}
+              <div className="grid grid-cols-7 border-b border-white/8">
+                {WEEK_PT.map((d) => (
+                  <div key={d} className="py-2 text-center text-[10px] font-black uppercase tracking-widest text-white/25">
+                    {d}
                   </div>
+                ))}
+              </div>
 
-                  {ev.ctaHref && (
-                    <div className="px-5 pb-5">
-                      <a
-                        href={ev.ctaHref}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex items-center justify-center gap-2 w-full py-3 bg-black text-buns-yellow font-black text-sm uppercase tracking-wide rounded-xl active:scale-[0.98] transition"
-                      >
-                        💬 {ev.ctaLabel ?? 'Quero participar'}
-                      </a>
-                    </div>
-                  )}
-                </article>
+              {/* Days grid */}
+              <div className="grid grid-cols-7">
+                {grid.map((day, idx) => {
+                  if (!day) {
+                    return <div key={`empty-${idx}`} className="h-16 border-b border-r border-white/5 last:border-r-0" />
+                  }
+                  const dateStr = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+                  const dayEvents = dayMap.get(dateStr) ?? []
+                  const isToday = dateStr === toDateStr(new Date())
+                  const isSelected = selectedDay === dateStr
+                  const colIdx = idx % 7
+
+                  return (
+                    <button
+                      key={dateStr}
+                      onClick={() => dayEvents.length > 0 ? toggleDay(dateStr) : undefined}
+                      className={`
+                        h-16 p-1.5 border-b border-r border-white/5 text-left transition-colors
+                        ${colIdx === 6 ? 'border-r-0' : ''}
+                        ${dayEvents.length > 0 ? 'cursor-pointer hover:bg-white/5' : 'cursor-default'}
+                        ${isSelected ? 'bg-white/8' : ''}
+                      `}
+                    >
+                      <span className={`
+                        inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-black mb-1
+                        ${isToday ? 'bg-buns-yellow text-black' : 'text-white/50'}
+                      `}>
+                        {day}
+                      </span>
+                      <div className="flex flex-wrap gap-0.5">
+                        {dayEvents.slice(0, 3).map((ev, i) => (
+                          <span
+                            key={`${ev.id}-${i}`}
+                            className={`inline-block w-2 h-2 rounded-full ${STATUS_DOT[ev.status]}`}
+                          />
+                        ))}
+                        {dayEvents.length > 3 && (
+                          <span className="text-[8px] text-white/30 font-black leading-none self-center">
+                            +{dayEvents.length - 3}
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* ── Status legend ── */}
+            <div className="flex flex-wrap gap-2">
+              {(Object.keys(STATUS_LABEL) as EventStatus[]).map((s) => (
+                <span key={s} className={`text-[10px] font-black uppercase tracking-wide px-2 py-1 rounded-full ${STATUS_CLASS[s]}`}>
+                  {STATUS_LABEL[s]}
+                </span>
               ))}
             </div>
-          </section>
-        )}
 
-        {/* ── Empty state ── */}
-        {filteredEvents.length === 0 && (
-          <div className="bg-white border-2 border-black/8 rounded-2xl p-8 text-center">
-            <p className="text-3xl mb-2">🔍</p>
-            <p className="font-black text-black text-base">Não encontrámos eventos.</p>
-            <p className="text-black/45 text-sm mt-1">Tenta outra palavra (ex.: "xadrez", "crypto"…)</p>
-          </div>
-        )}
-
-        {/* ── Organise your event CTA ── */}
-        <section className="bg-black rounded-3xl overflow-hidden">
-          <div className="h-2 bg-gradient-to-r from-buns-yellow via-amber-400 to-orange-500" />
-          <div className="px-6 py-7 sm:px-8 sm:py-8 flex flex-col sm:flex-row items-start sm:items-center gap-5">
-            <div className="flex-1">
-              <div className="inline-flex items-center gap-1.5 bg-buns-yellow text-black text-[11px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg mb-3">
-                💡 Organiza um evento
+            {/* ── Selected day panel ── */}
+            {selectedDay && selectedEvents.length > 0 && (
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-5 space-y-4">
+                <p className="text-[11px] font-black uppercase tracking-widest text-white/35">
+                  {new Date(selectedDay + 'T00:00:00').toLocaleDateString('pt-PT', {
+                    weekday: 'long', day: '2-digit', month: 'long', year: 'numeric',
+                  })}
+                </p>
+                <div className="space-y-3">
+                  {selectedEvents.map((ev) => (
+                    <div
+                      key={ev.id}
+                      className="flex items-start gap-3 rounded-xl border border-white/8 bg-zinc-950/50 p-4"
+                    >
+                      <span className={`mt-1 shrink-0 inline-block w-2.5 h-2.5 rounded-full ${STATUS_DOT[ev.status]}`} />
+                      <div className="min-w-0 flex-1">
+                        <p className="font-black text-white text-sm leading-tight">{ev.title}</p>
+                        {ev.description && (
+                          <p className="text-white/45 text-xs mt-1 leading-relaxed">{ev.description}</p>
+                        )}
+                      </div>
+                      <span className={`shrink-0 text-[9px] font-black uppercase tracking-wide px-2 py-0.5 rounded-full ${STATUS_CLASS[ev.status]}`}>
+                        {STATUS_LABEL[ev.status]}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <p className="font-display text-white uppercase leading-none text-xl sm:text-2xl">
-                Traz a tua ideia<br />para a BUNS.
-              </p>
-              <p className="text-white/45 text-sm mt-2 leading-snug max-w-sm">
-                Crypto, gaming, arte, comunidade — fala connosco em loja ou por WhatsApp e bora tirar ideias do papel.
-              </p>
-            </div>
-            <a
-              href={whatsappLink('Olá BUNS! Tenho uma ideia para um evento na BUNS. Posso falar convosco?')}
-              target="_blank"
-              rel="noreferrer"
-              className="shrink-0 px-6 py-4 bg-buns-yellow text-black font-black text-sm uppercase tracking-wide rounded-2xl active:scale-[0.98] transition"
-            >
-              💬 Falar no WhatsApp →
-            </a>
-          </div>
-        </section>
+            )}
 
+            {/* ── Events with date in this month (list view) ── */}
+            {(() => {
+              const monthEvents: { date: string; events: CalendarEvent[] }[] = []
+              dayMap.forEach((evs, date) => {
+                monthEvents.push({ date, events: evs })
+              })
+              monthEvents.sort((a, b) => a.date.localeCompare(b.date))
+              if (monthEvents.length === 0) return (
+                <p className="text-white/20 text-sm text-center py-4">Sem eventos este mês.</p>
+              )
+              return null
+            })()}
+
+            {/* ── Undated events ── */}
+            {undatedEvents.length > 0 && (
+              <div className="space-y-3">
+                <p className="text-[11px] font-black uppercase tracking-widest text-white/35">
+                  Em estudo / sem data
+                </p>
+                <div className="space-y-2">
+                  {undatedEvents.map((ev) => (
+                    <div
+                      key={ev.id}
+                      className="flex items-start gap-3 rounded-xl border border-white/8 bg-white/5 px-4 py-3"
+                    >
+                      <span className={`mt-1 shrink-0 inline-block w-2 h-2 rounded-full ${STATUS_DOT[ev.status]}`} />
+                      <div className="min-w-0 flex-1">
+                        <p className="font-black text-white text-sm">{ev.title}</p>
+                        {ev.description && (
+                          <p className="text-white/40 text-xs mt-0.5 leading-relaxed">{ev.description}</p>
+                        )}
+                      </div>
+                      <span className={`shrink-0 text-[9px] font-black uppercase tracking-wide px-2 py-0.5 rounded-full ${STATUS_CLASS[ev.status]}`}>
+                        {STATUS_LABEL[ev.status]}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        )}
       </div>
     </main>
   )

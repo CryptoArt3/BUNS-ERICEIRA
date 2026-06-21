@@ -56,14 +56,14 @@ export default function AdminHeader() {
             <a className={isActive("/admin/analytics")} href="/admin/analytics">
               📊 Analytics
             </a>
-            <a className={isActive("/admin/ping")} href="/admin/ping">
-              Ping
-            </a>
-            <a className={isActive("/admin/quest")} href="/admin/quest">
+<a className={isActive("/admin/quest")} href="/admin/quest">
               🎯 Quest
             </a>
             <a className={isActive("/admin/bonus")} href="/admin/bonus">
               🏆 Bonus
+            </a>
+            <a className={isActive("/admin/eventos")} href="/admin/eventos">
+              📅 Eventos
             </a>
           </nav>
         </div>
