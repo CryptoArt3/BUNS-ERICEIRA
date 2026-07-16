@@ -3,20 +3,29 @@ import Link from 'next/link'
 const CHAMPION = {
   title: 'RECORDISTAS ATUAIS',
   names: [
-    `Marc "Not Blondie" Weib`,
-    `Andrea "Blondie" Teyssedre`,
+    `Pedro Marques`,
+    `João Félix`,
   ],
-  city: 'Germany / Madagascar',
+  city: 'Portugal / Portugal',
   date: 'Novo recorde oficial',
-  record: 8,
-  photo: '/champions/marc-andrea-wall-of-fame.jpg',
+  record: 9,
+  photo: '/champions/pedro-marques-joao-felix.jpg',
   quote:
-    'Duas máquinas. Dezasseis carnes. Um novo topo no Wall of Fame. Agora o desafio ficou ainda mais sério.',
+    'Duas lendas. Dezoito carnes. Um novo topo no Wall of Fame. Agora o desafio é chegar às dez.',
   subtitle: 'Onde lendas do apetite nascem',
   note: 'novo recorde oficial em dupla',
 }
 
 const PAST_CHAMPIONS = [
+  {
+    name: `Marc "Not Blondie" Weib & Andrea "Blondie" Teyssedre`,
+    city: 'Germany / Madagascar',
+    date: 'Recorde anterior',
+    record: 8,
+    photo: '/champions/marc-andrea-wall-of-fame.jpg',
+    quote:
+      'Oito carnes cada um. A dupla internacional que elevou o recorde antes da chegada dos novos campeões portugueses.',
+  },
   {
     name: `Peter "Big Back" Reinheimer & Brayden "Big Back" Gotsky`,
     city: 'Philadelphia / New York',
