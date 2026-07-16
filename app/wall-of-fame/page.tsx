@@ -9,7 +9,7 @@ const CHAMPION = {
   city: 'Portugal / Portugal',
   date: 'Novo recorde oficial',
   record: 9,
-  photo: '/champions/pedro-marques-joao-felix.jpg',
+  photo: '/champions/pedro-marques-joao-felix.png',
   quote:
     'Duas lendas. Dezoito carnes. Um novo topo no Wall of Fame. Agora o desafio é chegar às dez.',
   subtitle: 'Onde lendas do apetite nascem',
