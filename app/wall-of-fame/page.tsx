@@ -3,20 +3,28 @@ import Link from 'next/link'
 const CHAMPION = {
   title: 'RECORDISTAS ATUAIS',
   names: [
-    `Pedro Marques`,
-    `João Félix`,
+    `Alex Matias`,
   ],
-  city: 'Portugal / Portugal',
+  city: 'Portugal',
   date: 'Novo recorde oficial',
-  record: 9,
-  photo: '/champions/pedro-marques-joao-felix.png',
+  record: 10,
+  photo: '/champions/alexmatias.jpg',
   quote:
-    'Duas lendas. Dezoito carnes. Um novo topo no Wall of Fame. Agora o desafio é chegar às dez.',
+    'Um recorde histórico. Dez carnes. Uma lenda. O novo topo do Wall of Fame.',
   subtitle: 'Onde lendas do apetite nascem',
-  note: 'novo recorde oficial em dupla',
+  note: 'novo recorde oficial',
 }
 
 const PAST_CHAMPIONS = [
+  {
+    name: `Pedro Marques & João Félix`,
+    city: 'Portugal',
+    date: 'Recorde anterior',
+    record: 9,
+    photo: '/champions/pedro-marques-joao-felix.png',
+    quote:
+      'Duas lendas. Dezoito carnes. O duelo em dupla que ergueu a fasquia a nove carnes cada, antes da chegada do novo recorde a solo.',
+  },
   {
     name: `Marc "Not Blondie" Weib & Andrea "Blondie" Teyssedre`,
     city: 'Germany / Madagascar',
@@ -126,15 +134,18 @@ export default function WallOfFamePage() {
                 {/* Info */}
                 <div className="space-y-4">
                   <div>
-                    <p className="text-[11px] font-black uppercase tracking-[0.18em] text-black/35 mb-2">Recordistas</p>
-                    <p className="font-display text-black uppercase leading-none"
-                       style={{ fontSize: 'clamp(1.4rem, 4vw, 2rem)' }}>
-                      {CHAMPION.names[0]}
-                    </p>
-                    <p className="font-display text-black/70 uppercase leading-none mt-1"
-                       style={{ fontSize: 'clamp(1.2rem, 3vw, 1.6rem)' }}>
-                      {CHAMPION.names[1]}
-                    </p>
+                    <p className="text-[11px] font-black uppercase tracking-[0.18em] text-black/35 mb-2">Recordista</p>
+                    {CHAMPION.names.map((name, i) => (
+                      <p
+                        key={name}
+                        className={i === 0
+                          ? 'font-display text-black uppercase leading-none'
+                          : 'font-display text-black/70 uppercase leading-none mt-1'}
+                        style={{ fontSize: i === 0 ? 'clamp(1.4rem, 4vw, 2rem)' : 'clamp(1.2rem, 3vw, 1.6rem)' }}
+                      >
+                        {name}
+                      </p>
+                    ))}
                   </div>
 
                   <div className="flex flex-wrap gap-2">
