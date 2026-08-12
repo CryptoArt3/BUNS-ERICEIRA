@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useI18n } from '@/lib/i18n/useI18n'
 import LangToggle from '@/components/ui/LangToggle'
+import { getLisbonParts, closingHourForDay } from '@/lib/hours'
 
 type AppRoute =
   | '/'
@@ -29,8 +30,16 @@ const NAV_ITEMS: { href: AppRoute; emoji: string; tKey: string }[] = [
 
 export default function MobileNav() {
   const [open, setOpen] = useState(false)
+  const [closingHour, setClosingHour] = useState<number | null>(null)
   const pathname = usePathname()
   const { t } = useI18n()
+
+  useEffect(() => {
+    try {
+      const { weekday, month } = getLisbonParts(new Date())
+      setClosingHour(closingHourForDay(weekday, month))
+    } catch { setClosingHour(0) }
+  }, [])
 
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : ''
@@ -128,7 +137,7 @@ export default function MobileNav() {
               {t('nav.order_now')}
             </Link>
             <p className="text-[11px] font-black uppercase tracking-widest text-white/25 text-center">
-              Ericeira · Takeaway · 11:00–00:00
+              Ericeira · Takeaway · 11:00–{closingHour === null ? '00' : String(closingHour).padStart(2, '0')}:00
             </p>
           </div>
 
