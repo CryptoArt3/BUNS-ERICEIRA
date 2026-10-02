@@ -1,21 +1,30 @@
 import Link from 'next/link'
 
 const CHAMPION = {
-  title: 'RECORDISTAS ATUAIS',
+  title: 'RECORDISTA ATUAL',
   names: [
-    `Alex Matias`,
+    `Peter “Big Back” Reinheimer`,
   ],
-  city: 'Portugal',
+  city: 'Philadelphia',
   date: 'Novo recorde oficial',
-  record: 10,
-  photo: '/champions/alexmatias.jpg',
+  record: 14,
+  photo: '/champions/peter-big-back-14-photo.jpg',
   quote:
-    'Um recorde histórico. Dez carnes. Uma lenda. O novo topo do Wall of Fame.',
+    'Quatorze carnes. Uma verdadeira lenda. O novo topo do Wall of Fame.',
   subtitle: 'Onde lendas do apetite nascem',
   note: 'novo recorde oficial',
 }
 
 const PAST_CHAMPIONS = [
+  {
+    name: 'Alex Matias',
+    city: 'Portugal',
+    date: 'Recorde anterior',
+    record: 10,
+    photo: '/champions/alexmatias.jpg',
+    quote:
+      'Dez carnes. Um recorde histórico que levou o Wall of Fame a um novo nível.',
+  },
   {
     name: `Pedro Marques & João Félix`,
     city: 'Portugal',
