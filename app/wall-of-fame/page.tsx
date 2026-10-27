@@ -3,19 +3,28 @@ import Link from 'next/link'
 const CHAMPION = {
   title: 'RECORDISTA ATUAL',
   names: [
-    `Peter “Big Back” Reinheimer`,
+    `David “Where Is My Icecream” de Bie`,
   ],
-  city: 'Philadelphia',
+  city: 'Belgium',
   date: 'Novo recorde oficial',
-  record: 14,
-  photo: '/champions/peter-big-back-14-photo.jpg',
+  record: 15,
+  photo: '/champions/david-bie.jpg',
   quote:
-    'Quatorze carnes. Uma verdadeira lenda. O novo topo do Wall of Fame.',
+    'Quinze carnes. Uma verdadeira lenda. O novo topo do Wall of Fame.',
   subtitle: 'Onde lendas do apetite nascem',
   note: 'novo recorde oficial',
 }
 
 const PAST_CHAMPIONS = [
+  {
+    name: `Peter “Big Back” Reinheimer`,
+    city: 'Philadelphia',
+    date: 'Recorde anterior',
+    record: 14,
+    photo: '/champions/peter-big-back-14-photo.jpg',
+    quote:
+      'Quatorze carnes. Uma marca histórica que elevou o desafio BUNS a outro nível.',
+  },
   {
     name: 'Alex Matias',
     city: 'Portugal',
